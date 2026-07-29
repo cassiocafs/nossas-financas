@@ -6,8 +6,9 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Claude Code (config local)
-.claude/settings.local.json
+# Claude Code (config local, pode conter segredos no histórico de permissões)
+.claude/
+skills-lock.json
 
 # Variáveis de ambiente
 .env

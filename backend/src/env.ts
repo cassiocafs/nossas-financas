@@ -1,0 +1,23 @@
+import "dotenv/config";
+import { z } from "zod";
+
+const envSchema = z.object({
+  PORT: z.coerce.number().default(3001),
+  CORS_ORIGIN: z.string().default("http://localhost:5173"),
+  DATABASE_URL: z.string().min(1, "DATABASE_URL é obrigatório"),
+  DIRECT_URL: z.string().min(1, "DIRECT_URL é obrigatório"),
+  SUPABASE_URL: z.string().min(1, "SUPABASE_URL é obrigatório"),
+  SUPABASE_JWT_SECRET: z.string().optional(),
+  EMAIL_PROVIDER_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default("no-reply@nossasfinancas.app"),
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  console.error("Variáveis de ambiente inválidas ou ausentes:");
+  console.error(parsed.error.format());
+  process.exit(1);
+}
+
+export const env = parsed.data;

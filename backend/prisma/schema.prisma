@@ -1,0 +1,242 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Usuario {
+  id              String         @id // = auth.users.id do Supabase (uuid)
+  email           String         @unique
+  nome            String?
+  criadoEm        DateTime       @default(now())
+  membros         MembroEspaco[]
+  convitesCriados Convite[]      @relation("ConvitesCriados")
+}
+
+model EspacoFinanceiro {
+  id                 String              @id @default(uuid())
+  nome               String
+  criadoEm           DateTime            @default(now())
+  membros            MembroEspaco[]
+  contas             Conta[]
+  gruposCategoria    GrupoCategoria[]
+  subgruposCategoria SubgrupoCategoria[]
+  categorias         Categoria[]
+  transacoes         Transacao[]
+  orcamentos         OrcamentoAnual[]
+  convites           Convite[]
+  seriesRecorrencia  SerieRecorrencia[]
+}
+
+enum PapelMembro {
+  PROPRIETARIO
+  EDITOR
+  LEITOR
+}
+
+model MembroEspaco {
+  id        String           @id @default(uuid())
+  usuarioId String
+  espacoId  String
+  papel     PapelMembro      @default(EDITOR)
+  criadoEm  DateTime         @default(now())
+  usuario   Usuario          @relation(fields: [usuarioId], references: [id])
+  espaco    EspacoFinanceiro @relation(fields: [espacoId], references: [id])
+
+  @@unique([usuarioId, espacoId])
+}
+
+enum StatusConvite {
+  PENDENTE
+  ACEITO
+  CANCELADO
+  EXPIRADO
+}
+
+model Convite {
+  id             String           @id @default(uuid())
+  espacoId       String
+  emailConvidado String
+  papel          PapelMembro      @default(EDITOR)
+  status         StatusConvite    @default(PENDENTE)
+  token          String           @unique @default(uuid())
+  criadoPorId    String
+  criadoEm       DateTime         @default(now())
+  respondidoEm   DateTime?
+  expiraEm       DateTime
+  espaco         EspacoFinanceiro @relation(fields: [espacoId], references: [id])
+  criadoPor      Usuario          @relation("ConvitesCriados", fields: [criadoPorId], references: [id])
+
+  @@index([espacoId])
+  @@index([emailConvidado])
+}
+
+model Conta {
+  id           String           @id @default(uuid())
+  espacoId     String
+  nome         String
+  saldoInicial Decimal          @default(0) @db.Decimal(14, 2)
+  ativa        Boolean          @default(true)
+  criadoEm     DateTime         @default(now())
+  atualizadoEm DateTime         @updatedAt
+  espaco       EspacoFinanceiro @relation(fields: [espacoId], references: [id])
+  transacoes   Transacao[]
+
+  @@index([espacoId])
+}
+
+model GrupoCategoria {
+  id         String              @id @default(uuid())
+  espacoId   String
+  nome       String
+  ordem      Int                 @default(0)
+  espaco     EspacoFinanceiro    @relation(fields: [espacoId], references: [id])
+  subgrupos  SubgrupoCategoria[]
+  categorias Categoria[]
+
+  @@unique([espacoId, nome])
+}
+
+model SubgrupoCategoria {
+  id         String           @id @default(uuid())
+  espacoId   String
+  grupoId    String
+  nome       String
+  ordem      Int              @default(0)
+  espaco     EspacoFinanceiro @relation(fields: [espacoId], references: [id])
+  grupo      GrupoCategoria   @relation(fields: [grupoId], references: [id])
+  categorias Categoria[]
+
+  @@unique([grupoId, nome])
+}
+
+enum TipoCategoria {
+  DESPESA
+  RECEITA
+  AMBOS
+}
+
+model Categoria {
+  id             String                  @id @default(uuid())
+  espacoId       String
+  grupoId        String?
+  subgrupoId     String?
+  nome           String
+  tipo           TipoCategoria           @default(AMBOS)
+  ativa          Boolean                 @default(true)
+  criadoEm       DateTime                @default(now())
+  espaco         EspacoFinanceiro        @relation(fields: [espacoId], references: [id])
+  grupo          GrupoCategoria?         @relation(fields: [grupoId], references: [id])
+  subgrupo       SubgrupoCategoria?      @relation(fields: [subgrupoId], references: [id])
+  regras         RegraCategorizacao[]
+  transacoes     Transacao[]
+  orcamentoItens OrcamentoCategoriaMes[]
+
+  @@unique([espacoId, grupoId, subgrupoId, nome])
+}
+
+model RegraCategorizacao {
+  id           String    @id @default(uuid())
+  categoriaId  String
+  palavraChave String
+  criadoEm     DateTime  @default(now())
+  categoria    Categoria @relation(fields: [categoriaId], references: [id])
+
+  @@unique([categoriaId, palavraChave])
+}
+
+enum TipoTransacao {
+  DESPESA
+  RECEITA
+  TRANSFERENCIA
+}
+
+enum TipoSerie {
+  PARCELAMENTO_MENSAL
+  AVANCADO
+}
+
+enum FrequenciaUnidade {
+  DIA
+  SEMANA
+  MES
+  ANO
+}
+
+enum LembreteAntecedencia {
+  NENHUM
+  NO_DIA
+  UM_DIA_ANTES
+  TRES_DIAS_ANTES
+  UMA_SEMANA_ANTES
+}
+
+model SerieRecorrencia {
+  id                  String             @id @default(uuid())
+  espacoId            String
+  tipo                TipoSerie
+  frequenciaUnidade   FrequenciaUnidade?
+  frequenciaIntervalo Int?
+  indeterminada       Boolean            @default(false)
+  totalOcorrencias    Int?
+  criadoEm            DateTime           @default(now())
+  espaco              EspacoFinanceiro   @relation(fields: [espacoId], references: [id])
+  transacoes          Transacao[]
+}
+
+model Transacao {
+  id                   String                @id @default(uuid())
+  espacoId             String
+  contaId              String
+  categoriaId          String?
+  tipo                 TipoTransacao
+  data                 DateTime              @db.Date
+  descricao            String
+  valor                Decimal               @db.Decimal(14, 2)
+  consolidado          Boolean               @default(false)
+  nota                 String?
+  lembreteAntecedencia LembreteAntecedencia?
+  lembreteEnviadoEm    DateTime?
+  transferenciaGrupoId String?
+  serieId              String?
+  numeroParcela        Int?
+  totalParcelas        Int?
+  criadoEm             DateTime              @default(now())
+  atualizadoEm         DateTime              @updatedAt
+  espaco               EspacoFinanceiro      @relation(fields: [espacoId], references: [id])
+  conta                Conta                 @relation(fields: [contaId], references: [id])
+  categoria            Categoria?            @relation(fields: [categoriaId], references: [id])
+  serie                SerieRecorrencia?     @relation(fields: [serieId], references: [id])
+
+  @@index([espacoId, data])
+  @@index([contaId])
+  @@index([serieId])
+  @@index([transferenciaGrupoId])
+}
+
+model OrcamentoAnual {
+  id       String                  @id @default(uuid())
+  espacoId String
+  ano      Int
+  criadoEm DateTime                @default(now())
+  espaco   EspacoFinanceiro        @relation(fields: [espacoId], references: [id])
+  itens    OrcamentoCategoriaMes[]
+
+  @@unique([espacoId, ano])
+}
+
+model OrcamentoCategoriaMes {
+  id               String         @id @default(uuid())
+  orcamentoAnualId String
+  categoriaId      String
+  mes              Int
+  valorPrevisto    Decimal        @db.Decimal(14, 2)
+  orcamento        OrcamentoAnual @relation(fields: [orcamentoAnualId], references: [id])
+  categoria        Categoria      @relation(fields: [categoriaId], references: [id])
+
+  @@unique([orcamentoAnualId, categoriaId, mes])
+}
