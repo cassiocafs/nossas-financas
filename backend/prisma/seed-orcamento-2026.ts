@@ -142,7 +142,6 @@ async function montarItens(): Promise<ItemOrcamento[]> {
       nome: "Padaria",
       categoriaId: CAT.padaria,
       meses: { 1: 100, 2: 100, 3: 100, 4: 100, 5: 100, 6: 200, 7: 200, 8: 200, 9: 100, 10: 200, 11: 200, 12: 200 },
-      incerto: true, // valor de junho pouco legível no PDF de origem
     },
     {
       nome: "Suplemento",
@@ -186,7 +185,7 @@ async function montarItens(): Promise<ItemOrcamento[]> {
     { nome: "Google Drive", categoriaId: CAT.googleDrive, meses: todosMeses(10) },
     { nome: "Livelo", categoriaId: CAT.livelo, meses: todosMeses(45) },
     { nome: "Mercado Livre", categoriaId: CAT.mercadoLivre, meses: todosMeses(10) },
-    { nome: "Quenha diária (Queima diária)", categoriaId: CAT.quenhaDiaria, meses: { 1: 36, 3: 36, 4: 36 } },
+    { nome: "Quenha diária (Queima diária)", categoriaId: CAT.quenhaDiaria, meses: { 1: 36, 2: 36, 3: 36, 4: 36 } },
 
     { nome: "Limp SV Amoaras", categoriaId: CAT.limpSvAmoaras, meses: todosMeses(250) },
 
@@ -195,7 +194,7 @@ async function montarItens(): Promise<ItemOrcamento[]> {
     {
       nome: "Salário Baba",
       categoriaId: CAT.salarioBaba,
-      meses: { 1: 800, 2: 0, 3: 800, 4: 800, 5: 800, 6: 1112, 7: 1112, 8: 1112, 9: 1112, 10: 1112, 11: 1112, 12: 1112 },
+      meses: { 1: 800, 2: 800, 3: 800, 4: 800, 5: 800, 6: 1112, 7: 1112, 8: 1112, 9: 1112, 10: 1112, 11: 1112, 12: 1112 },
     },
 
     {
@@ -214,7 +213,7 @@ async function montarItens(): Promise<ItemOrcamento[]> {
       categoriaId: CAT.presenteExterno,
       meses: { 1: 100, 2: 0, 3: 300, 4: 300, 5: 100, 7: 300, 8: 200, 9: 100, 10: 200, 11: 400 },
     },
-    { nome: "Presente (Filhos)", categoriaId: CAT.presenteFilhos, meses: { 1: 0, 6: 0, 10: 200 } },
+    { nome: "Presente (Filhos)", categoriaId: CAT.presenteFilhos, meses: { 1: 0, 2: 200, 6: 0, 10: 200, 11: 200 } },
 
     { nome: "Doações Realizadas", categoriaId: CAT.doacoesRealizadas, meses: todosMeses(150) },
 
@@ -240,13 +239,12 @@ async function montarItens(): Promise<ItemOrcamento[]> {
     {
       nome: "Fono Terapia (Filhos)",
       categoriaId: CAT.fonoTerapiaFilhos,
-      meses: { 1: 520, 2: 1040, 3: 1040, 4: 1040, 5: 1040, 6: 1040, 7: 0, 8: 1040, 9: 1040, 10: 1040, 11: 1040, 12: 1040 },
-      incerto: true, // jun/jul pouco legíveis no PDF de origem
+      meses: { 1: 520, 2: 1040, 3: 1040, 4: 1040, 5: 1040, 6: 1040, 7: 1040, 8: 1040, 9: 1040, 10: 1040, 11: 1040, 12: 1040 },
     },
     {
       nome: "Médico (Filhos)",
       categoriaId: CAT.medicoFilhos,
-      meses: { 2: 0, 3: 600, 4: 0, 5: 700, 9: 600, 12: 600 },
+      meses: { 2: 0, 3: 600, 4: 0, 5: 700, 6: 600, 9: 600, 12: 600 },
     },
 
     { nome: "Gasolina Carro", categoriaId: CAT.gasolinaCarro, meses: todosMeses(500) },
@@ -261,7 +259,7 @@ async function montarItens(): Promise<ItemOrcamento[]> {
       categoriaId: CAT.manutencaoCarro,
       meses: { 1: 1000, 2: 1000, 3: 1000, 4: 0, 6: 0, 7: 1000, 8: 1000, 9: 1000 },
     },
-    { nome: "Seguro Carro", categoriaId: seguroCarro.id, meses: { 5: 440, 6: 440, 7: 0, 8: 440, 9: 440, 10: 360 } },
+    { nome: "Seguro Carro", categoriaId: seguroCarro.id, meses: { 5: 440, 6: 440, 7: 440, 8: 440, 9: 440, 10: 360 } },
 
     { nome: "Calçados (Esteyce)", categoriaId: CAT.calcadosEsteyce, meses: todosMeses(150) },
     { nome: "Calçados (Filhos)", categoriaId: CAT.calcadosFilhos, meses: { 1: 0, 5: 150, 8: 150, 11: 150 } },
