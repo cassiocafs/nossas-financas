@@ -18,6 +18,8 @@
   --color-line-night: #262626;
   --color-vermelho: #d6371f;
   --color-vermelho-night: #ff6b52;
+  --color-verde: #1f9254;
+  --color-verde-night: #34d399;
 
   --color-marca: #0066cc;
   --color-marca-night: #4d9fff;
@@ -32,6 +34,19 @@
 
 :root {
   color-scheme: light dark;
+}
+
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+.animate-progress-indeterminate {
+  animation: progress-indeterminate 1.1s ease-in-out infinite;
 }
 
 body {

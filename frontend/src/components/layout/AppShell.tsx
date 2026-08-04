@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sidebar } from "./Sidebar";
+import { Navbar } from "./Navbar";
 
 export function AppShell() {
   const { session, loading } = useAuth();
@@ -18,8 +18,8 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-paper text-ink md:flex-row dark:bg-paper-night dark:text-paper">
-      <Sidebar />
+    <div className="flex min-h-screen flex-col bg-paper text-ink dark:bg-paper-night dark:text-paper">
+      <Navbar />
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <Outlet />
       </main>

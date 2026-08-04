@@ -13,10 +13,19 @@ export interface CategoriaGrade {
   estourado: boolean;
 }
 
+export interface SubgrupoGrade {
+  subgrupoId: string;
+  subgrupoNome: string;
+  categorias: CategoriaGrade[];
+  subtotalPrevisto: number;
+  subtotalRealizado: number;
+}
+
 export interface GrupoGrade {
   grupoId: string | null;
   grupoNome: string;
   categorias: CategoriaGrade[];
+  subgrupos: SubgrupoGrade[];
   subtotalPrevisto: number;
   subtotalRealizado: number;
 }

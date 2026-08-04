@@ -47,7 +47,7 @@ export async function buscarGrade(espacoId: string, orcamentoId: string, mes: nu
 
   const itensMes = await prisma.orcamentoCategoriaMes.findMany({
     where: { orcamentoAnualId: orcamentoId, mes },
-    include: { categoria: { include: { grupo: true } } },
+    include: { categoria: { include: { grupo: true, subgrupo: true } } },
   });
 
   const categoriaIds = itensMes.map((i) => i.categoriaId);
@@ -68,10 +68,24 @@ export async function buscarGrade(espacoId: string, orcamentoId: string, mes: nu
     realizadoPorCategoria.map((r) => [r.categoriaId, Math.abs(toNumber(r._sum.valor))]),
   );
 
-  const gruposMap = new Map<
-    string,
-    { grupoId: string; grupoNome: string; categorias: LinhaCategoria[]; subtotalPrevisto: number; subtotalRealizado: number }
-  >();
+  interface SubgrupoBucket {
+    subgrupoId: string;
+    subgrupoNome: string;
+    ordem: number;
+    categorias: LinhaCategoria[];
+    subtotalPrevisto: number;
+    subtotalRealizado: number;
+  }
+  interface GrupoBucket {
+    grupoId: string;
+    grupoNome: string;
+    categorias: LinhaCategoria[];
+    subgruposMap: Map<string, SubgrupoBucket>;
+    subtotalPrevisto: number;
+    subtotalRealizado: number;
+  }
+
+  const gruposMap = new Map<string, GrupoBucket>();
   const semGrupoCategorias: LinhaCategoria[] = [];
   let totalPrevisto = 0;
   let totalRealizado = 0;
@@ -91,17 +105,36 @@ export async function buscarGrade(espacoId: string, orcamentoId: string, mes: nu
     };
 
     const grupo = item.categoria.grupo;
+    const subgrupo = item.categoria.subgrupo;
     if (grupo) {
       const bucket = gruposMap.get(grupo.id) ?? {
         grupoId: grupo.id,
         grupoNome: grupo.nome,
         categorias: [],
+        subgruposMap: new Map<string, SubgrupoBucket>(),
         subtotalPrevisto: 0,
         subtotalRealizado: 0,
       };
-      bucket.categorias.push(linha);
       bucket.subtotalPrevisto += previsto;
       bucket.subtotalRealizado += realizado;
+
+      if (subgrupo) {
+        const subBucket = bucket.subgruposMap.get(subgrupo.id) ?? {
+          subgrupoId: subgrupo.id,
+          subgrupoNome: subgrupo.nome,
+          ordem: subgrupo.ordem,
+          categorias: [],
+          subtotalPrevisto: 0,
+          subtotalRealizado: 0,
+        };
+        subBucket.categorias.push(linha);
+        subBucket.subtotalPrevisto += previsto;
+        subBucket.subtotalRealizado += realizado;
+        bucket.subgruposMap.set(subgrupo.id, subBucket);
+      } else {
+        bucket.categorias.push(linha);
+      }
+
       gruposMap.set(grupo.id, bucket);
     } else {
       semGrupoCategorias.push(linha);
@@ -130,7 +163,22 @@ export async function buscarGrade(espacoId: string, orcamentoId: string, mes: nu
     });
   }
 
-  const grupos = [...gruposMap.values()];
+  const grupos = [...gruposMap.values()].map((g) => ({
+    grupoId: g.grupoId,
+    grupoNome: g.grupoNome,
+    categorias: g.categorias,
+    subtotalPrevisto: g.subtotalPrevisto,
+    subtotalRealizado: g.subtotalRealizado,
+    subgrupos: [...g.subgruposMap.values()]
+      .sort((a, b) => a.ordem - b.ordem)
+      .map(({ subgrupoId, subgrupoNome, categorias, subtotalPrevisto, subtotalRealizado }) => ({
+        subgrupoId,
+        subgrupoNome,
+        categorias,
+        subtotalPrevisto,
+        subtotalRealizado,
+      })),
+  }));
   if (semGrupoCategorias.length > 0) {
     grupos.push({
       grupoId: null as unknown as string,
@@ -138,6 +186,7 @@ export async function buscarGrade(espacoId: string, orcamentoId: string, mes: nu
       categorias: semGrupoCategorias,
       subtotalPrevisto: semGrupoCategorias.reduce((s, c) => s + c.previsto, 0),
       subtotalRealizado: semGrupoCategorias.reduce((s, c) => s + c.realizado, 0),
+      subgrupos: [],
     });
   }
 

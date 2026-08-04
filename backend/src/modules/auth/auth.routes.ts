@@ -11,10 +11,17 @@ authRouter.post(
   authenticate,
   resolveEspaco,
   asyncHandler(async (req, res) => {
-    const espaco = await prisma.espacoFinanceiro.findUniqueOrThrow({
-      where: { id: req.espacoId },
-    });
+    const { userId, email } = req.auth!;
 
-    res.json({ usuario: req.usuario, espaco });
+    const [usuario, espaco] = await Promise.all([
+      prisma.usuario.upsert({
+        where: { id: userId },
+        update: email ? { email } : {},
+        create: { id: userId, email: email ?? `${userId}@desconhecido.local` },
+      }),
+      prisma.espacoFinanceiro.findUniqueOrThrow({ where: { id: req.espacoId } }),
+    ]);
+
+    res.json({ usuario, espaco });
   }),
 );

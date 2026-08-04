@@ -23,7 +23,7 @@ export function RealizadoPrevistoChart({ serie }: RealizadoPrevistoChartProps) {
   const corEixo = "#8c8c8c";
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ResponsiveContainer width="100%" height={200}>
       <LineChart data={serie} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
         <CartesianGrid stroke={corGrid} vertical={false} />
         <XAxis dataKey="dia" tick={{ fontSize: 11, fill: corEixo }} tickLine={false} />

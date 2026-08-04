@@ -10,6 +10,25 @@ import { DefinirPrevistoModal } from "@/components/orcamento/DefinirPrevistoModa
 import { formatarMoeda } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ProgressBar } from "@/components/ui/ProgressBar";
+
+type Tom = "positivo" | "negativo" | "neutro";
+
+function StatTile({ label, valor, tom = "neutro" }: { label: string; valor: string; tom?: Tom }) {
+  const cor =
+    tom === "positivo"
+      ? "text-verde dark:text-verde-night"
+      : tom === "negativo"
+        ? "text-vermelho dark:text-vermelho-night"
+        : "text-ink dark:text-paper";
+
+  return (
+    <Card className="p-3">
+      <p className="font-mono text-[10px] tracking-widest text-ink/40 uppercase dark:text-paper/40">{label}</p>
+      <p className={`mt-1 truncate font-mono text-lg font-medium tabular-nums ${cor}`}>{valor}</p>
+    </Card>
+  );
+}
 
 export function OrcamentoPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -50,54 +69,62 @@ export function OrcamentoPage() {
     setModalAberto(true);
   }
 
+  const restante = grade ? grade.totalPrevisto - grade.totalRealizado : 0;
+  const percentualUsado = grade && grade.totalPrevisto > 0 ? (grade.totalRealizado / grade.totalPrevisto) * 100 : 0;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-3xl font-semibold text-ink dark:text-paper">Orçamento</h1>
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-2xl font-semibold text-ink dark:text-paper">Orçamento</h1>
         <AnoSelector orcamentoId={orcamentoId} onSelecionar={setOrcamentoId} />
       </div>
 
       {!orcamentoId ? (
-        <p className="text-sm text-ink/50 dark:text-paper/50">
-          Nenhum orçamento criado ainda. Clique em "Novo orçamento" para começar.
-        </p>
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-line px-6 py-14 text-center dark:border-line-night">
+          <p className="max-w-xs text-sm text-ink/50 dark:text-paper/50">
+            Nenhum orçamento criado ainda. Clique em "Novo orçamento" para começar a planejar seus gastos.
+          </p>
+        </div>
       ) : (
         <>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <MesNavigator
               ano={orcamentoAtual?.ano ?? new Date().getFullYear()}
               mes={mes}
               onChange={mudarMes}
             />
-            <Button onClick={abrirNovaCategoria}>Adicionar categoria</Button>
+            <Button onClick={abrirNovaCategoria}>+ Adicionar categoria</Button>
           </div>
 
           {isLoading || !grade ? (
-            <p className="text-sm text-ink/50 dark:text-paper/50">Carregando...</p>
+            <ProgressBar label="Carregando orçamento..." />
           ) : (
             <>
-              <Card className="flex gap-6 px-4 py-3 text-sm">
-                <span>
-                  Previsto:{" "}
-                  <strong className="text-ink dark:text-paper">
-                    {formatarMoeda(grade.totalPrevisto)}
-                  </strong>
-                </span>
-                <span>
-                  Realizado:{" "}
-                  <strong
-                    className={
-                      grade.totalRealizado > grade.totalPrevisto
-                        ? "text-vermelho dark:text-vermelho-night"
-                        : "text-ink dark:text-paper"
-                    }
-                  >
-                    {formatarMoeda(grade.totalRealizado)}
-                  </strong>
-                </span>
-              </Card>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <StatTile label="Previsto" valor={formatarMoeda(grade.totalPrevisto)} />
+                <StatTile
+                  label="Realizado"
+                  valor={formatarMoeda(grade.totalRealizado)}
+                  tom={grade.totalRealizado > grade.totalPrevisto ? "negativo" : "neutro"}
+                />
+                <StatTile
+                  label="Restante"
+                  valor={formatarMoeda(restante)}
+                  tom={restante >= 0 ? "positivo" : "negativo"}
+                />
+                <StatTile
+                  label="Usado"
+                  valor={`${Math.round(percentualUsado)}%`}
+                  tom={percentualUsado > 100 ? "negativo" : "neutro"}
+                />
+              </div>
 
-              <RealizadoPrevistoChart serie={grade.serieDiaria} />
+              <Card className="p-3 sm:p-4">
+                <p className="mb-1.5 font-mono text-[10px] tracking-widest text-ink/40 uppercase dark:text-paper/40">
+                  Ritmo de gastos no mês
+                </p>
+                <RealizadoPrevistoChart serie={grade.serieDiaria} />
+              </Card>
 
               <OrcamentoTabela
                 orcamentoId={orcamentoId}

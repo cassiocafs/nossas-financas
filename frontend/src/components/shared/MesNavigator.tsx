@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 const MESES = [
   "Janeiro",
   "Fevereiro",
@@ -20,13 +22,29 @@ interface MesNavigatorProps {
 }
 
 export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
+  const [aberto, setAberto] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!aberto) return;
+    function aoClicarFora(evento: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(evento.target as Node)) {
+        setAberto(false);
+      }
+    }
+    document.addEventListener("mousedown", aoClicarFora);
+    return () => document.removeEventListener("mousedown", aoClicarFora);
+  }, [aberto]);
+
   function irPara(delta: number) {
     const data = new Date(Date.UTC(ano, mes - 1 + delta, 1));
     onChange(data.getUTCFullYear(), data.getUTCMonth() + 1);
   }
 
+  const anos = Array.from({ length: 11 }, (_, i) => ano - 5 + i);
+
   return (
-    <div className="flex items-center gap-3">
+    <div ref={containerRef} className="relative flex items-center gap-3">
       <button
         type="button"
         onClick={() => irPara(-1)}
@@ -35,9 +53,13 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
       >
         ←
       </button>
-      <span className="min-w-36 text-center font-display text-sm font-medium text-ink dark:text-paper">
+      <button
+        type="button"
+        onClick={() => setAberto((v) => !v)}
+        className="min-w-36 rounded-md px-2 py-1 text-center font-display text-sm font-medium text-ink hover:bg-ink/5 dark:text-paper dark:hover:bg-white/5"
+      >
         {MESES[mes - 1]} {ano}
-      </span>
+      </button>
       <button
         type="button"
         onClick={() => irPara(1)}
@@ -46,6 +68,37 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
       >
         →
       </button>
+
+      {aberto && (
+        <div className="absolute left-1/2 top-full z-30 mt-2 w-64 -translate-x-1/2 rounded-lg border border-line bg-surface p-3 shadow-lg dark:border-line-night dark:bg-surface-night">
+          <div className="flex gap-2">
+            <select
+              value={mes}
+              onChange={(e) => onChange(ano, Number(e.target.value))}
+              aria-label="Selecionar mês"
+              className="flex-1 rounded-md border border-line bg-paper px-2 py-1.5 text-sm text-ink dark:border-line-night dark:bg-paper-night dark:text-paper"
+            >
+              {MESES.map((nome, indice) => (
+                <option key={nome} value={indice + 1}>
+                  {nome}
+                </option>
+              ))}
+            </select>
+            <select
+              value={ano}
+              onChange={(e) => onChange(Number(e.target.value), mes)}
+              aria-label="Selecionar ano"
+              className="w-24 rounded-md border border-line bg-paper px-2 py-1.5 text-sm text-ink dark:border-line-night dark:bg-paper-night dark:text-paper"
+            >
+              {anos.map((a) => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -315,26 +315,22 @@ export async function listarTransacoesMes(espacoId: string, filtros: ListarTrans
   const primeiroDia = primeiroDiaMesUTC(filtros.ano, filtros.mes);
   const ultimoDia = ultimoDiaMesUTC(filtros.ano, filtros.mes);
 
-  const saldoAnterior = await calcularSaldoAnterior(
-    espacoId,
-    contaIdsEmEscopo,
-    saldoInicialTotal,
-    primeiroDia,
-  );
-
-  const transacoes = await prisma.transacao.findMany({
-    where: {
-      espacoId,
-      contaId: { in: contaIdsEmEscopo },
-      data: { gte: primeiroDia, lte: ultimoDia },
-      ...(filtros.categoriaIds ? { categoriaId: { in: filtros.categoriaIds } } : {}),
-      ...(filtros.status === "consolidadas" ? { consolidado: true } : {}),
-      ...(filtros.status === "pendentes" ? { consolidado: false } : {}),
-      ...(filtros.texto ? { descricao: { contains: filtros.texto, mode: "insensitive" } } : {}),
-    },
-    include: TRANSACAO_INCLUDE,
-    orderBy: [{ data: "asc" }, { criadoEm: "asc" }],
-  });
+  const [saldoAnterior, transacoes] = await Promise.all([
+    calcularSaldoAnterior(espacoId, contaIdsEmEscopo, saldoInicialTotal, primeiroDia),
+    prisma.transacao.findMany({
+      where: {
+        espacoId,
+        contaId: { in: contaIdsEmEscopo },
+        data: { gte: primeiroDia, lte: ultimoDia },
+        ...(filtros.categoriaIds ? { categoriaId: { in: filtros.categoriaIds } } : {}),
+        ...(filtros.status === "consolidadas" ? { consolidado: true } : {}),
+        ...(filtros.status === "pendentes" ? { consolidado: false } : {}),
+        ...(filtros.texto ? { descricao: { contains: filtros.texto, mode: "insensitive" } } : {}),
+      },
+      include: TRANSACAO_INCLUDE,
+      orderBy: [{ data: "asc" }, { criadoEm: "asc" }],
+    }),
+  ]);
 
   const dias: { data: string; saldoDia: number; transacoes: TransacaoDTO[] }[] = [];
   let running = saldoAnterior;
@@ -380,21 +376,40 @@ export async function buscarResumoMensal(espacoId: string, ano: number, mes: num
   const ultimoDia = ultimoDiaMesUTC(ano, mes);
   const hoje = hojeUTC();
 
-  const saldoAnterior = await calcularSaldoAnterior(
-    espacoId,
-    contaIdsEmEscopo,
-    saldoInicialTotal,
-    primeiroDia,
-  );
-
-  const transacoesDoMes = await prisma.transacao.findMany({
-    where: {
-      espacoId,
-      contaId: { in: contaIdsEmEscopo },
-      data: { gte: primeiroDia, lte: ultimoDia },
-    },
-    include: TRANSACAO_INCLUDE,
-  });
+  const [saldoAnterior, transacoesDoMes, anterioresNaoConsolidadas, proximasNaoConsolidadas] =
+    await Promise.all([
+      calcularSaldoAnterior(espacoId, contaIdsEmEscopo, saldoInicialTotal, primeiroDia),
+      prisma.transacao.findMany({
+        where: {
+          espacoId,
+          contaId: { in: contaIdsEmEscopo },
+          data: { gte: primeiroDia, lte: ultimoDia },
+        },
+        include: TRANSACAO_INCLUDE,
+      }),
+      prisma.transacao.findMany({
+        where: {
+          espacoId,
+          contaId: { in: contaIdsEmEscopo },
+          consolidado: false,
+          data: { lt: hoje },
+        },
+        include: TRANSACAO_INCLUDE,
+        orderBy: { data: "asc" },
+        take: 10,
+      }),
+      prisma.transacao.findMany({
+        where: {
+          espacoId,
+          contaId: { in: contaIdsEmEscopo },
+          consolidado: false,
+          data: { gte: hoje },
+        },
+        include: TRANSACAO_INCLUDE,
+        orderBy: { data: "asc" },
+        take: 10,
+      }),
+    ]);
 
   let totalEntradas = 0;
   let totalSaidas = 0;
@@ -418,21 +433,6 @@ export async function buscarResumoMensal(espacoId: string, ano: number, mes: num
       despesasPorCategoriaMap.set(chave, atual);
     }
   }
-
-  const [anterioresNaoConsolidadas, proximasNaoConsolidadas] = await Promise.all([
-    prisma.transacao.findMany({
-      where: { espacoId, contaId: { in: contaIdsEmEscopo }, consolidado: false, data: { lt: hoje } },
-      include: TRANSACAO_INCLUDE,
-      orderBy: { data: "asc" },
-      take: 10,
-    }),
-    prisma.transacao.findMany({
-      where: { espacoId, contaId: { in: contaIdsEmEscopo }, consolidado: false, data: { gte: hoje } },
-      include: TRANSACAO_INCLUDE,
-      orderBy: { data: "asc" },
-      take: 10,
-    }),
-  ]);
 
   return {
     saldoAnterior,
@@ -473,18 +473,15 @@ export async function buscarEvolucaoSaldo(espacoId: string, meses: number) {
   const sequenciaMeses = mesesAnteriores(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1, meses);
   const primeiroDia = primeiroDiaMesUTC(sequenciaMeses[0].ano, sequenciaMeses[0].mes);
 
-  let saldo = await calcularSaldoAnterior(
-    espacoId,
-    contaIdsEmEscopo,
-    saldoInicialTotal,
-    primeiroDia,
-  );
-
-  const transacoes = await prisma.transacao.findMany({
-    where: { espacoId, contaId: { in: contaIdsEmEscopo }, data: { gte: primeiroDia } },
-    select: { data: true, valor: true },
-    orderBy: { data: "asc" },
-  });
+  const [saldoAnterior, transacoes] = await Promise.all([
+    calcularSaldoAnterior(espacoId, contaIdsEmEscopo, saldoInicialTotal, primeiroDia),
+    prisma.transacao.findMany({
+      where: { espacoId, contaId: { in: contaIdsEmEscopo }, data: { gte: primeiroDia } },
+      select: { data: true, valor: true },
+      orderBy: { data: "asc" },
+    }),
+  ]);
+  let saldo = saldoAnterior;
 
   let indiceTransacao = 0;
   const evolucao: { ano: number; mes: number; saldoFinal: number }[] = [];

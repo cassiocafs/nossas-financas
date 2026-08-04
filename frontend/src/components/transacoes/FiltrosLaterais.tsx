@@ -1,31 +1,23 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listarContas } from "@/api/contas";
 import { listarGrupos } from "@/api/categorias";
-import type { StatusFiltro } from "@/api/transacoes";
+import { Valor } from "@/components/ui/Valor";
 
 interface FiltrosLateraisProps {
-  status: StatusFiltro;
-  onStatusChange: (status: StatusFiltro) => void;
   contaIds: string[];
   onContaIdsChange: (ids: string[]) => void;
   categoriaIds: string[];
   onCategoriaIdsChange: (ids: string[]) => void;
-  texto: string;
-  onTextoChange: (texto: string) => void;
 }
 
 export function FiltrosLaterais({
-  status,
-  onStatusChange,
   contaIds,
   onContaIdsChange,
   categoriaIds,
   onCategoriaIdsChange,
-  texto,
-  onTextoChange,
 }: FiltrosLateraisProps) {
-  const [rascunhoBusca, setRascunhoBusca] = useState(texto);
+  const [gruposExpandidos, setGruposExpandidos] = useState<Record<string, boolean>>({});
 
   const { data: contas = [] } = useQuery({
     queryKey: ["contas"],
@@ -54,54 +46,32 @@ export function FiltrosLaterais({
     );
   }
 
+  function grupoExpandido(id: string) {
+    return gruposExpandidos[id] ?? true;
+  }
+
+  function alternarGrupo(id: string) {
+    setGruposExpandidos((prev) => ({ ...prev, [id]: !grupoExpandido(id) }));
+  }
+
+  const idsExpansiveis = useMemo(() => {
+    const grupos = gruposData?.grupos ?? [];
+    return [...grupos.map((g) => g.id), ...grupos.flatMap((g) => g.subgrupos.map((s) => `sub-${s.id}`))];
+  }, [gruposData]);
+
+  const todosExpandidos = idsExpansiveis.every((id) => grupoExpandido(id));
+
+  function alternarTodosGrupos() {
+    const novoValor = !todosExpandidos;
+    setGruposExpandidos((prev) => {
+      const next = { ...prev };
+      for (const id of idsExpansiveis) next[id] = novoValor;
+      return next;
+    });
+  }
+
   return (
     <aside className="space-y-6 text-sm lg:w-64 lg:shrink-0">
-      <div>
-        <h3 className="mb-2 font-mono text-xs tracking-widest text-ink/50 uppercase dark:text-paper/50">
-          Busca rápida
-        </h3>
-        <div className="flex gap-2">
-          <input
-            value={rascunhoBusca}
-            onChange={(e) => setRascunhoBusca(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onTextoChange(rascunhoBusca)}
-            className="w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:text-paper"
-          />
-          <button
-            type="button"
-            onClick={() => onTextoChange(rascunhoBusca)}
-            className="rounded-md border border-line px-3 py-2 text-sm text-ink/80 dark:border-line-night dark:text-paper/80"
-          >
-            Buscar
-          </button>
-        </div>
-      </div>
-
-      <div>
-        <h3 className="mb-2 font-mono text-xs tracking-widest text-ink/50 uppercase dark:text-paper/50">
-          Status
-        </h3>
-        <div className="space-y-1">
-          {(
-            [
-              ["todas", "Todas"],
-              ["consolidadas", "Consolidadas"],
-              ["pendentes", "Não consolidadas"],
-            ] as const
-          ).map(([valor, label]) => (
-            <label key={valor} className="flex items-center gap-2 text-ink/80 dark:text-paper/80">
-              <input
-                type="radio"
-                checked={status === valor}
-                onChange={() => onStatusChange(valor)}
-                className="accent-marca"
-              />
-              {label}
-            </label>
-          ))}
-        </div>
-      </div>
-
       <div>
         <div className="mb-2 flex items-center justify-between">
           <h3 className="font-mono text-xs tracking-widest text-ink/50 uppercase dark:text-paper/50">
@@ -117,29 +87,121 @@ export function FiltrosLaterais({
         </div>
         <div className="space-y-1">
           {contas.map((conta) => (
-            <label key={conta.id} className="flex items-center gap-2 text-ink/80 dark:text-paper/80">
-              <input
-                type="checkbox"
-                checked={contaIds.includes(conta.id)}
-                onChange={() => alternarConta(conta.id)}
-                className="accent-marca"
-              />
-              {conta.nome}
+            <label
+              key={conta.id}
+              className="flex items-center justify-between gap-2 text-ink/80 dark:text-paper/80"
+            >
+              <span className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={contaIds.includes(conta.id)}
+                  onChange={() => alternarConta(conta.id)}
+                  className="accent-marca"
+                />
+                {conta.nome}
+              </span>
+              <Valor valor={conta.saldoAtual} className="text-xs" />
             </label>
           ))}
         </div>
       </div>
 
       <div>
-        <h3 className="mb-2 font-mono text-xs tracking-widest text-ink/50 uppercase dark:text-paper/50">
-          Categorias
-        </h3>
-        <div className="max-h-72 space-y-2 overflow-y-auto">
-          {gruposData?.grupos.map((grupo) => (
-            <div key={grupo.id}>
-              <p className="text-xs font-semibold text-ink/40 uppercase dark:text-paper/40">{grupo.nome}</p>
-              {grupo.categorias.map((categoria) => (
-                <label key={categoria.id} className="flex items-center gap-2 pl-2 text-ink/80 dark:text-paper/80">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="font-mono text-xs tracking-widest text-ink/50 uppercase dark:text-paper/50">
+            Categorias
+          </h3>
+          {idsExpansiveis.length > 0 && (
+            <button
+              type="button"
+              onClick={alternarTodosGrupos}
+              className="text-xs text-marca underline dark:text-marca-night"
+            >
+              {todosExpandidos ? "Recolher tudo" : "Expandir tudo"}
+            </button>
+          )}
+        </div>
+        <div className="space-y-2">
+          {gruposData?.grupos.map((grupo) => {
+            const expandido = grupoExpandido(grupo.id);
+            return (
+              <div key={grupo.id}>
+                <button
+                  type="button"
+                  onClick={() => alternarGrupo(grupo.id)}
+                  className="flex w-full items-center gap-1.5 rounded px-1 py-1 text-left text-xs font-bold text-ink/70 uppercase hover:bg-ink/5 dark:text-paper/70 dark:hover:bg-white/5"
+                >
+                  <span className="inline-block w-4 text-lg leading-none">
+                    {expandido ? "▾" : "▸"}
+                  </span>
+                  {grupo.nome}
+                </button>
+                {expandido && (
+                  <div className="space-y-1">
+                    {grupo.categorias.map((categoria) => (
+                      <label
+                        key={categoria.id}
+                        className="flex items-center gap-2 pl-5 text-ink/80 dark:text-paper/80"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={categoriaIds.includes(categoria.id)}
+                          onChange={() => alternarCategoria(categoria.id)}
+                          className="accent-marca"
+                        />
+                        {categoria.nome}
+                      </label>
+                    ))}
+                    {grupo.subgrupos.map((subgrupo) => {
+                      const subChave = `sub-${subgrupo.id}`;
+                      const subExpandido = grupoExpandido(subChave);
+                      return (
+                        <div key={subgrupo.id}>
+                          <button
+                            type="button"
+                            onClick={() => alternarGrupo(subChave)}
+                            className="flex w-full items-center gap-1.5 rounded px-1 py-1 pl-3 text-left text-xs font-semibold text-ink/60 uppercase hover:bg-ink/5 dark:text-paper/60 dark:hover:bg-white/5"
+                          >
+                            <span className="inline-block w-4 text-lg leading-none">
+                              {subExpandido ? "▾" : "▸"}
+                            </span>
+                            {subgrupo.nome}
+                          </button>
+                          {subExpandido &&
+                            subgrupo.categorias.map((categoria) => (
+                              <label
+                                key={categoria.id}
+                                className="flex items-center gap-2 pl-8 text-ink/80 dark:text-paper/80"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={categoriaIds.includes(categoria.id)}
+                                  onChange={() => alternarCategoria(categoria.id)}
+                                  className="accent-marca"
+                                />
+                                {categoria.nome}
+                              </label>
+                            ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {gruposData?.semGrupo && gruposData.semGrupo.length > 0 && (
+            <div className="space-y-1">
+              {gruposData.grupos.length > 0 && (
+                <span className="block text-xs font-bold text-ink/70 uppercase dark:text-paper/70">
+                  Sem grupo
+                </span>
+              )}
+              {gruposData.semGrupo.map((categoria) => (
+                <label
+                  key={categoria.id}
+                  className="flex items-center gap-2 pl-5 text-ink/80 dark:text-paper/80"
+                >
                   <input
                     type="checkbox"
                     checked={categoriaIds.includes(categoria.id)}
@@ -150,7 +212,7 @@ export function FiltrosLaterais({
                 </label>
               ))}
             </div>
-          ))}
+          )}
         </div>
       </div>
     </aside>

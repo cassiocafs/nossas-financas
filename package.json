@@ -3,12 +3,18 @@
   "private": true,
   "workspaces": [
     "backend",
-    "frontend"
+    "frontend",
+    "mobile"
   ],
   "scripts": {
     "dev:backend": "npm run dev --workspace backend",
     "dev:frontend": "npm run dev --workspace frontend",
+    "dev:mobile": "npm run start --workspace mobile",
     "build:backend": "npm run build --workspace backend",
-    "build:frontend": "npm run build --workspace frontend"
+    "build:frontend": "npm run build --workspace frontend",
+    "dev:all": "npm run dev:backend && npm run dev:frontend"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.0"
   }
 }

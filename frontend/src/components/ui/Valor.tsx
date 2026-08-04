@@ -7,10 +7,13 @@ interface ValorProps {
 }
 
 export function Valor({ valor, className = "", neutro = false }: ValorProps) {
-  const cor =
-    !neutro && valor < 0
+  const cor = neutro
+    ? "text-ink dark:text-paper"
+    : valor < 0
       ? "text-vermelho dark:text-vermelho-night"
-      : "text-ink dark:text-paper";
+      : valor > 0
+        ? "text-verde dark:text-verde-night"
+        : "text-ink dark:text-paper";
 
   return (
     <span className={`font-mono tabular-nums ${cor} ${className}`}>

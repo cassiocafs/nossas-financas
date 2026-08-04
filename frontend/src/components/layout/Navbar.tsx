@@ -57,13 +57,13 @@ const links = [
   { to: "/configuracoes", label: "Configurações", icon: IconGear },
 ];
 
-export function Sidebar() {
+export function Navbar() {
   const { session, signOut } = useAuth();
   const email = session?.user.email ?? "";
 
   return (
-    <aside className="flex shrink-0 flex-col bg-marca-escura text-paper md:w-60 md:min-h-screen">
-      <div className="flex items-center gap-2.5 px-5 pt-5 pb-4 md:pt-6">
+    <header className="flex shrink-0 flex-col gap-3 bg-marca-escura px-4 py-3 text-paper sm:flex-row sm:items-center sm:gap-5 sm:px-6">
+      <div className="flex shrink-0 items-center gap-2.5">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-marca text-sm font-semibold text-white">
           N
         </span>
@@ -72,7 +72,7 @@ export function Sidebar() {
         </p>
       </div>
 
-      <nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-1 md:flex-col md:gap-0.5 md:overflow-visible md:pb-0">
+      <nav className="flex flex-1 gap-1 overflow-x-auto">
         {links.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
@@ -92,11 +92,11 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="flex items-center gap-2.5 border-t border-white/10 px-4 py-3">
+      <div className="flex shrink-0 items-center gap-2.5 border-t border-white/10 pt-3 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-paper/80">
           {email ? email.charAt(0).toUpperCase() : "?"}
         </span>
-        <span className="min-w-0 flex-1 truncate text-xs text-paper/55">
+        <span className="min-w-0 max-w-[10rem] truncate text-xs text-paper/55">
           {email}
         </span>
         <button
@@ -109,6 +109,6 @@ export function Sidebar() {
           <IconLogout className="h-4 w-4" />
         </button>
       </div>
-    </aside>
+    </header>
   );
 }

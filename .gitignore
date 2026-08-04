@@ -28,3 +28,6 @@ venv/
 
 # Logs
 *.log
+
+# Dados financeiros pessoais (nao publicar)
+/xls-transacoes/
