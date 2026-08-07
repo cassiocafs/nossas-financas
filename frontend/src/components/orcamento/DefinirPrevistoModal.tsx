@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@/components/ui/Modal";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import { Button } from "@/components/ui/Button";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { CategoriaAutocomplete } from "@/components/transacoes/CategoriaAutocomplete";
 import { definirPrevisto } from "@/api/orcamento";
 
@@ -50,22 +51,23 @@ export function DefinirPrevistoModal({
   }, [open, categoriaIdInicial]);
 
   const mutation = useMutation({
-    mutationFn: () =>
-      definirPrevisto(
+    mutationFn: async () => {
+      await definirPrevisto(
         orcamentoId,
         modo === "mesmoValorTodosMeses"
           ? { categoriaId, modo, valor: valorUnico }
           : { categoriaId, modo, valoresPorMes },
-      ),
+      );
+      await queryClient.invalidateQueries({ queryKey: ["orcamento", orcamentoId, "itens"] });
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["orcamento", orcamentoId, "itens"] });
       onClose();
     },
   });
 
   return (
-    <Modal open={open} onClose={onClose} title="Definir valor previsto">
-      <div className="space-y-4">
+    <Modal open={open} onClose={onClose} title="Definir valor previsto" closable={!mutation.isPending}>
+      <fieldset disabled={mutation.isPending} className="space-y-4">
         {!categoriaIdInicial && (
           <div>
             <label className="block text-sm font-medium text-ink/80 dark:text-paper/80">
@@ -120,15 +122,17 @@ export function DefinirPrevistoModal({
           </p>
         )}
 
+        {mutation.isPending && <ProgressBar label="Salvando..." />}
+
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={onClose} disabled={mutation.isPending}>
             Cancelar
           </Button>
           <Button disabled={!categoriaId || mutation.isPending} onClick={() => mutation.mutate()}>
             {mutation.isPending ? "Salvando..." : "Salvar"}
           </Button>
         </div>
-      </div>
+      </fieldset>
     </Modal>
   );
 }

@@ -32,8 +32,12 @@ transacoesRouter.get(
 transacoesRouter.get(
   "/evolucao-saldo",
   asyncHandler(async (req, res) => {
-    const { meses } = evolucaoSaldoQuerySchema.parse(req.query);
-    const evolucao = await transacoesService.buscarEvolucaoSaldo(req.espacoId!, meses);
+    const { anoInicio, mesInicio, anoFim, mesFim } = evolucaoSaldoQuerySchema.parse(req.query);
+    const evolucao = await transacoesService.buscarEvolucaoSaldo(
+      req.espacoId!,
+      { ano: anoInicio, mes: mesInicio },
+      { ano: anoFim, mes: mesFim },
+    );
     res.json(evolucao);
   }),
 );

@@ -79,6 +79,7 @@ export async function buscarGrade(espacoId: string, orcamentoId: string, mes: nu
   interface GrupoBucket {
     grupoId: string;
     grupoNome: string;
+    ordem: number;
     categorias: LinhaCategoria[];
     subgruposMap: Map<string, SubgrupoBucket>;
     subtotalPrevisto: number;
@@ -110,6 +111,7 @@ export async function buscarGrade(espacoId: string, orcamentoId: string, mes: nu
       const bucket = gruposMap.get(grupo.id) ?? {
         grupoId: grupo.id,
         grupoNome: grupo.nome,
+        ordem: grupo.ordem,
         categorias: [],
         subgruposMap: new Map<string, SubgrupoBucket>(),
         subtotalPrevisto: 0,
@@ -163,22 +165,24 @@ export async function buscarGrade(espacoId: string, orcamentoId: string, mes: nu
     });
   }
 
-  const grupos = [...gruposMap.values()].map((g) => ({
-    grupoId: g.grupoId,
-    grupoNome: g.grupoNome,
-    categorias: g.categorias,
-    subtotalPrevisto: g.subtotalPrevisto,
-    subtotalRealizado: g.subtotalRealizado,
-    subgrupos: [...g.subgruposMap.values()]
-      .sort((a, b) => a.ordem - b.ordem)
-      .map(({ subgrupoId, subgrupoNome, categorias, subtotalPrevisto, subtotalRealizado }) => ({
-        subgrupoId,
-        subgrupoNome,
-        categorias,
-        subtotalPrevisto,
-        subtotalRealizado,
-      })),
-  }));
+  const grupos = [...gruposMap.values()]
+    .sort((a, b) => a.ordem - b.ordem)
+    .map((g) => ({
+      grupoId: g.grupoId,
+      grupoNome: g.grupoNome,
+      categorias: g.categorias,
+      subtotalPrevisto: g.subtotalPrevisto,
+      subtotalRealizado: g.subtotalRealizado,
+      subgrupos: [...g.subgruposMap.values()]
+        .sort((a, b) => a.ordem - b.ordem)
+        .map(({ subgrupoId, subgrupoNome, categorias, subtotalPrevisto, subtotalRealizado }) => ({
+          subgrupoId,
+          subgrupoNome,
+          categorias,
+          subtotalPrevisto,
+          subtotalRealizado,
+        })),
+    }));
   if (semGrupoCategorias.length > 0) {
     grupos.push({
       grupoId: null as unknown as string,

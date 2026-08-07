@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Modal } from "./Modal";
 import { Button } from "./Button";
+import { ProgressBar } from "./ProgressBar";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -24,13 +25,14 @@ export function ConfirmDialog({
   children,
 }: ConfirmDialogProps) {
   return (
-    <Modal open={open} onClose={onClose} title={title}>
+    <Modal open={open} onClose={onClose} title={title} closable={!confirmando}>
       <div className="space-y-4">
         <div className="text-sm text-ink/70 dark:text-paper/70">
           {children}
         </div>
+        {confirmando && <ProgressBar label="Aguarde, processando..." />}
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={onClose} disabled={confirmando}>
             Cancelar
           </Button>
           <Button

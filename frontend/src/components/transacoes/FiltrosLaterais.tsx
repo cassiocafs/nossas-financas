@@ -19,10 +19,14 @@ export function FiltrosLaterais({
 }: FiltrosLateraisProps) {
   const [gruposExpandidos, setGruposExpandidos] = useState<Record<string, boolean>>({});
 
-  const { data: contas = [] } = useQuery({
+  const { data: contasData = [] } = useQuery({
     queryKey: ["contas"],
     queryFn: () => listarContas(true),
   });
+  const contas = useMemo(
+    () => [...contasData].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+    [contasData],
+  );
   const { data: gruposData } = useQuery({
     queryKey: ["categorias", "grupos"],
     queryFn: listarGrupos,
@@ -89,16 +93,23 @@ export function FiltrosLaterais({
           {contas.map((conta) => (
             <label
               key={conta.id}
-              className="flex items-center justify-between gap-2 text-ink/80 dark:text-paper/80"
+              className="group flex items-center justify-between gap-2 text-ink/80 dark:text-paper/80"
             >
-              <span className="flex items-center gap-2">
+              <span className="flex min-w-0 items-center gap-2">
                 <input
                   type="checkbox"
                   checked={contaIds.includes(conta.id)}
                   onChange={() => alternarConta(conta.id)}
                   className="accent-marca"
                 />
-                {conta.nome}
+                <span className="truncate">{conta.nome}</span>
+                <button
+                  type="button"
+                  onClick={() => onContaIdsChange([conta.id])}
+                  className="hidden shrink-0 text-xs text-marca underline group-hover:inline dark:text-marca-night"
+                >
+                  Somente
+                </button>
               </span>
               <Valor valor={conta.saldoAtual} className="text-xs" />
             </label>

@@ -126,12 +126,14 @@ export function OrcamentoPage() {
                 <RealizadoPrevistoChart serie={grade.serieDiaria} />
               </Card>
 
-              <OrcamentoTabela
-                orcamentoId={orcamentoId}
-                mes={mes}
-                grupos={grade.grupos}
-                onEditarCategoria={abrirEdicaoCategoria}
-              />
+              <div className="lg:mx-auto lg:w-3/4">
+                <OrcamentoTabela
+                  orcamentoId={orcamentoId}
+                  mes={mes}
+                  grupos={grade.grupos}
+                  onEditarCategoria={abrirEdicaoCategoria}
+                />
+              </div>
             </>
           )}
 

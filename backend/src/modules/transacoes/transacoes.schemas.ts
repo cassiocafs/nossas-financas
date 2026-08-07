@@ -64,9 +64,17 @@ export const resumoQuerySchema = z.object({
   mes: z.coerce.number().int().min(1).max(12),
 });
 
-export const evolucaoSaldoQuerySchema = z.object({
-  meses: z.coerce.number().int().min(1).max(24).default(6),
-});
+export const evolucaoSaldoQuerySchema = z
+  .object({
+    anoInicio: z.coerce.number().int(),
+    mesInicio: z.coerce.number().int().min(1).max(12),
+    anoFim: z.coerce.number().int(),
+    mesFim: z.coerce.number().int().min(1).max(12),
+  })
+  .refine((v) => v.anoInicio * 12 + v.mesInicio <= v.anoFim * 12 + v.mesFim, {
+    message: "Início deve ser anterior ou igual ao fim",
+    path: ["anoInicio"],
+  });
 
 export const excluirLoteSchema = z.object({ ids: z.array(idSchema).min(1) });
 export const consolidarLoteSchema = z.object({

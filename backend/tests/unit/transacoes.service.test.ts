@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mockPrisma, resetMockPrisma } from "../helpers/mockPrisma.js";
 
 vi.mock("../../src/lib/prisma.js", () => ({ prisma: mockPrisma }));
@@ -140,14 +140,7 @@ describe("transacoes.service — lote", () => {
 });
 
 describe("transacoes.service — buscarEvolucaoSaldo", () => {
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it("acumula o saldo base com as transações de cada mês, mês a mês", async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-07-15T12:00:00.000Z"));
-
     mockPrisma.conta.findMany.mockResolvedValue([{ id: "conta-1", saldoInicial: 1000 }]);
     mockPrisma.transacao.aggregate.mockResolvedValue({ _sum: { valor: 200 } });
     mockPrisma.transacao.findMany.mockResolvedValue([
@@ -157,7 +150,11 @@ describe("transacoes.service — buscarEvolucaoSaldo", () => {
       { data: new Date("2026-07-20T00:00:00.000Z"), valor: 20 },
     ]);
 
-    const resultado = await transacoesService.buscarEvolucaoSaldo(ESPACO_ID, 3);
+    const resultado = await transacoesService.buscarEvolucaoSaldo(
+      ESPACO_ID,
+      { ano: 2026, mes: 5 },
+      { ano: 2026, mes: 7 },
+    );
 
     expect(mockPrisma.transacao.aggregate).toHaveBeenCalledWith({
       where: {

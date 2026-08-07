@@ -32,6 +32,16 @@ export interface ListagemMensal {
   saldoFinal: number;
 }
 
+export interface ItemCategoriaResumo {
+  categoriaId: string | null;
+  categoriaNome: string;
+  grupoId: string | null;
+  grupoNome: string | null;
+  subgrupoId: string | null;
+  subgrupoNome: string | null;
+  total: number;
+}
+
 export interface ResumoMensal {
   saldoAnterior: number;
   totalEntradas: number;
@@ -39,7 +49,8 @@ export interface ResumoMensal {
   saldoFinal: number;
   anterioresNaoConsolidadas: Transacao[];
   proximasNaoConsolidadas: Transacao[];
-  despesasPorCategoria: { categoriaId: string | null; categoriaNome: string; total: number }[];
+  despesasPorCategoria: ItemCategoriaResumo[];
+  receitasPorCategoria: ItemCategoriaResumo[];
 }
 
 export interface FiltrosTransacoes {
@@ -99,8 +110,18 @@ export interface PontoEvolucaoSaldo {
   saldoFinal: number;
 }
 
-export function buscarEvolucaoSaldo(meses = 6): Promise<PontoEvolucaoSaldo[]> {
-  return apiFetch<PontoEvolucaoSaldo[]>(`/api/transacoes/evolucao-saldo?meses=${meses}`);
+export interface PeriodoMes {
+  ano: number;
+  mes: number;
+}
+
+export function buscarEvolucaoSaldo(
+  inicio: PeriodoMes,
+  fim: PeriodoMes,
+): Promise<PontoEvolucaoSaldo[]> {
+  return apiFetch<PontoEvolucaoSaldo[]>(
+    `/api/transacoes/evolucao-saldo?anoInicio=${inicio.ano}&mesInicio=${inicio.mes}&anoFim=${fim.ano}&mesFim=${fim.mes}`,
+  );
 }
 
 export function criarTransacao(input: CriarTransacaoInput): Promise<Transacao> {

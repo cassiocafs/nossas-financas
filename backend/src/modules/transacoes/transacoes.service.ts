@@ -20,6 +20,59 @@ const TRANSACAO_INCLUDE = {
   categoria: { select: { id: true, nome: true } },
 } satisfies Prisma.TransacaoInclude;
 
+const NOME_CATEGORIA_TRANSFERENCIA = "Transferência";
+
+const CATEGORIA_RESUMO_INCLUDE = {
+  categoria: {
+    select: {
+      id: true,
+      nome: true,
+      grupoId: true,
+      grupo: { select: { id: true, nome: true } },
+      subgrupoId: true,
+      subgrupo: { select: { id: true, nome: true } },
+    },
+  },
+} satisfies Prisma.TransacaoInclude;
+
+interface ItemCategoriaResumo {
+  categoriaId: string | null;
+  categoriaNome: string;
+  grupoId: string | null;
+  grupoNome: string | null;
+  subgrupoId: string | null;
+  subgrupoNome: string | null;
+  total: number;
+}
+
+function acumularPorCategoria(
+  mapa: Map<string, ItemCategoriaResumo>,
+  t: {
+    categoriaId: string | null;
+    categoria: {
+      nome: string;
+      grupoId: string | null;
+      grupo: { nome: string } | null;
+      subgrupoId: string | null;
+      subgrupo: { nome: string } | null;
+    } | null;
+  },
+  valorAbsoluto: number,
+): void {
+  const chave = t.categoriaId ?? "sem-categoria";
+  const atual = mapa.get(chave) ?? {
+    categoriaId: t.categoriaId,
+    categoriaNome: t.categoria?.nome ?? "Sem Categoria",
+    grupoId: t.categoria?.grupoId ?? null,
+    grupoNome: t.categoria?.grupo?.nome ?? null,
+    subgrupoId: t.categoria?.subgrupoId ?? null,
+    subgrupoNome: t.categoria?.subgrupo?.nome ?? null,
+    total: 0,
+  };
+  atual.total += valorAbsoluto;
+  mapa.set(chave, atual);
+}
+
 type TransacaoComRelacoes = Prisma.TransacaoGetPayload<{ include: typeof TRANSACAO_INCLUDE }>;
 
 interface TransacaoDTO {
@@ -314,14 +367,17 @@ export async function listarTransacoesMes(espacoId: string, filtros: ListarTrans
 
   const primeiroDia = primeiroDiaMesUTC(filtros.ano, filtros.mes);
   const ultimoDia = ultimoDiaMesUTC(filtros.ano, filtros.mes);
+  const buscaGlobal = Boolean(filtros.texto);
 
   const [saldoAnterior, transacoes] = await Promise.all([
-    calcularSaldoAnterior(espacoId, contaIdsEmEscopo, saldoInicialTotal, primeiroDia),
+    buscaGlobal
+      ? Promise.resolve(saldoInicialTotal)
+      : calcularSaldoAnterior(espacoId, contaIdsEmEscopo, saldoInicialTotal, primeiroDia),
     prisma.transacao.findMany({
       where: {
         espacoId,
         contaId: { in: contaIdsEmEscopo },
-        data: { gte: primeiroDia, lte: ultimoDia },
+        ...(buscaGlobal ? {} : { data: { gte: primeiroDia, lte: ultimoDia } }),
         ...(filtros.categoriaIds ? { categoriaId: { in: filtros.categoriaIds } } : {}),
         ...(filtros.status === "consolidadas" ? { consolidado: true } : {}),
         ...(filtros.status === "pendentes" ? { consolidado: false } : {}),
@@ -385,7 +441,7 @@ export async function buscarResumoMensal(espacoId: string, ano: number, mes: num
           contaId: { in: contaIdsEmEscopo },
           data: { gte: primeiroDia, lte: ultimoDia },
         },
-        include: TRANSACAO_INCLUDE,
+        include: CATEGORIA_RESUMO_INCLUDE,
       }),
       prisma.transacao.findMany({
         where: {
@@ -414,7 +470,8 @@ export async function buscarResumoMensal(espacoId: string, ano: number, mes: num
   let totalEntradas = 0;
   let totalSaidas = 0;
   let movimentoTotal = 0;
-  const despesasPorCategoriaMap = new Map<string, { categoriaNome: string; total: number }>();
+  const despesasPorCategoriaMap = new Map<string, ItemCategoriaResumo>();
+  const receitasPorCategoriaMap = new Map<string, ItemCategoriaResumo>();
 
   for (const t of transacoesDoMes) {
     const valor = toNumber(t.valor);
@@ -425,12 +482,12 @@ export async function buscarResumoMensal(espacoId: string, ano: number, mes: num
       else totalSaidas += Math.abs(valor);
     }
 
-    if (t.tipo === "DESPESA") {
-      const chave = t.categoriaId ?? "sem-categoria";
-      const nome = t.categoria?.nome ?? "Sem Categoria";
-      const atual = despesasPorCategoriaMap.get(chave) ?? { categoriaNome: nome, total: 0 };
-      atual.total += Math.abs(valor);
-      despesasPorCategoriaMap.set(chave, atual);
+    if (t.categoria?.nome !== NOME_CATEGORIA_TRANSFERENCIA) {
+      if (t.tipo === "DESPESA") {
+        acumularPorCategoria(despesasPorCategoriaMap, t, Math.abs(valor));
+      } else if (t.tipo === "RECEITA") {
+        acumularPorCategoria(receitasPorCategoriaMap, t, Math.abs(valor));
+      }
     }
   }
 
@@ -441,37 +498,37 @@ export async function buscarResumoMensal(espacoId: string, ano: number, mes: num
     saldoFinal: saldoAnterior + movimentoTotal,
     anterioresNaoConsolidadas: anterioresNaoConsolidadas.map(serializarTransacao),
     proximasNaoConsolidadas: proximasNaoConsolidadas.map(serializarTransacao),
-    despesasPorCategoria: Array.from(despesasPorCategoriaMap.entries()).map(
-      ([categoriaId, v]) => ({
-        categoriaId: categoriaId === "sem-categoria" ? null : categoriaId,
-        categoriaNome: v.categoriaNome,
-        total: v.total,
-      }),
-    ),
+    despesasPorCategoria: Array.from(despesasPorCategoriaMap.values()),
+    receitasPorCategoria: Array.from(receitasPorCategoriaMap.values()),
   };
 }
 
-function mesesAnteriores(
-  ano: number,
-  mes: number,
-  quantidade: number,
+function sequenciaMeses(
+  anoInicio: number,
+  mesInicio: number,
+  anoFim: number,
+  mesFim: number,
 ): { ano: number; mes: number }[] {
   const lista: { ano: number; mes: number }[] = [];
-  for (let i = quantidade - 1; i >= 0; i--) {
-    const data = new Date(Date.UTC(ano, mes - 1 - i, 1));
-    lista.push({ ano: data.getUTCFullYear(), mes: data.getUTCMonth() + 1 });
+  const totalInicio = anoInicio * 12 + (mesInicio - 1);
+  const totalFim = anoFim * 12 + (mesFim - 1);
+  for (let t = totalInicio; t <= totalFim; t++) {
+    lista.push({ ano: Math.floor(t / 12), mes: (t % 12) + 1 });
   }
   return lista;
 }
 
-export async function buscarEvolucaoSaldo(espacoId: string, meses: number) {
+export async function buscarEvolucaoSaldo(
+  espacoId: string,
+  inicio: { ano: number; mes: number },
+  fim: { ano: number; mes: number },
+) {
   const contas = await resolverContasEmEscopo(espacoId, undefined);
   const contaIdsEmEscopo = contas.map((c) => c.id);
   const saldoInicialTotal = contas.reduce((soma, c) => soma + toNumber(c.saldoInicial), 0);
 
-  const hoje = hojeUTC();
-  const sequenciaMeses = mesesAnteriores(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1, meses);
-  const primeiroDia = primeiroDiaMesUTC(sequenciaMeses[0].ano, sequenciaMeses[0].mes);
+  const sequenciaMesesIntervalo = sequenciaMeses(inicio.ano, inicio.mes, fim.ano, fim.mes);
+  const primeiroDia = primeiroDiaMesUTC(sequenciaMesesIntervalo[0].ano, sequenciaMesesIntervalo[0].mes);
 
   const [saldoAnterior, transacoes] = await Promise.all([
     calcularSaldoAnterior(espacoId, contaIdsEmEscopo, saldoInicialTotal, primeiroDia),
@@ -486,7 +543,7 @@ export async function buscarEvolucaoSaldo(espacoId: string, meses: number) {
   let indiceTransacao = 0;
   const evolucao: { ano: number; mes: number; saldoFinal: number }[] = [];
 
-  for (const { ano, mes } of sequenciaMeses) {
+  for (const { ano, mes } of sequenciaMesesIntervalo) {
     const ultimoDia = ultimoDiaMesUTC(ano, mes);
     while (
       indiceTransacao < transacoes.length &&
