@@ -5,7 +5,7 @@ import { listarContas } from '@/api/contas';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui/Card';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { formatarValor } from '@/lib/format';
 
 export function SaldoPorContasCard() {
@@ -29,8 +29,8 @@ export function SaldoPorContasCard() {
       ) : (
         <ThemedView style={styles.lista}>
           {contas.map((conta) => (
-            <ThemedView key={conta.id} style={styles.linha}>
-              <ThemedText type="small" style={styles.nomeConta}>
+            <ThemedView key={conta.id} type="surface" style={styles.linha}>
+              <ThemedText type="small" style={styles.nomeConta} numberOfLines={1}>
                 {conta.nome}
               </ThemedText>
               <ThemedText type="smallBold" numeric themeColor={conta.saldoAtual < 0 ? 'expense' : 'text'}>
@@ -46,7 +46,15 @@ export function SaldoPorContasCard() {
 
 const styles = StyleSheet.create({
   card: { gap: Spacing.two },
-  lista: { gap: Spacing.one },
-  linha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  lista: { gap: Spacing.two },
+  linha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+  },
   nomeConta: { flex: 1 },
 });

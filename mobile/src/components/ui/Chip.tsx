@@ -36,7 +36,8 @@ export function Chip({ label, selected, style, ...rest }: ChipProps) {
 const styles = StyleSheet.create({
   base: {
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    height: 40,
+    justifyContent: 'center',
     borderRadius: Radius.pill,
   },
 });

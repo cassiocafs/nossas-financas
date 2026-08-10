@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet } from 'react-native';
@@ -11,6 +12,7 @@ import { ResumoMesCard } from '@/components/home/ResumoMesCard';
 import { SaldoPorContasCard } from '@/components/home/SaldoPorContasCard';
 import { MesNavigator } from '@/components/transacoes/MesNavigator';
 import { TransacaoFormModal } from '@/components/transacoes/TransacaoFormModal';
+import { StatCard } from '@/components/ui/StatCard';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -61,12 +63,12 @@ export default function InicioScreen() {
             </ThemedText>
           ) : (
             <>
-              <ResumoMesCard
-                saldoAnterior={data.saldoAnterior}
-                totalEntradas={data.totalEntradas}
-                totalSaidas={data.totalSaidas}
-                saldoFinal={data.saldoFinal}
-              />
+              <ResumoMesCard saldoAnterior={data.saldoAnterior} saldoFinal={data.saldoFinal} />
+
+              <ThemedView style={styles.statsRow}>
+                <StatCard label="Entradas" value={data.totalEntradas} tone="income" icon="arrow-down-left" />
+                <StatCard label="Saídas" value={-Math.abs(data.totalSaidas)} tone="expense" icon="arrow-up-right" />
+              </ThemedView>
 
               <SaldoPorContasCard />
 
@@ -93,9 +95,7 @@ export default function InicioScreen() {
             { backgroundColor: theme.primary, opacity: state.pressed ? 0.9 : 1 },
             Shadow.lift,
           ]}>
-          <ThemedText type="title" themeColor="primaryForeground" style={styles.fabIcone}>
-            +
-          </ThemedText>
+          <Feather name="plus" size={26} color={theme.primaryForeground} />
         </Pressable>
       </SafeAreaView>
 
@@ -114,6 +114,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   scroll: { padding: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six * 2 },
   header: { gap: Spacing.two },
+  statsRow: { flexDirection: 'row', gap: Spacing.three },
   fab: {
     position: 'absolute',
     right: Spacing.four,
@@ -124,5 +125,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fabIcone: { fontSize: 28, lineHeight: 32 },
 });

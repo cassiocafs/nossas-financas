@@ -3,8 +3,9 @@ import { Pressable, StyleSheet } from 'react-native';
 import type { Transacao } from '@/api/transacoes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Amount } from '@/components/ui/Amount';
+import { TypeIcon } from '@/components/ui/TypeIcon';
 import { Radius, Spacing } from '@/constants/theme';
-import { formatarValor } from '@/lib/format';
 import { useTheme } from '@/hooks/use-theme';
 
 interface TransacaoItemProps {
@@ -23,7 +24,6 @@ export function TransacaoItem({
   onLongPress,
 }: TransacaoItemProps) {
   const theme = useTheme();
-  const negativo = transacao.valor < 0;
 
   return (
     <Pressable onPress={onPress} onLongPress={onLongPress}>
@@ -31,9 +31,9 @@ export function TransacaoItem({
         type="card"
         style={[
           styles.item,
-          { borderColor: selecionado ? theme.primary : theme.border, borderWidth: selecionado ? 1.5 : 1 },
+          { borderColor: selecionado ? theme.primary : theme.border, borderWidth: selecionado ? 1.5 : StyleSheet.hairlineWidth },
         ]}>
-        {modoSelecao && (
+        {modoSelecao ? (
           <ThemedView
             style={[
               styles.marcador,
@@ -48,11 +48,13 @@ export function TransacaoItem({
               </ThemedText>
             )}
           </ThemedView>
+        ) : (
+          <TypeIcon tipo={transacao.tipo} />
         )}
         <ThemedView style={styles.conteudo}>
           <ThemedView style={styles.linha}>
             <ThemedView style={styles.descricaoRow}>
-              <ThemedText type={transacao.consolidado ? 'small' : 'smallBold'} style={styles.descricao}>
+              <ThemedText type={transacao.consolidado ? 'small' : 'smallBold'} style={styles.descricao} numberOfLines={1}>
                 {transacao.descricao}
               </ThemedText>
               {transacao.tipo === 'TRANSFERENCIA' && (
@@ -63,9 +65,7 @@ export function TransacaoItem({
                 </ThemedView>
               )}
             </ThemedView>
-            <ThemedText type="smallBold" numeric themeColor={negativo ? 'expense' : 'income'}>
-              {formatarValor(transacao.valor)}
-            </ThemedText>
+            <Amount tipo={transacao.tipo} valor={transacao.valor} />
           </ThemedView>
           <ThemedText type="small" themeColor="textSecondary">
             {transacao.conta.nome}
@@ -99,6 +99,6 @@ const styles = StyleSheet.create({
   linha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   descricaoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, flexShrink: 1 },
   descricao: { flexShrink: 1 },
-  tag: { paddingHorizontal: Spacing.two, paddingVertical: 1, borderRadius: Radius.sm },
+  tag: { paddingHorizontal: Spacing.two, paddingVertical: 1, borderRadius: Radius.pill },
   tagTexto: { fontSize: 11, lineHeight: 14 },
 });

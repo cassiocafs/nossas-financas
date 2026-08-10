@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet } from 'react-native';
@@ -98,15 +99,14 @@ export default function TransacoesScreen() {
               <Pressable
                 onPress={() => setFiltrosVisiveis(true)}
                 style={[styles.botaoTopo, { borderColor: theme.border }]}>
+                <Feather name="sliders" size={14} color={theme.text} />
                 <ThemedText type="small">Filtros</ThemedText>
               </Pressable>
               <Pressable
                 onPress={() => setCriando(true)}
                 accessibilityLabel="Nova transação"
                 style={[styles.botaoTopo, styles.botaoAdicionar, { backgroundColor: theme.primary }]}>
-                <ThemedText type="smallBold" themeColor="primaryForeground">
-                  +
-                </ThemedText>
+                <Feather name="plus" size={16} color={theme.primaryForeground} />
               </Pressable>
             </ThemedView>
           </ThemedView>
@@ -225,8 +225,11 @@ const styles = StyleSheet.create({
   topoLinha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   topoAcoes: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   botaoTopo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
     borderWidth: 1,
-    borderRadius: Radius.md,
+    borderRadius: Radius.pill,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
@@ -235,6 +238,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     minWidth: 36,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   resumo: {
     flexDirection: 'row',

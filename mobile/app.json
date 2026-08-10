@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "nossasfinancas",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "owner": "cassiocafs",
     "android": {
       "package": "com.nossasfinancas.app",
@@ -35,7 +35,8 @@
           "imageWidth": 120
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,

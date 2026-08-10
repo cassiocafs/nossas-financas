@@ -18,7 +18,7 @@ export function Card({ variant = 'elevated', padded = true, style, ...rest }: Ca
         styles.base,
         padded && styles.padded,
         variant === 'elevated'
-          ? { backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1, ...Shadow.card }
+          ? { backgroundColor: theme.card, borderColor: theme.border, borderWidth: StyleSheet.hairlineWidth, ...Shadow.card }
           : { backgroundColor: theme.surface },
         style,
       ]}
@@ -28,6 +28,6 @@ export function Card({ variant = 'elevated', padded = true, style, ...rest }: Ca
 }
 
 const styles = StyleSheet.create({
-  base: { borderRadius: Radius.lg },
-  padded: { padding: Spacing.three },
+  base: { borderRadius: Radius.card },
+  padded: { padding: Spacing.four },
 });

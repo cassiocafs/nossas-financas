@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
 
@@ -46,25 +47,27 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
 
   return (
     <ThemedView style={styles.container}>
-      <Pressable
-        onPress={() => irPara(-1)}
-        accessibilityLabel="Mês anterior"
-        style={[styles.navButton, { borderColor: theme.border }]}>
-        <ThemedText type="small">‹</ThemedText>
-      </Pressable>
+      <ThemedView type="surface" style={styles.pill}>
+        <Pressable
+          onPress={() => irPara(-1)}
+          accessibilityLabel="Mês anterior"
+          style={(state) => [styles.navButton, { backgroundColor: theme.card, opacity: state.pressed ? 0.85 : 1 }]}>
+          <Feather name="chevron-left" size={16} color={theme.text} />
+        </Pressable>
 
-      <Pressable onPress={() => setAberto(true)} style={styles.label}>
-        <ThemedText type="smallBold">
-          {MESES[mes - 1]} {ano}
-        </ThemedText>
-      </Pressable>
+        <Pressable onPress={() => setAberto(true)} style={styles.label}>
+          <ThemedText type="smallBold">
+            {MESES[mes - 1]} {ano}
+          </ThemedText>
+        </Pressable>
 
-      <Pressable
-        onPress={() => irPara(1)}
-        accessibilityLabel="Próximo mês"
-        style={[styles.navButton, { borderColor: theme.border }]}>
-        <ThemedText type="small">›</ThemedText>
-      </Pressable>
+        <Pressable
+          onPress={() => irPara(1)}
+          accessibilityLabel="Próximo mês"
+          style={(state) => [styles.navButton, { backgroundColor: theme.card, opacity: state.pressed ? 0.85 : 1 }]}>
+          <Feather name="chevron-right" size={16} color={theme.text} />
+        </Pressable>
+      </ThemedView>
 
       <Pressable onPress={irParaHoje} style={[styles.hojeButton, { borderColor: theme.border }]}>
         <ThemedText type="small">Hoje</ThemedText>
@@ -124,18 +127,26 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
 
 const styles = StyleSheet.create({
   container: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    borderRadius: Radius.pill,
+    padding: 4,
+  },
   navButton: {
-    borderWidth: 1,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   label: { minWidth: 110, alignItems: 'center' },
   hojeButton: {
     borderWidth: 1,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
   backdrop: {
     flex: 1,

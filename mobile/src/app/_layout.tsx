@@ -1,7 +1,9 @@
+import { DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold } from '@expo-google-fonts/dm-sans';
+import { SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DarkTheme, DefaultTheme, Slot, ThemeProvider } from 'expo-router';
+import { useFonts } from 'expo-font';
+import { DefaultTheme, Slot, ThemeProvider } from 'expo-router';
 import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { ApiError } from '@/api/client';
@@ -12,6 +14,7 @@ import { Colors } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
 
+/** O app sempre roda no tema light, independentemente do tema do aparelho. */
 const LightNavigationTheme = {
   ...DefaultTheme,
   colors: {
@@ -21,18 +24,6 @@ const LightNavigationTheme = {
     text: Colors.light.text,
     border: Colors.light.border,
     primary: Colors.light.primary,
-  },
-};
-
-const DarkNavigationTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: Colors.dark.background,
-    card: Colors.dark.card,
-    text: Colors.dark.text,
-    border: Colors.dark.border,
-    primary: Colors.dark.primary,
   },
 };
 
@@ -71,16 +62,17 @@ const queryClient = new QueryClient({
   }),
 });
 
-function SplashGate({ children }: { children: React.ReactNode }) {
+function SplashGate({ children, fontsReady }: { children: React.ReactNode; fontsReady: boolean }) {
   const { loading } = useAuth();
+  const ready = fontsReady && !loading;
 
   useEffect(() => {
-    if (!loading) {
+    if (ready) {
       SplashScreen.hideAsync();
     }
-  }, [loading]);
+  }, [ready]);
 
-  if (loading) return null;
+  if (!ready) return null;
 
   return (
     <>
@@ -91,14 +83,21 @@ function SplashGate({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const [fontsLoaded, fontsError] = useFonts({
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_600SemiBold,
+  });
+  const fontsReady = fontsLoaded || !!fontsError;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkNavigationTheme : LightNavigationTheme}>
+    <ThemeProvider value={LightNavigationTheme}>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <SplashGate>
+            <SplashGate fontsReady={fontsReady}>
               <Slot />
             </SplashGate>
           </AuthProvider>

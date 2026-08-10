@@ -4,48 +4,50 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    background: '#F6F7F9',
-    surface: '#ECEEF2',
+    background: '#F7F8FA',
+    surface: '#EDEFF3',
     card: '#FFFFFF',
-    border: '#E2E4E9',
-    text: '#14161A',
-    textSecondary: '#5B616E',
-    textTertiary: '#9AA0AC',
-    primary: '#2F6FED',
-    primaryForeground: '#FFFFFF',
-    income: '#1E9563',
-    incomeSoft: '#E3F6EC',
-    expense: '#D64545',
-    expenseSoft: '#FCE8E8',
-    transfer: '#5B5BD6',
-    transferSoft: '#ECECFB',
-    destructive: '#D64545',
+    border: '#E3E6EC',
+    text: '#1F2937',
+    textSecondary: '#7A8496',
+    textTertiary: '#A4ACBA',
+    primary: '#232B3A',
+    primaryForeground: '#F8F9FB',
+    income: '#2E9E7C',
+    incomeSoft: '#DCF2E7',
+    expense: '#E2564A',
+    expenseSoft: '#FBE6E3',
+    transfer: '#5E7FD0',
+    transferSoft: '#E6EBF8',
+    destructive: '#DC4A3D',
     destructiveForeground: '#FFFFFF',
   },
   dark: {
-    background: '#0F1115',
-    surface: '#191C22',
-    card: '#1E212A',
-    border: 'rgba(255,255,255,0.09)',
+    background: '#14181F',
+    surface: '#2A3038',
+    card: '#1E242C',
+    border: '#31373F',
     text: '#F5F6F8',
-    textSecondary: '#A8AEBB',
-    textTertiary: '#6B7280',
-    primary: '#5B8DFF',
-    primaryForeground: '#0F1115',
-    income: '#3DDC97',
-    incomeSoft: '#123024',
-    expense: '#F2726B',
-    expenseSoft: '#341616',
-    transfer: '#9797F0',
-    transferSoft: '#211F3A',
-    destructive: '#F2726B',
-    destructiveForeground: '#0F1115',
+    textSecondary: '#A7AEBB',
+    textTertiary: '#7B8393',
+    primary: '#F3F4F7',
+    primaryForeground: '#1A1F27',
+    income: '#49C39B',
+    incomeSoft: '#26473C',
+    expense: '#F0685A',
+    expenseSoft: '#4A2A26',
+    transfer: '#7C9AE0',
+    transferSoft: '#26314A',
+    destructive: '#F0685A',
+    destructiveForeground: '#14181F',
   },
 } as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
-export const Fonts = Platform.select({
+export const ChartColors = ['#2E9E7C', '#E2564A', '#5E7FD0', '#D89A3A', '#9A6BD1'];
+
+const SystemFonts = Platform.select({
   ios: {
     sans: 'system-ui',
     serif: 'ui-serif',
@@ -64,7 +66,17 @@ export const Fonts = Platform.select({
     rounded: 'var(--font-rounded)',
     mono: 'var(--font-mono)',
   },
-});
+})!;
+
+/** Space Grotesk (títulos/valores) + DM Sans (corpo), carregadas via expo-font no RootLayout. */
+export const Fonts = {
+  ...SystemFonts,
+  display: 'SpaceGrotesk_600SemiBold',
+  displayBold: 'SpaceGrotesk_700Bold',
+  body: 'DMSans_400Regular',
+  bodyMedium: 'DMSans_500Medium',
+  bodySemi: 'DMSans_600SemiBold',
+};
 
 export const Spacing = {
   half: 2,
@@ -77,26 +89,27 @@ export const Spacing = {
 } as const;
 
 export const Radius = {
-  sm: 8,
-  md: 12,
+  sm: 12,
+  md: 14,
   lg: 16,
   xl: 20,
+  card: 24,
   pill: 999,
 } as const;
 
 export const Shadow = {
   card: {
-    shadowColor: '#000',
+    shadowColor: '#0F172A',
     shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
     elevation: 3,
   },
   lift: {
-    shadowColor: '#000',
-    shadowOpacity: 0.16,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
     elevation: 6,
   },
 } as const;

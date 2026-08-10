@@ -23,7 +23,7 @@ export default function PerfilScreen() {
           <ThemedText type="default">{session?.user?.email}</ThemedText>
         </Card>
 
-        <Button title="Sair" variant="secondary" onPress={() => signOut()} style={styles.button} />
+        <Button title="Sair" icon="log-out" variant="secondary" onPress={() => signOut()} style={styles.button} />
       </SafeAreaView>
     </ThemedView>
   );

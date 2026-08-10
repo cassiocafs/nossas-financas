@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, StyleSheet, type PressableProps } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -10,10 +11,11 @@ export type ButtonProps = Omit<PressableProps, 'style'> & {
   title: string;
   variant?: ButtonVariant;
   loading?: boolean;
+  icon?: keyof typeof Feather.glyphMap;
   style?: PressableProps['style'];
 };
 
-export function Button({ title, variant = 'primary', loading, disabled, style, ...rest }: ButtonProps) {
+export function Button({ title, variant = 'primary', loading, icon, disabled, style, ...rest }: ButtonProps) {
   const theme = useTheme();
   const inactive = disabled || loading;
 
@@ -46,9 +48,12 @@ export function Button({ title, variant = 'primary', loading, disabled, style, .
       {loading ? (
         <ActivityIndicator size="small" color={textColor} />
       ) : (
-        <ThemedText type="smallBold" style={{ color: textColor }}>
-          {title}
-        </ThemedText>
+        <>
+          {icon ? <Feather name={icon} size={16} color={textColor} /> : null}
+          <ThemedText type="smallBold" style={{ color: textColor }}>
+            {title}
+          </ThemedText>
+        </>
       )}
     </Pressable>
   );
@@ -56,8 +61,10 @@ export function Button({ title, variant = 'primary', loading, disabled, style, .
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.three,
+    flexDirection: 'row',
+    gap: Spacing.two,
+    height: 48,
+    borderRadius: Radius.pill,
     paddingHorizontal: Spacing.four,
     alignItems: 'center',
     justifyContent: 'center',

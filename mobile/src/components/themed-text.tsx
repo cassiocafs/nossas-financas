@@ -41,54 +41,54 @@ export function ThemedText({ style, type = 'default', themeColor, numeric, ...re
 
 const styles = StyleSheet.create({
   display: {
+    fontFamily: Fonts.displayBold,
     fontSize: 36,
     lineHeight: 42,
-    fontWeight: '700',
-    letterSpacing: -0.4,
+    letterSpacing: -0.8,
   },
   title: {
+    fontFamily: Fonts.displayBold,
     fontSize: 26,
     lineHeight: 32,
-    fontWeight: '700',
-    letterSpacing: -0.3,
+    letterSpacing: -0.6,
   },
   subtitle: {
+    fontFamily: Fonts.display,
     fontSize: 19,
     lineHeight: 25,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
   default: {
+    fontFamily: Fonts.bodyMedium,
     fontSize: 16,
     lineHeight: 22,
-    fontWeight: '500',
   },
   small: {
+    fontFamily: Fonts.body,
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '500',
   },
   smallBold: {
+    fontFamily: Fonts.bodySemi,
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '700',
   },
   caption: {
+    fontFamily: Fonts.bodySemi,
     fontSize: 11,
     lineHeight: 14,
-    fontWeight: '700',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
   link: {
+    fontFamily: Fonts.body,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '500',
   },
   linkPrimary: {
+    fontFamily: Fonts.bodySemi,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '600',
   },
   code: {
     fontFamily: Fonts.mono,
@@ -96,7 +96,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   numeric: {
+    fontFamily: Fonts.displayBold,
     fontVariant: ['tabular-nums'],
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
 });
