@@ -1,29 +1,29 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/hooks/use-theme';
 
 export default function PerfilScreen() {
   const { session, signOut } = useAuth();
-  const theme = useTheme();
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView type="background" style={styles.container}>
       <SafeAreaView edges={['bottom']} style={styles.safeArea}>
-        <ThemedText type="smallBold">Conta</ThemedText>
-        <ThemedText type="default" themeColor="textSecondary">
-          {session?.user?.email}
-        </ThemedText>
+        <ThemedText type="title">Perfil</ThemedText>
 
-        <Pressable
-          onPress={() => signOut()}
-          style={[styles.button, { backgroundColor: theme.backgroundElement }]}>
-          <ThemedText type="smallBold">Sair</ThemedText>
-        </Pressable>
+        <Card style={styles.card}>
+          <ThemedText type="small" themeColor="textSecondary">
+            Conta
+          </ThemedText>
+          <ThemedText type="default">{session?.user?.email}</ThemedText>
+        </Card>
+
+        <Button title="Sair" variant="secondary" onPress={() => signOut()} style={styles.button} />
       </SafeAreaView>
     </ThemedView>
   );
@@ -31,12 +31,7 @@ export default function PerfilScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1, padding: Spacing.four, gap: Spacing.one },
-  button: {
-    marginTop: Spacing.four,
-    borderRadius: Spacing.two,
-    paddingVertical: Spacing.three,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  safeArea: { flex: 1, padding: Spacing.four, gap: Spacing.four },
+  card: { gap: Spacing.half },
+  button: { marginTop: Spacing.two },
 });

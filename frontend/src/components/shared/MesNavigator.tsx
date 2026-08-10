@@ -49,14 +49,14 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
         type="button"
         onClick={() => irPara(-1)}
         aria-label="Mês anterior"
-        className="rounded-md border border-line px-2 py-1 text-sm text-ink/70 hover:bg-ink/5 dark:border-line-night dark:text-paper/70 dark:hover:bg-white/5"
+        className="rounded-xl border border-border px-2 py-1 text-sm text-foreground/70 hover:bg-muted"
       >
         ←
       </button>
       <button
         type="button"
         onClick={() => setAberto((v) => !v)}
-        className="min-w-36 rounded-md px-2 py-1 text-center font-display text-sm font-medium text-ink hover:bg-ink/5 dark:text-paper dark:hover:bg-white/5"
+        className="min-w-36 rounded-xl px-2 py-1 text-center font-display text-sm font-medium text-foreground hover:bg-muted"
       >
         {MESES[mes - 1]} {ano}
       </button>
@@ -64,19 +64,19 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
         type="button"
         onClick={() => irPara(1)}
         aria-label="Próximo mês"
-        className="rounded-md border border-line px-2 py-1 text-sm text-ink/70 hover:bg-ink/5 dark:border-line-night dark:text-paper/70 dark:hover:bg-white/5"
+        className="rounded-xl border border-border px-2 py-1 text-sm text-foreground/70 hover:bg-muted"
       >
         →
       </button>
 
       {aberto && (
-        <div className="absolute left-1/2 top-full z-30 mt-2 w-64 -translate-x-1/2 rounded-lg border border-line bg-surface p-3 shadow-lg dark:border-line-night dark:bg-surface-night">
+        <div className="card-surface absolute left-1/2 top-full z-30 mt-2 w-64 -translate-x-1/2 p-3 shadow-lift">
           <div className="flex gap-2">
             <select
               value={mes}
               onChange={(e) => onChange(ano, Number(e.target.value))}
               aria-label="Selecionar mês"
-              className="flex-1 rounded-md border border-line bg-paper px-2 py-1.5 text-sm text-ink dark:border-line-night dark:bg-paper-night dark:text-paper"
+              className="flex-1 rounded-xl border border-input bg-background px-2 py-1.5 text-sm text-foreground"
             >
               {MESES.map((nome, indice) => (
                 <option key={nome} value={indice + 1}>
@@ -88,7 +88,7 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
               value={ano}
               onChange={(e) => onChange(Number(e.target.value), mes)}
               aria-label="Selecionar ano"
-              className="w-24 rounded-md border border-line bg-paper px-2 py-1.5 text-sm text-ink dark:border-line-night dark:bg-paper-night dark:text-paper"
+              className="w-24 rounded-xl border border-input bg-background px-2 py-1.5 text-sm text-foreground"
             >
               {anos.map((a) => (
                 <option key={a} value={a}>

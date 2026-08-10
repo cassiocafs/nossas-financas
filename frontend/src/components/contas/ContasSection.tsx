@@ -36,43 +36,39 @@ export function ContasSection() {
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-display text-lg font-semibold text-ink dark:text-paper">Contas</h2>
-          <p className="text-sm text-ink/50 dark:text-paper/50">
+          <h2 className="text-lg font-semibold text-foreground">Contas</h2>
+          <p className="text-sm text-muted-foreground">
             Saldo consolidado:{" "}
-            <span className="font-medium text-ink dark:text-paper">
-              {formatarMoeda(saldoConsolidado)}
-            </span>
+            <span className="font-medium text-foreground">{formatarMoeda(saldoConsolidado)}</span>
           </p>
         </div>
         <Button onClick={abrirCriacao}>Nova conta</Button>
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-ink/50 dark:text-paper/50">Carregando...</p>
+        <p className="text-sm text-muted-foreground">Carregando...</p>
       ) : (
-        <ul className={`divide-y divide-line dark:divide-line-night ${cardClassName}`}>
+        <ul className={`divide-y divide-border ${cardClassName}`}>
           {ativas.map((conta) => (
             <li
               key={conta.id}
               className="group flex items-center justify-between px-4 py-3 text-sm"
             >
-              <span className="text-ink dark:text-paper">{conta.nome}</span>
+              <span className="text-foreground">{conta.nome}</span>
               <div className="flex items-center gap-4">
-                <span className="text-ink/80 dark:text-paper/80">
-                  {formatarMoeda(conta.saldoAtual)}
-                </span>
+                <span className="text-foreground/80">{formatarMoeda(conta.saldoAtual)}</span>
                 <div className="hidden gap-2 group-hover:flex">
                   <button
                     type="button"
                     onClick={() => abrirEdicao(conta)}
-                    className="text-ink/50 underline hover:text-ink dark:text-paper/50 dark:hover:text-paper"
+                    className="text-muted-foreground underline hover:text-foreground"
                   >
                     Editar
                   </button>
                   <button
                     type="button"
                     onClick={() => setContaExcluindo(conta)}
-                    className="text-vermelho underline hover:text-vermelho/80 dark:text-vermelho-night"
+                    className="text-destructive underline hover:text-destructive/80"
                   >
                     Excluir
                   </button>
@@ -81,7 +77,7 @@ export function ContasSection() {
             </li>
           ))}
           {ativas.length === 0 && (
-            <li className="px-4 py-3 text-sm text-ink/50 dark:text-paper/50">Nenhuma conta ativa.</li>
+            <li className="px-4 py-3 text-sm text-muted-foreground">Nenhuma conta ativa.</li>
           )}
         </ul>
       )}
@@ -91,16 +87,16 @@ export function ContasSection() {
           <button
             type="button"
             onClick={() => setMostrarInativas((v) => !v)}
-            className="text-sm font-medium text-ink/60 underline dark:text-paper/60"
+            className="text-sm font-medium text-muted-foreground underline"
           >
             {mostrarInativas ? "Ocultar" : "Mostrar"} contas inativas ({inativas.length})
           </button>
           {mostrarInativas && (
-            <ul className={`mt-2 divide-y divide-line dark:divide-line-night ${cardClassName}`}>
+            <ul className={`mt-2 divide-y divide-border ${cardClassName}`}>
               {inativas.map((conta) => (
                 <li
                   key={conta.id}
-                  className="group flex items-center justify-between px-4 py-3 text-sm text-ink/50 dark:text-paper/50"
+                  className="group flex items-center justify-between px-4 py-3 text-sm text-muted-foreground"
                 >
                   <span>{conta.nome}</span>
                   <div className="flex items-center gap-4">
@@ -108,7 +104,7 @@ export function ContasSection() {
                     <button
                       type="button"
                       onClick={() => abrirEdicao(conta)}
-                      className="text-ink/50 underline hover:text-ink dark:text-paper/50 dark:hover:text-paper"
+                      className="text-muted-foreground underline hover:text-foreground"
                     >
                       Reativar/editar
                     </button>

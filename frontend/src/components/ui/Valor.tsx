@@ -8,15 +8,15 @@ interface ValorProps {
 
 export function Valor({ valor, className = "", neutro = false }: ValorProps) {
   const cor = neutro
-    ? "text-ink dark:text-paper"
+    ? "text-foreground"
     : valor < 0
-      ? "text-vermelho dark:text-vermelho-night"
+      ? "text-expense"
       : valor > 0
-        ? "text-verde dark:text-verde-night"
-        : "text-ink dark:text-paper";
+        ? "text-income"
+        : "text-foreground";
 
   return (
-    <span className={`font-mono tabular-nums ${cor} ${className}`}>
+    <span className={`num ${cor} ${className}`}>
       {formatarMoeda(valor)}
     </span>
   );

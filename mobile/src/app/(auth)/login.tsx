@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput } from 'react-native';
+import { StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -30,57 +32,54 @@ export default function LoginScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView type="background" style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ThemedText type="title" style={styles.title}>
-          Nossas Finanças
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          Entrar na conta
-        </ThemedText>
-
-        <ThemedView style={styles.field}>
-          <ThemedText type="smallBold">E-mail</ThemedText>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            style={[styles.input, { borderColor: theme.backgroundSelected, color: theme.text }]}
-            placeholderTextColor={theme.textSecondary}
-          />
-        </ThemedView>
-
-        <ThemedView style={styles.field}>
-          <ThemedText type="smallBold">Senha</ThemedText>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={[styles.input, { borderColor: theme.backgroundSelected, color: theme.text }]}
-            placeholderTextColor={theme.textSecondary}
-          />
-        </ThemedView>
-
-        {erro && (
-          <ThemedText type="small" style={styles.erro}>
-            {erro}
+        <ThemedView style={styles.header}>
+          <ThemedText type="display">Nossas Finanças</ThemedText>
+          <ThemedText type="default" themeColor="textSecondary">
+            Entrar na conta
           </ThemedText>
-        )}
+        </ThemedView>
 
-        <Pressable
-          onPress={handleSubmit}
-          disabled={loading || !email || !password}
-          style={[styles.button, { backgroundColor: theme.text, opacity: loading ? 0.6 : 1 }]}>
-          {loading ? (
-            <ActivityIndicator color={theme.background} />
-          ) : (
-            <ThemedText type="smallBold" themeColor="background">
-              Entrar
+        <Card style={styles.card}>
+          <ThemedView style={styles.field}>
+            <ThemedText type="smallBold">E-mail</ThemedText>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface }]}
+              placeholderTextColor={theme.textTertiary}
+            />
+          </ThemedView>
+
+          <ThemedView style={styles.field}>
+            <ThemedText type="smallBold">Senha</ThemedText>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface }]}
+              placeholderTextColor={theme.textTertiary}
+            />
+          </ThemedView>
+
+          {erro && (
+            <ThemedText type="small" themeColor="expense" style={styles.erro}>
+              {erro}
             </ThemedText>
           )}
-        </Pressable>
+
+          <Button
+            title={loading ? 'Entrando...' : 'Entrar'}
+            onPress={handleSubmit}
+            disabled={!email || !password}
+            loading={loading}
+            style={styles.button}
+          />
+        </Card>
       </SafeAreaView>
     </ThemedView>
   );
@@ -94,31 +93,28 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: Spacing.four,
-    gap: Spacing.two,
   },
-  title: {
-    marginBottom: Spacing.one,
+  header: {
+    gap: Spacing.half,
+    marginBottom: Spacing.five,
+  },
+  card: {
+    gap: Spacing.three,
   },
   field: {
     gap: Spacing.one,
-    marginTop: Spacing.three,
   },
   input: {
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.md,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     fontSize: 16,
   },
   erro: {
-    color: '#d33',
-    marginTop: Spacing.two,
+    marginTop: -Spacing.one,
   },
   button: {
-    marginTop: Spacing.four,
-    borderRadius: Spacing.two,
-    paddingVertical: Spacing.three,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: Spacing.one,
   },
 });

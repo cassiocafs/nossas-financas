@@ -1,32 +1,50 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { listarContas } from "@/api/contas";
+import { listarContas, type Conta } from "@/api/contas";
 import { Card } from "@/components/ui/Card";
 import { Valor } from "@/components/ui/Valor";
+import { ContaFormModal } from "@/components/contas/ContaFormModal";
 
 export function SaldoPorContasCard() {
-  const { data: contas, isLoading } = useQuery({
+  const { data: contasData, isLoading } = useQuery({
     queryKey: ["contas", "ativas"],
     queryFn: () => listarContas(false),
   });
 
+  const contas = useMemo(
+    () => [...(contasData ?? [])].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+    [contasData],
+  );
+
+  const [contaEditando, setContaEditando] = useState<Conta | null>(null);
+
   return (
     <Card className="p-4">
-      <h3 className="mb-2 font-display text-sm font-semibold text-ink dark:text-paper">
+      <h3 className="mb-2 text-sm font-semibold text-foreground">
         Saldo por conta
       </h3>
-      {isLoading || !contas ? (
-        <p className="text-sm text-ink/50 dark:text-paper/50">Carregando...</p>
+      {isLoading || !contasData ? (
+        <p className="text-sm text-muted-foreground">Carregando...</p>
       ) : contas.length === 0 ? (
-        <p className="text-sm text-ink/50 dark:text-paper/50">Nenhuma conta cadastrada.</p>
+        <p className="text-sm text-muted-foreground">Nenhuma conta cadastrada.</p>
       ) : (
-        <ul className="divide-y divide-line text-sm dark:divide-line-night">
+        <ul className="divide-y divide-border text-sm">
           {contas.map((conta) => (
-            <li key={conta.id} className="flex items-center justify-between py-2">
-              <span className="text-ink/80 dark:text-paper/80">{conta.nome}</span>
+            <li key={conta.id} className="group flex items-center justify-between py-2">
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="truncate text-foreground/80">{conta.nome}</span>
+                <button
+                  type="button"
+                  onClick={() => setContaEditando(conta)}
+                  className="hidden shrink-0 text-xs text-primary underline group-hover:inline"
+                >
+                  Editar
+                </button>
+              </span>
               <div className="flex items-center gap-2">
                 {conta.saldoAtual < 0 && (
                   <span
-                    className="text-xs text-vermelho dark:text-vermelho-night"
+                    className="text-xs text-expense"
                     title="Saldo negativo"
                   >
                     ⚠
@@ -38,6 +56,12 @@ export function SaldoPorContasCard() {
           ))}
         </ul>
       )}
+
+      <ContaFormModal
+        open={!!contaEditando}
+        onClose={() => setContaEditando(null)}
+        conta={contaEditando}
+      />
     </Card>
   );
 }

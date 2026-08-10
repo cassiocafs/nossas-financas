@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { listarContas } from "@/api/contas";
+import { listarContas, type Conta } from "@/api/contas";
 import { listarGrupos } from "@/api/categorias";
 import { Valor } from "@/components/ui/Valor";
+import { ContaFormModal } from "@/components/contas/ContaFormModal";
 
 interface FiltrosLateraisProps {
   contaIds: string[];
@@ -18,6 +19,7 @@ export function FiltrosLaterais({
   onCategoriaIdsChange,
 }: FiltrosLateraisProps) {
   const [gruposExpandidos, setGruposExpandidos] = useState<Record<string, boolean>>({});
+  const [contaEditando, setContaEditando] = useState<Conta | null>(null);
 
   const { data: contasData = [] } = useQuery({
     queryKey: ["contas"],
@@ -78,13 +80,11 @@ export function FiltrosLaterais({
     <aside className="space-y-6 text-sm lg:w-64 lg:shrink-0">
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="font-mono text-xs tracking-widest text-ink/50 uppercase dark:text-paper/50">
-            Contas
-          </h3>
+          <h3 className="text-xs tracking-widest text-muted-foreground uppercase">Contas</h3>
           <button
             type="button"
             onClick={alternarTodasContas}
-            className="text-xs text-marca underline dark:text-marca-night"
+            className="text-xs text-primary underline"
           >
             Todos
           </button>
@@ -93,22 +93,32 @@ export function FiltrosLaterais({
           {contas.map((conta) => (
             <label
               key={conta.id}
-              className="group flex items-center justify-between gap-2 text-ink/80 dark:text-paper/80"
+              className="group flex items-center justify-between gap-2 text-foreground/80"
             >
               <span className="flex min-w-0 items-center gap-2">
                 <input
                   type="checkbox"
                   checked={contaIds.includes(conta.id)}
                   onChange={() => alternarConta(conta.id)}
-                  className="accent-marca"
+                  className="accent-primary"
                 />
                 <span className="truncate">{conta.nome}</span>
                 <button
                   type="button"
                   onClick={() => onContaIdsChange([conta.id])}
-                  className="hidden shrink-0 text-xs text-marca underline group-hover:inline dark:text-marca-night"
+                  className="hidden shrink-0 text-xs text-primary underline group-hover:inline"
                 >
                   Somente
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setContaEditando(conta);
+                  }}
+                  className="hidden shrink-0 text-xs text-primary underline group-hover:inline"
+                >
+                  Editar
                 </button>
               </span>
               <Valor valor={conta.saldoAtual} className="text-xs" />
@@ -119,14 +129,12 @@ export function FiltrosLaterais({
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="font-mono text-xs tracking-widest text-ink/50 uppercase dark:text-paper/50">
-            Categorias
-          </h3>
+          <h3 className="text-xs tracking-widest text-muted-foreground uppercase">Categorias</h3>
           {idsExpansiveis.length > 0 && (
             <button
               type="button"
               onClick={alternarTodosGrupos}
-              className="text-xs text-marca underline dark:text-marca-night"
+              className="text-xs text-primary underline"
             >
               {todosExpandidos ? "Recolher tudo" : "Expandir tudo"}
             </button>
@@ -140,7 +148,7 @@ export function FiltrosLaterais({
                 <button
                   type="button"
                   onClick={() => alternarGrupo(grupo.id)}
-                  className="flex w-full items-center gap-1.5 rounded px-1 py-1 text-left text-xs font-bold text-ink/70 uppercase hover:bg-ink/5 dark:text-paper/70 dark:hover:bg-white/5"
+                  className="flex w-full items-center gap-1.5 rounded px-1 py-1 text-left text-xs font-bold text-foreground/70 uppercase hover:bg-muted"
                 >
                   <span className="inline-block w-4 text-lg leading-none">
                     {expandido ? "▾" : "▸"}
@@ -152,13 +160,13 @@ export function FiltrosLaterais({
                     {grupo.categorias.map((categoria) => (
                       <label
                         key={categoria.id}
-                        className="flex items-center gap-2 pl-5 text-ink/80 dark:text-paper/80"
+                        className="flex items-center gap-2 pl-5 text-foreground/80"
                       >
                         <input
                           type="checkbox"
                           checked={categoriaIds.includes(categoria.id)}
                           onChange={() => alternarCategoria(categoria.id)}
-                          className="accent-marca"
+                          className="accent-primary"
                         />
                         {categoria.nome}
                       </label>
@@ -171,7 +179,7 @@ export function FiltrosLaterais({
                           <button
                             type="button"
                             onClick={() => alternarGrupo(subChave)}
-                            className="flex w-full items-center gap-1.5 rounded px-1 py-1 pl-3 text-left text-xs font-semibold text-ink/60 uppercase hover:bg-ink/5 dark:text-paper/60 dark:hover:bg-white/5"
+                            className="flex w-full items-center gap-1.5 rounded px-1 py-1 pl-3 text-left text-xs font-semibold text-foreground/60 uppercase hover:bg-muted"
                           >
                             <span className="inline-block w-4 text-lg leading-none">
                               {subExpandido ? "▾" : "▸"}
@@ -182,13 +190,13 @@ export function FiltrosLaterais({
                             subgrupo.categorias.map((categoria) => (
                               <label
                                 key={categoria.id}
-                                className="flex items-center gap-2 pl-8 text-ink/80 dark:text-paper/80"
+                                className="flex items-center gap-2 pl-8 text-foreground/80"
                               >
                                 <input
                                   type="checkbox"
                                   checked={categoriaIds.includes(categoria.id)}
                                   onChange={() => alternarCategoria(categoria.id)}
-                                  className="accent-marca"
+                                  className="accent-primary"
                                 />
                                 {categoria.nome}
                               </label>
@@ -204,20 +212,20 @@ export function FiltrosLaterais({
           {gruposData?.semGrupo && gruposData.semGrupo.length > 0 && (
             <div className="space-y-1">
               {gruposData.grupos.length > 0 && (
-                <span className="block text-xs font-bold text-ink/70 uppercase dark:text-paper/70">
+                <span className="block text-xs font-bold text-foreground/70 uppercase">
                   Sem grupo
                 </span>
               )}
               {gruposData.semGrupo.map((categoria) => (
                 <label
                   key={categoria.id}
-                  className="flex items-center gap-2 pl-5 text-ink/80 dark:text-paper/80"
+                  className="flex items-center gap-2 pl-5 text-foreground/80"
                 >
                   <input
                     type="checkbox"
                     checked={categoriaIds.includes(categoria.id)}
                     onChange={() => alternarCategoria(categoria.id)}
-                    className="accent-marca"
+                    className="accent-primary"
                   />
                   {categoria.nome}
                 </label>
@@ -226,6 +234,12 @@ export function FiltrosLaterais({
           )}
         </div>
       </div>
+
+      <ContaFormModal
+        open={!!contaEditando}
+        onClose={() => setContaEditando(null)}
+        conta={contaEditando}
+      />
     </aside>
   );
 }

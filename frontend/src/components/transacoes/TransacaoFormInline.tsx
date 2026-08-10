@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listarContas } from "@/api/contas";
 import { sugerirCategoria } from "@/api/categorias";
@@ -21,24 +21,34 @@ function hojeISO(): string {
 
 interface TransacaoFormInlineProps {
   transacao?: Transacao | null;
+  contaIdPadrao?: string;
   onSaved: () => void;
   onCancel: () => void;
 }
 
-export function TransacaoFormInline({ transacao, onSaved, onCancel }: TransacaoFormInlineProps) {
+export function TransacaoFormInline({
+  transacao,
+  contaIdPadrao,
+  onSaved,
+  onCancel,
+}: TransacaoFormInlineProps) {
   const queryClient = useQueryClient();
   const isEdicaoTransferencia = !!transacao?.transferenciaGrupoId;
   const editando = !!transacao;
 
-  const { data: contas = [] } = useQuery({
+  const { data: contasData = [] } = useQuery({
     queryKey: ["contas"],
     queryFn: () => listarContas(false),
   });
+  const contas = useMemo(
+    () => [...contasData].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+    [contasData],
+  );
 
   const [tipo, setTipo] = useState<TipoTransacao>(transacao?.tipo ?? "DESPESA");
   const [data, setData] = useState(transacao?.data ?? hojeISO());
   const [descricao, setDescricao] = useState(transacao?.descricao ?? "");
-  const [contaId, setContaId] = useState(transacao?.contaId ?? "");
+  const [contaId, setContaId] = useState(transacao?.contaId ?? contaIdPadrao ?? "");
   const [categoriaId, setCategoriaId] = useState(transacao?.categoriaId ?? "");
   const [categoriaTocada, setCategoriaTocada] = useState(editando);
   const [valor, setValor] = useState(transacao ? Math.abs(transacao.valor) : 0);
@@ -119,32 +129,29 @@ export function TransacaoFormInline({ transacao, onSaved, onCancel }: TransacaoF
   });
 
   const campoClasse =
-    "rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:text-paper";
+    "rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground";
+
+  const TIPOS = [
+    { valor: "DESPESA", label: "Despesa", tone: "text-expense" },
+    { valor: "RECEITA", label: "Receita", tone: "text-income" },
+    { valor: "TRANSFERENCIA", label: "Transferência", tone: "text-transfer" },
+  ] as const;
 
   return (
-    <div className="border border-line bg-surface dark:border-line-night dark:bg-surface-night">
-      <div className="flex items-center justify-between gap-3 border-b border-line bg-ink/5 px-3 py-2 dark:border-line-night dark:bg-white/5">
-        <div className="flex items-center gap-4">
-          {(
-            [
-              ["DESPESA", "Despesa"],
-              ["RECEITA", "Receita"],
-              ["TRANSFERENCIA", "Transferência"],
-            ] as const
-          ).map(([t, label]) => (
-            <label
+    <div className="card-surface">
+      <div className="flex items-center justify-between gap-3 rounded-t-2xl border-b border-border bg-muted px-3 py-2">
+        <div className="flex items-center gap-1 rounded-xl bg-background p-1">
+          {TIPOS.map(({ valor: t, label, tone }) => (
+            <button
               key={t}
-              className="flex items-center gap-1.5 text-sm text-ink/80 dark:text-paper/80"
+              type="button"
+              onClick={() => setTipo(t)}
+              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                tipo === t ? `card-surface ${tone}` : "text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <input
-                type="radio"
-                name="tipo"
-                checked={tipo === t}
-                onChange={() => setTipo(t)}
-                className="accent-ink dark:accent-paper"
-              />
               {label}
-            </label>
+            </button>
           ))}
         </div>
         {!editando && (
@@ -152,7 +159,7 @@ export function TransacaoFormInline({ transacao, onSaved, onCancel }: TransacaoF
             type="button"
             onClick={onCancel}
             aria-label="Fechar"
-            className="text-ink/40 hover:text-ink dark:text-paper/40 dark:hover:text-paper"
+            className="text-foreground/40 hover:text-foreground"
           >
             ✕
           </button>
@@ -244,14 +251,14 @@ export function TransacaoFormInline({ transacao, onSaved, onCancel }: TransacaoF
         </div>
 
         <label
-          className="flex shrink-0 items-center gap-1 text-ink/70 dark:text-paper/70"
+          className="flex shrink-0 items-center gap-1 text-foreground/70"
           title="Consolidado"
         >
           <input
             type="checkbox"
             checked={consolidado}
             onChange={(e) => setConsolidado(e.target.checked)}
-            className="accent-ink dark:accent-paper"
+            className="accent-primary"
           />
         </label>
 
@@ -265,7 +272,7 @@ export function TransacaoFormInline({ transacao, onSaved, onCancel }: TransacaoF
         )}
 
         {mutation.isError && (
-          <span className="text-xs text-vermelho dark:text-vermelho-night">
+          <span className="text-xs text-destructive">
             {mutation.error instanceof Error ? mutation.error.message : "Erro ao salvar"}
           </span>
         )}

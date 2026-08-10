@@ -111,7 +111,7 @@ export function ExcluirCategoriaDialog({
             <select
               value={categoriaDestinoId}
               onChange={(e) => setCategoriaDestinoId(e.target.value)}
-              className="w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:text-paper"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
             >
               <option value="">Selecione a categoria de destino</option>
               {todasCategorias.map((c) => (

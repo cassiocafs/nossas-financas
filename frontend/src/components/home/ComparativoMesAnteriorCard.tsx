@@ -20,11 +20,11 @@ function calcularVariacao(atual: number, anterior: number): number | null {
 
 function Variacao({ valor, invertido = false }: { valor: number | null; invertido?: boolean }) {
   if (valor === null) {
-    return <span className="text-ink/40 dark:text-paper/40">sem dado anterior</span>;
+    return <span className="text-muted-foreground">sem dado anterior</span>;
   }
   const positivo = invertido ? valor <= 0 : valor >= 0;
   return (
-    <span className={positivo ? "text-ink dark:text-paper" : "text-vermelho dark:text-vermelho-night"}>
+    <span className={positivo ? "text-foreground" : "text-expense"}>
       {valor >= 0 ? "+" : ""}
       {valor.toFixed(0)}% vs. mês anterior
     </span>
@@ -52,24 +52,24 @@ export function ComparativoMesAnteriorCard({
   return (
     <Card className="grid grid-cols-1 gap-3 p-4 text-xs sm:grid-cols-3">
       {isLoading || !resumoAnterior ? (
-        <p className="col-span-3 text-sm text-ink/50 dark:text-paper/50">
+        <p className="col-span-3 text-sm text-muted-foreground">
           Carregando comparativo...
         </p>
       ) : (
         <>
           <div>
-            <p className="text-ink/50 dark:text-paper/50">Entradas</p>
+            <p className="text-muted-foreground">Entradas</p>
             <Variacao valor={calcularVariacao(totalEntradas, resumoAnterior.totalEntradas)} />
           </div>
           <div>
-            <p className="text-ink/50 dark:text-paper/50">Saídas</p>
+            <p className="text-muted-foreground">Saídas</p>
             <Variacao
               valor={calcularVariacao(totalSaidas, resumoAnterior.totalSaidas)}
               invertido
             />
           </div>
           <div>
-            <p className="text-ink/50 dark:text-paper/50">Saldo do mês</p>
+            <p className="text-muted-foreground">Saldo do mês</p>
             <Variacao valor={calcularVariacao(movimentoAtual, movimentoAnterior)} />
           </div>
         </>

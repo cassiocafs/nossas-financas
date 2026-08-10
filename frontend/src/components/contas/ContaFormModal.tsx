@@ -63,22 +63,16 @@ export function ContaFormModal({ open, onClose, conta }: ContaFormModalProps) {
         className="space-y-4"
       >
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-ink/80 dark:text-paper/80">
-            Nome
-          </label>
+          <label className="block text-sm font-medium text-foreground/80">Nome</label>
           <input
             {...register("nome")}
-            className="w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:text-paper"
+            className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
           />
-          {errors.nome && (
-            <p className="text-sm text-vermelho dark:text-vermelho-night">{errors.nome.message}</p>
-          )}
+          {errors.nome && <p className="text-sm text-destructive">{errors.nome.message}</p>}
         </div>
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-ink/80 dark:text-paper/80">
-            Saldo inicial
-          </label>
+          <label className="block text-sm font-medium text-foreground/80">Saldo inicial</label>
           <Controller
             control={control}
             name="saldoInicial"
@@ -88,13 +82,13 @@ export function ContaFormModal({ open, onClose, conta }: ContaFormModalProps) {
           />
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-ink/80 dark:text-paper/80">
-          <input type="checkbox" {...register("ativa")} className="accent-ink dark:accent-paper" />
+        <label className="flex items-center gap-2 text-sm text-foreground/80">
+          <input type="checkbox" {...register("ativa")} className="accent-primary" />
           Conta ativa
         </label>
 
         {mutation.isError && (
-          <p className="text-sm text-vermelho dark:text-vermelho-night">
+          <p className="text-sm text-destructive">
             {mutation.error instanceof Error ? mutation.error.message : "Erro ao salvar"}
           </p>
         )}

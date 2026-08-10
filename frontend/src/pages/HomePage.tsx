@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { buscarEvolucaoSaldo, buscarResumoMensal, type PeriodoMes } from "@/api/transacoes";
-import { ResumoMesCard } from "@/components/home/ResumoMesCard";
+import { listarContas } from "@/api/contas";
 import { ComparativoMesAnteriorCard } from "@/components/home/ComparativoMesAnteriorCard";
 import { SaldoPorContasCard } from "@/components/home/SaldoPorContasCard";
 import { OrcamentoResumoCard } from "@/components/home/OrcamentoResumoCard";
@@ -13,11 +13,6 @@ import { MesNavigator } from "@/components/shared/MesNavigator";
 import { Card } from "@/components/ui/Card";
 import { formatarMoeda } from "@/lib/format";
 
-const MESES = [
-  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
-  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
-];
-
 function hoje() {
   const agora = new Date();
   return { ano: agora.getFullYear(), mes: agora.getMonth() + 1 };
@@ -26,6 +21,69 @@ function hoje() {
 function subtrairMeses(periodo: PeriodoMes, quantidade: number): PeriodoMes {
   const data = new Date(Date.UTC(periodo.ano, periodo.mes - 1 - quantidade, 1));
   return { ano: data.getUTCFullYear(), mes: data.getUTCMonth() + 1 };
+}
+
+function IconPlus(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function IconArrowDownLeft(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M17 7 7 17" />
+      <path d="M17 17H7V7" />
+    </svg>
+  );
+}
+
+function IconArrowUpRight(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M7 17 17 7" />
+      <path d="M7 7h10v10" />
+    </svg>
+  );
+}
+
+function IconTrend(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M3 17 9 11l4 4 8-8" />
+      <path d="M15 7h6v6" />
+    </svg>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  tone,
+  icon,
+}: {
+  label: string;
+  value: number;
+  tone: "income" | "expense";
+  icon: React.ReactNode;
+}) {
+  return (
+    <Card className="p-5">
+      <div className="flex items-center gap-2.5">
+        <span
+          className={`grid size-8 place-items-center rounded-lg ${
+            tone === "income" ? "bg-income-soft text-income" : "bg-expense-soft text-expense"
+          }`}
+        >
+          {icon}
+        </span>
+        <span className="text-sm text-muted-foreground">{label}</span>
+      </div>
+      <p className="num mt-3 text-2xl font-semibold text-foreground">{formatarMoeda(value)}</p>
+    </Card>
+  );
 }
 
 export function HomePage() {
@@ -42,6 +100,12 @@ export function HomePage() {
     queryKey: ["transacoes", "resumo", ano, mes],
     queryFn: () => buscarResumoMensal(ano, mes),
   });
+
+  const { data: contas } = useQuery({
+    queryKey: ["contas", "ativas"],
+    queryFn: () => listarContas(false),
+  });
+  const patrimonio = (contas ?? []).reduce((soma, c) => soma + c.saldoAtual, 0);
 
   const [evolucaoFim, setEvolucaoFim] = useState<PeriodoMes>({ ano, mes });
   const [evolucaoInicio, setEvolucaoInicio] = useState<PeriodoMes>(() =>
@@ -66,34 +130,60 @@ export function HomePage() {
   });
 
   const despesasSemCategoria = data?.despesasPorCategoria.find((d) => d.categoriaId === null);
+  const resultado = data ? data.totalEntradas - data.totalSaidas : 0;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="font-mono text-xs tracking-widest text-ink/50 uppercase dark:text-paper/50">
-            {MESES[mes - 1]} de {ano}
-          </p>
-          <h1 className="font-display text-3xl font-semibold text-ink dark:text-paper">Início</h1>
+          <p className="text-sm text-muted-foreground">Patrimônio nas contas</p>
+          <h1 className="num mt-1 text-4xl font-semibold text-foreground">
+            {formatarMoeda(patrimonio)}
+          </h1>
         </div>
-        <MesNavigator ano={ano} mes={mes} onChange={mudarMes} />
+        <div className="flex items-center gap-4">
+          <MesNavigator ano={ano} mes={mes} onChange={mudarMes} />
+          <Link
+            to={`/transacoes?ano=${ano}&mes=${mes}&novo=1`}
+            className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground shadow-soft transition-opacity hover:opacity-90"
+          >
+            <IconPlus className="size-4" />
+            Novo lançamento
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-col gap-6 sm:flex-row">
         <div className="sm:w-72 sm:shrink-0">
           <SaldoPorContasCard />
         </div>
+
         <div className="flex-1 space-y-6">
           {data && (
             <>
-              <ResumoMesCard
-                saldoAnterior={data.saldoAnterior}
-                totalEntradas={data.totalEntradas}
-                totalSaidas={data.totalSaidas}
-                saldoFinal={data.saldoFinal}
-              />
+              <div className="grid gap-4 sm:grid-cols-3">
+                <StatCard
+                  label="Receitas do mês"
+                  value={data.totalEntradas}
+                  tone="income"
+                  icon={<IconArrowDownLeft className="size-4" />}
+                />
+                <StatCard
+                  label="Despesas do mês"
+                  value={data.totalSaidas}
+                  tone="expense"
+                  icon={<IconArrowUpRight className="size-4" />}
+                />
+                <StatCard
+                  label="Resultado do mês"
+                  value={resultado}
+                  tone={resultado >= 0 ? "income" : "expense"}
+                  icon={<IconTrend className="size-4" />}
+                />
+              </div>
+
               <div className="grid gap-6 sm:grid-cols-2">
-                <Card className="p-4">
+                <Card className="p-6">
                   <CategoriaDrilldownChart
                     dados={data.despesasPorCategoria}
                     tipo="DESPESA"
@@ -101,7 +191,7 @@ export function HomePage() {
                     mes={mes}
                   />
                 </Card>
-                <Card className="p-4">
+                <Card className="p-6">
                   <CategoriaDrilldownChart
                     dados={data.receitasPorCategoria}
                     tipo="RECEITA"
@@ -112,53 +202,53 @@ export function HomePage() {
               </div>
             </>
           )}
+
+          {isLoading || !data ? (
+            <p className="text-sm text-muted-foreground">Carregando...</p>
+          ) : (
+            <>
+              {despesasSemCategoria && despesasSemCategoria.total > 0 && (
+                <Link
+                  to={`/transacoes?ano=${ano}&mes=${mes}`}
+                  className="card-surface block p-3 text-sm text-foreground/70 hover:underline"
+                >
+                  ⚠ {formatarMoeda(despesasSemCategoria.total)} em despesas sem categoria este mês
+                </Link>
+              )}
+
+              <ComparativoMesAnteriorCard
+                ano={ano}
+                mes={mes}
+                totalEntradas={data.totalEntradas}
+                totalSaidas={data.totalSaidas}
+              />
+
+              <OrcamentoResumoCard ano={ano} mes={mes} />
+
+              {evolucaoSaldo && (
+                <EvolucaoSaldoChart
+                  dados={evolucaoSaldo}
+                  inicio={evolucaoInicio}
+                  fim={evolucaoFim}
+                  onChangeInicio={(novoAno, novoMes) => setEvolucaoInicio({ ano: novoAno, mes: novoMes })}
+                  onChangeFim={(novoAno, novoMes) => setEvolucaoFim({ ano: novoAno, mes: novoMes })}
+                />
+              )}
+
+              <div className="grid gap-6 sm:grid-cols-2">
+                <PendenciasList
+                  titulo="Anteriores não consolidadas"
+                  itens={data.anterioresNaoConsolidadas}
+                />
+                <PendenciasList
+                  titulo="Próximas não consolidadas"
+                  itens={data.proximasNaoConsolidadas}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
-
-      {isLoading || !data ? (
-        <p className="font-mono text-sm text-ink/50 dark:text-paper/50">Carregando...</p>
-      ) : (
-        <>
-          {despesasSemCategoria && despesasSemCategoria.total > 0 && (
-            <Link
-              to={`/transacoes?ano=${ano}&mes=${mes}`}
-              className="block rounded-lg border border-line bg-surface p-3 text-sm text-ink/70 hover:underline dark:border-line-night dark:bg-surface-night dark:text-paper/70"
-            >
-              ⚠ {formatarMoeda(despesasSemCategoria.total)} em despesas sem categoria este mês
-            </Link>
-          )}
-
-          <ComparativoMesAnteriorCard
-            ano={ano}
-            mes={mes}
-            totalEntradas={data.totalEntradas}
-            totalSaidas={data.totalSaidas}
-          />
-
-          <OrcamentoResumoCard ano={ano} mes={mes} />
-
-          {evolucaoSaldo && (
-            <EvolucaoSaldoChart
-              dados={evolucaoSaldo}
-              inicio={evolucaoInicio}
-              fim={evolucaoFim}
-              onChangeInicio={(novoAno, novoMes) => setEvolucaoInicio({ ano: novoAno, mes: novoMes })}
-              onChangeFim={(novoAno, novoMes) => setEvolucaoFim({ ano: novoAno, mes: novoMes })}
-            />
-          )}
-
-          <div className="grid gap-6 sm:grid-cols-2">
-            <PendenciasList
-              titulo="Anteriores não consolidadas"
-              itens={data.anterioresNaoConsolidadas}
-            />
-            <PendenciasList
-              titulo="Próximas não consolidadas"
-              itens={data.proximasNaoConsolidadas}
-            />
-          </div>
-        </>
-      )}
     </div>
   );
 }

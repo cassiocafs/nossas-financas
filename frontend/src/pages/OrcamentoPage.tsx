@@ -16,16 +16,12 @@ type Tom = "positivo" | "negativo" | "neutro";
 
 function StatTile({ label, valor, tom = "neutro" }: { label: string; valor: string; tom?: Tom }) {
   const cor =
-    tom === "positivo"
-      ? "text-verde dark:text-verde-night"
-      : tom === "negativo"
-        ? "text-vermelho dark:text-vermelho-night"
-        : "text-ink dark:text-paper";
+    tom === "positivo" ? "text-income" : tom === "negativo" ? "text-expense" : "text-foreground";
 
   return (
     <Card className="p-3">
-      <p className="font-mono text-[10px] tracking-widest text-ink/40 uppercase dark:text-paper/40">{label}</p>
-      <p className={`mt-1 truncate font-mono text-lg font-medium tabular-nums ${cor}`}>{valor}</p>
+      <p className="text-[10px] tracking-widest text-muted-foreground uppercase">{label}</p>
+      <p className={`num mt-1 truncate text-lg font-medium ${cor}`}>{valor}</p>
     </Card>
   );
 }
@@ -75,13 +71,13 @@ export function OrcamentoPage() {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-semibold text-ink dark:text-paper">Orçamento</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Orçamento</h1>
         <AnoSelector orcamentoId={orcamentoId} onSelecionar={setOrcamentoId} />
       </div>
 
       {!orcamentoId ? (
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-line px-6 py-14 text-center dark:border-line-night">
-          <p className="max-w-xs text-sm text-ink/50 dark:text-paper/50">
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border px-6 py-14 text-center">
+          <p className="max-w-xs text-sm text-muted-foreground">
             Nenhum orçamento criado ainda. Clique em "Novo orçamento" para começar a planejar seus gastos.
           </p>
         </div>
@@ -120,7 +116,7 @@ export function OrcamentoPage() {
               </div>
 
               <Card className="p-3 sm:p-4">
-                <p className="mb-1.5 font-mono text-[10px] tracking-widest text-ink/40 uppercase dark:text-paper/40">
+                <p className="mb-1.5 text-[10px] tracking-widest text-muted-foreground uppercase">
                   Ritmo de gastos no mês
                 </p>
                 <RealizadoPrevistoChart serie={grade.serieDiaria} />

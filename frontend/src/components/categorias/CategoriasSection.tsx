@@ -45,24 +45,24 @@ export function CategoriasSection() {
         key={categoria.id}
         className="group flex items-center justify-between py-2 pl-6 text-sm"
       >
-        <span className="text-ink/90 dark:text-paper/90">
+        <span className="text-foreground/90">
           {categoria.nome}
           {!categoria.ativa && (
-            <span className="ml-2 text-xs text-ink/40 dark:text-paper/40">(inativa)</span>
+            <span className="ml-2 text-xs text-muted-foreground">(inativa)</span>
           )}
         </span>
         <div className="hidden gap-2 group-hover:flex">
           <button
             type="button"
             onClick={() => abrirEdicao(categoria)}
-            className="text-ink/50 underline hover:text-ink dark:text-paper/50 dark:hover:text-paper"
+            className="text-muted-foreground underline hover:text-foreground"
           >
             Editar
           </button>
           <button
             type="button"
             onClick={() => setCategoriaExcluindo(categoria)}
-            className="text-vermelho underline hover:text-vermelho/80 dark:text-vermelho-night"
+            className="text-destructive underline hover:text-destructive/80"
           >
             Excluir
           </button>
@@ -74,25 +74,25 @@ export function CategoriasSection() {
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold text-ink dark:text-paper">Categorias</h2>
+        <h2 className="text-lg font-semibold text-foreground">Categorias</h2>
         <Button onClick={abrirCriacao}>Nova categoria</Button>
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-ink/50 dark:text-paper/50">Carregando...</p>
+        <p className="text-sm text-muted-foreground">Carregando...</p>
       ) : (
         <Card className="space-y-4 p-4">
           {data?.grupos.map((grupo) => (
             <div key={grupo.id}>
               <div className="flex items-center justify-between">
-                <h3 className="font-mono text-xs tracking-widest text-ink/50 uppercase dark:text-paper/50">
+                <h3 className="text-xs tracking-widest text-muted-foreground uppercase">
                   {grupo.nome}
                 </h3>
                 {grupo.categorias.length === 0 && grupo.subgrupos.length === 0 && (
                   <button
                     type="button"
                     onClick={() => excluirGrupoMutation.mutate(grupo.id)}
-                    className="text-xs text-vermelho underline hover:text-vermelho/80 dark:text-vermelho-night"
+                    className="text-xs text-destructive underline hover:text-destructive/80"
                   >
                     Excluir grupo
                   </button>
@@ -102,26 +102,26 @@ export function CategoriasSection() {
               {grupo.subgrupos.map((subgrupo) => (
                 <div key={subgrupo.id} className="pl-3">
                   <div className="flex items-center justify-between pt-2">
-                    <h4 className="text-xs font-medium text-ink/70 dark:text-paper/70">
+                    <h4 className="text-xs font-medium text-foreground/70">
                       {subgrupo.nome}
                     </h4>
                     {subgrupo.categorias.length === 0 && (
                       <button
                         type="button"
                         onClick={() => excluirSubgrupoMutation.mutate(subgrupo.id)}
-                        className="text-xs text-vermelho underline hover:text-vermelho/80 dark:text-vermelho-night"
+                        className="text-xs text-destructive underline hover:text-destructive/80"
                       >
                         Excluir subgrupo
                       </button>
                     )}
                   </div>
-                  <ul className="divide-y divide-line dark:divide-line-night">
+                  <ul className="divide-y divide-border">
                     {subgrupo.categorias.map(renderCategoria)}
                   </ul>
                 </div>
               ))}
 
-              <ul className="divide-y divide-line dark:divide-line-night">
+              <ul className="divide-y divide-border">
                 {grupo.categorias.map(renderCategoria)}
               </ul>
             </div>
@@ -129,10 +129,10 @@ export function CategoriasSection() {
 
           {data && data.semGrupo.length > 0 && (
             <div>
-              <h3 className="font-mono text-xs tracking-widest text-ink/50 uppercase dark:text-paper/50">
+              <h3 className="text-xs tracking-widest text-muted-foreground uppercase">
                 Sem grupo
               </h3>
-              <ul className="divide-y divide-line dark:divide-line-night">
+              <ul className="divide-y divide-border">
                 {data.semGrupo.map(renderCategoria)}
               </ul>
             </div>

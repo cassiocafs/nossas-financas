@@ -1,0 +1,34 @@
+# Arquivos/pastas que não devem ser enviados ao servidor de build do EAS.
+# Diferente do .gitignore, o .easignore controla apenas o upload feito por
+# `eas build`/`eas submit`. Se este arquivo não existir, o EAS usa o .gitignore
+# como referência — mas como aqui queremos excluir também alguns itens
+# versionados (docs, testes), deixamos essa lista explícita.
+
+# dependências (o EAS reinstala no servidor de build)
+node_modules
+
+# caches locais do Expo/Metro
+.expo
+.metro-health-check*
+dist
+web-build
+
+# builds nativos gerados localmente (não devem ir para o build na nuvem)
+/ios
+/android
+
+# documentação e arquivos que não afetam o build
+docs
+README.md
+AGENTS.md
+CLAUDE.md
+LICENSE
+
+# arquivos de ambiente locais (segredos não devem ser enviados)
+.env
+.env.local
+.env*.local
+
+# editor/OS
+.DS_Store
+*.log

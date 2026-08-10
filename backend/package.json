@@ -13,7 +13,9 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
-    "importar:extrato": "tsx prisma/importar-extrato.ts"
+    "importar:extrato": "tsx prisma/importar-extrato.ts",
+    "validar:categorias-sem-grupo": "tsx prisma/validar-exclusao-categorias-sem-grupo.ts",
+    "migrar:categorias-sem-grupo": "tsx prisma/migrar-categorias-sem-grupo.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -20,8 +20,8 @@ const rotuloStatus: Record<PreviewImportacao["linhas"][number]["status"], string
 };
 
 const corStatus: Record<PreviewImportacao["linhas"][number]["status"], string> = {
-  nova: "text-marca dark:text-marca-night",
-  invalida: "text-vermelho dark:text-vermelho-night",
+  nova: "text-primary",
+  invalida: "text-destructive",
 };
 
 export function ImportarExtratoSection() {
@@ -85,10 +85,10 @@ export function ImportarExtratoSection() {
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="font-display text-lg font-semibold text-ink dark:text-paper">
+        <h2 className="text-lg font-semibold text-foreground">
           Importar transações
         </h2>
-        <p className="text-sm text-ink/50 dark:text-paper/50">
+        <p className="text-sm text-muted-foreground">
           Envie um ou mais extratos em XLS/XLSX com as colunas Data Ocorrência, Descrição,
           Valor, Categoria e Conta. Contas e categorias novas são criadas automaticamente.
         </p>
@@ -112,7 +112,7 @@ export function ImportarExtratoSection() {
       {previewMutation.isPending && <ProgressBar label="Analisando arquivo(s)..." />}
 
       {previewMutation.isError && (
-        <p className="text-sm text-vermelho dark:text-vermelho-night">
+        <p className="text-sm text-destructive">
           {previewMutation.error instanceof Error
             ? previewMutation.error.message
             : "Erro ao analisar arquivo"}
@@ -121,22 +121,22 @@ export function ImportarExtratoSection() {
 
       {resultado && (
         <Card className="space-y-2 p-4 text-sm">
-          <p className="text-ink dark:text-paper">
+          <p className="text-foreground">
             <span className="font-medium">{resultado.importadas}</span> de{" "}
             {resultado.totalLinhas} transações importadas.
           </p>
           {resultado.contasCriadas.length > 0 && (
-            <p className="text-ink/60 dark:text-paper/60">
+            <p className="text-muted-foreground">
               Contas criadas: {resultado.contasCriadas.join(", ")}
             </p>
           )}
           {resultado.categoriasCriadas.length > 0 && (
-            <p className="text-ink/60 dark:text-paper/60">
+            <p className="text-muted-foreground">
               Categorias criadas: {resultado.categoriasCriadas.join(", ")}
             </p>
           )}
           {resultado.erros.length > 0 && (
-            <div className="text-vermelho dark:text-vermelho-night">
+            <div className="text-destructive">
               <p>{resultado.erros.length} linha(s) não importada(s):</p>
               <ul className="ml-4 list-disc">
                 {resultado.erros.slice(0, 10).map((erro) => (
@@ -156,21 +156,21 @@ export function ImportarExtratoSection() {
 
       {previewAberto && preview && (
         <Card className="space-y-4 p-4">
-          <h3 className="font-display text-base font-semibold text-ink dark:text-paper">
+          <h3 className="text-base font-semibold text-foreground">
             Confirme a importação
           </h3>
 
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink/70 dark:text-paper/70">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-foreground/70">
               <span>
-                <span className="font-medium text-marca dark:text-marca-night">
+                <span className="font-medium text-primary">
                   {preview.novas}
                 </span>{" "}
                 nova(s)
               </span>
               {preview.invalidas > 0 && (
                 <span>
-                  <span className="font-medium text-vermelho dark:text-vermelho-night">
+                  <span className="font-medium text-destructive">
                     {preview.invalidas}
                   </span>{" "}
                   inválida(s)
@@ -180,20 +180,20 @@ export function ImportarExtratoSection() {
             </div>
 
             {preview.contasNovas.length > 0 && (
-              <p className="text-sm text-ink/60 dark:text-paper/60">
+              <p className="text-sm text-muted-foreground">
                 Contas novas: {preview.contasNovas.join(", ")}
               </p>
             )}
             {preview.categoriasNovas.length > 0 && (
-              <p className="text-sm text-ink/60 dark:text-paper/60">
+              <p className="text-sm text-muted-foreground">
                 Categorias novas: {preview.categoriasNovas.join(", ")}
               </p>
             )}
 
-            <div className="max-h-80 overflow-y-auto rounded-md border border-line dark:border-line-night">
+            <div className="max-h-80 overflow-y-auto rounded-md border border-input">
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 bg-surface dark:bg-surface-night">
-                  <tr className="border-b border-line dark:border-line-night text-ink/50 dark:text-paper/50">
+                <thead className="sticky top-0 bg-card">
+                  <tr className="border-b border-input text-muted-foreground">
                     {multiplosArquivos && (
                       <th className="px-3 py-2 font-medium">Arquivo</th>
                     )}
@@ -209,31 +209,31 @@ export function ImportarExtratoSection() {
                   {preview.linhas.slice(0, LIMITE_LINHAS_EXIBIDAS).map((linha) => (
                     <tr
                       key={`${linha.arquivo}-${linha.linha}`}
-                      className="border-b border-line/60 last:border-0 dark:border-line-night/60"
+                      className="border-b border-input/60 last:border-0/60"
                     >
                       {multiplosArquivos && (
-                        <td className="whitespace-nowrap px-3 py-2 text-ink/80 dark:text-paper/80">
+                        <td className="whitespace-nowrap px-3 py-2 text-foreground/80">
                           {linha.arquivo}
                         </td>
                       )}
-                      <td className="whitespace-nowrap px-3 py-2 text-ink/80 dark:text-paper/80">
+                      <td className="whitespace-nowrap px-3 py-2 text-foreground/80">
                         {linha.data ? formatarData(linha.data) : "—"}
                       </td>
-                      <td className="px-3 py-2 text-ink/80 dark:text-paper/80">
+                      <td className="px-3 py-2 text-foreground/80">
                         {linha.descricao || "—"}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2 text-ink/80 dark:text-paper/80">
+                      <td className="whitespace-nowrap px-3 py-2 text-foreground/80">
                         {linha.conta || "—"}
                         {linha.contaNova && (
-                          <span className="ml-1 text-xs text-marca dark:text-marca-night">
+                          <span className="ml-1 text-xs text-primary">
                             (nova)
                           </span>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2 text-ink/80 dark:text-paper/80">
+                      <td className="whitespace-nowrap px-3 py-2 text-foreground/80">
                         {linha.categoria ?? "—"}
                         {linha.categoriaNova && (
-                          <span className="ml-1 text-xs text-marca dark:text-marca-night">
+                          <span className="ml-1 text-xs text-primary">
                             (nova)
                           </span>
                         )}
@@ -244,7 +244,7 @@ export function ImportarExtratoSection() {
                       <td className={`whitespace-nowrap px-3 py-2 ${corStatus[linha.status]}`}>
                         {rotuloStatus[linha.status]}
                         {linha.motivo && (
-                          <span className="ml-1 text-xs text-ink/40 dark:text-paper/40">
+                          <span className="ml-1 text-xs text-muted-foreground">
                             ({linha.motivo})
                           </span>
                         )}
@@ -255,7 +255,7 @@ export function ImportarExtratoSection() {
               </table>
             </div>
             {preview.linhas.length > LIMITE_LINHAS_EXIBIDAS && (
-              <p className="text-sm text-ink/50 dark:text-paper/50">
+              <p className="text-sm text-muted-foreground">
                 e mais {preview.linhas.length - LIMITE_LINHAS_EXIBIDAS} linha(s)...
               </p>
             )}
@@ -270,7 +270,7 @@ export function ImportarExtratoSection() {
             )}
 
             {importMutation.isError && (
-              <p className="text-sm text-vermelho dark:text-vermelho-night">
+              <p className="text-sm text-destructive">
                 {importMutation.error instanceof Error
                   ? importMutation.error.message
                   : "Erro ao importar arquivo"}

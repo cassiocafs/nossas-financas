@@ -3,13 +3,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { listarTransacoesMes, type ItemCategoriaResumo } from "@/api/transacoes";
 import { formatarData, formatarMoeda } from "@/lib/format";
-import {
-  CATEGORICAL_PALETTE_DARK,
-  CATEGORICAL_PALETTE_LIGHT,
-  OUTROS_COR_DARK,
-  OUTROS_COR_LIGHT,
-} from "@/lib/chartPalette";
-import { useDarkMode } from "@/lib/useDarkMode";
+import { CATEGORICAL_PALETTE, OUTROS_COR } from "@/lib/chartPalette";
 import { cardClassName } from "@/components/ui/Card";
 import { Valor } from "@/components/ui/Valor";
 
@@ -114,10 +108,6 @@ interface CategoriaDrilldownChartProps {
 const LIMITE_FATIAS = 8;
 
 export function CategoriaDrilldownChart({ dados, tipo, ano, mes }: CategoriaDrilldownChartProps) {
-  const escuro = useDarkMode();
-  const paleta = escuro ? CATEGORICAL_PALETTE_DARK : CATEGORICAL_PALETTE_LIGHT;
-  const corOutros = escuro ? OUTROS_COR_DARK : OUTROS_COR_LIGHT;
-
   const [pilha, setPilha] = useState<Nivel[]>([{ tipo: "raiz" }]);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<{
     id: string | null;
@@ -144,7 +134,7 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes }: CategoriaDril
   const totalOutros = resto.reduce((soma, d) => soma + d.total, 0);
 
   const fatias = [
-    ...principais.map((d, i) => ({ ...d, cor: paleta[i] })),
+    ...principais.map((d, i) => ({ ...d, cor: CATEGORICAL_PALETTE[i % CATEGORICAL_PALETTE.length] })),
     ...(totalOutros > 0
       ? [
           {
@@ -152,11 +142,11 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes }: CategoriaDril
             nome: "Outros",
             total: totalOutros,
             folha: false,
-            cor: corOutros,
+            cor: OUTROS_COR,
           } satisfies ItemGrafico & { cor: string },
         ]
       : []),
-    ...(semCategoria ? [{ ...semCategoria, cor: corOutros }] : []),
+    ...(semCategoria ? [{ ...semCategoria, cor: OUTROS_COR }] : []),
   ];
 
   const totalGeral = fatias.reduce((soma, f) => soma + f.total, 0);
@@ -199,9 +189,9 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes }: CategoriaDril
     <div>
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
-          <h3 className="font-display text-sm font-semibold text-ink dark:text-paper">{titulo}</h3>
+          <h3 className="font-display text-sm font-semibold text-foreground">{titulo}</h3>
           {caminho && (
-            <p className="text-xs text-ink/50 dark:text-paper/50">{caminho}</p>
+            <p className="text-xs text-muted-foreground">{caminho}</p>
           )}
         </div>
         {podeVoltar && (
@@ -209,14 +199,14 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes }: CategoriaDril
             <button
               type="button"
               onClick={voltar}
-              className="rounded-md border border-line px-2 py-1 text-xs text-ink/70 hover:bg-ink/5 dark:border-line-night dark:text-paper/70 dark:hover:bg-white/5"
+              className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
             >
               ← Voltar
             </button>
             <button
               type="button"
               onClick={resetar}
-              className="rounded-md border border-line px-2 py-1 text-xs text-ink/70 hover:bg-ink/5 dark:border-line-night dark:text-paper/70 dark:hover:bg-white/5"
+              className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
             >
               Resetar
             </button>
@@ -225,7 +215,7 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes }: CategoriaDril
       </div>
 
       {itens.length === 0 ? (
-        <p className="py-8 text-center text-sm text-ink/50 dark:text-paper/50">
+        <p className="py-8 text-center text-sm text-muted-foreground">
           {tipo === "DESPESA" ? "Nenhuma despesa registrada." : "Nenhuma receita registrada."}
         </p>
       ) : (
@@ -252,12 +242,12 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes }: CategoriaDril
               />
             </PieChart>
           </ResponsiveContainer>
-          <ul className="mt-2 space-y-1 text-xs text-ink/70 dark:text-paper/70">
+          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
             {fatias.map((f) => (
               <li
                 key={f.chave}
                 onClick={() => aoClicarItem(f)}
-                className="flex cursor-pointer items-center justify-between gap-2 rounded px-1 py-0.5 hover:bg-ink/5 dark:hover:bg-white/5"
+                className="flex cursor-pointer items-center justify-between gap-2 rounded px-1 py-0.5 hover:bg-muted"
               >
                 <span className="flex items-center gap-1.5 truncate">
                   <span
@@ -267,7 +257,7 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes }: CategoriaDril
                   <span className="truncate">{f.nome}</span>
                   {!f.folha && <span aria-hidden>›</span>}
                 </span>
-                <span className="shrink-0 font-mono tabular-nums">
+                <span className="shrink-0 num">
                   {formatarMoeda(f.total)} ({((f.total / totalGeral) * 100).toFixed(0)}%)
                 </span>
               </li>
@@ -321,19 +311,19 @@ function TransacoesDaCategoria({
   });
 
   return (
-    <div className="mt-4 border-t border-line pt-3 dark:border-line-night">
-      <h4 className="mb-2 text-xs font-semibold tracking-wide text-ink/50 uppercase dark:text-paper/50">
+    <div className="mt-4 border-t border-border pt-3">
+      <h4 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         Transações · {categoriaNome}
       </h4>
       {isLoading ? (
-        <p className="text-sm text-ink/50 dark:text-paper/50">Carregando...</p>
+        <p className="text-sm text-muted-foreground">Carregando...</p>
       ) : transacoes.length === 0 ? (
-        <p className="text-sm text-ink/50 dark:text-paper/50">Nenhuma transação encontrada.</p>
+        <p className="text-sm text-muted-foreground">Nenhuma transação encontrada.</p>
       ) : (
-        <ul className={`divide-y divide-line dark:divide-line-night ${cardClassName}`}>
+        <ul className={`divide-y divide-border ${cardClassName}`}>
           {transacoes.map((t) => (
             <li key={t.id} className="flex items-center justify-between px-3 py-2 text-sm">
-              <span className="text-ink/80 dark:text-paper/80">
+              <span className="text-muted-foreground">
                 {formatarData(t.data)} · {t.descricao}
               </span>
               <Valor valor={t.valor} />

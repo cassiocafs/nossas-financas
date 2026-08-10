@@ -62,12 +62,12 @@ export function Navbar() {
   const email = session?.user.email ?? "";
 
   return (
-    <header className="flex shrink-0 flex-col gap-3 bg-marca-escura px-4 py-3 text-paper sm:flex-row sm:items-center sm:gap-5 sm:px-6">
+    <header className="flex shrink-0 flex-col gap-3 bg-primary px-4 py-3 text-primary-foreground sm:flex-row sm:items-center sm:gap-5 sm:px-6">
       <div className="flex shrink-0 items-center gap-2.5">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-marca text-sm font-semibold text-white">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-foreground/15 text-sm font-semibold text-primary-foreground">
           N
         </span>
-        <p className="font-display text-base leading-tight font-semibold text-paper">
+        <p className="font-display text-base leading-tight font-semibold text-primary-foreground">
           Nossas Finanças
         </p>
       </div>
@@ -81,8 +81,8 @@ export function Navbar() {
             className={({ isActive }) =>
               `flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-white/10 text-white"
-                  : "text-paper/55 hover:bg-white/5 hover:text-paper/90"
+                  ? "bg-primary-foreground/15 text-primary-foreground"
+                  : "text-primary-foreground/55 hover:bg-primary-foreground/10 hover:text-primary-foreground/90"
               }`
             }
           >
@@ -92,11 +92,11 @@ export function Navbar() {
         ))}
       </nav>
 
-      <div className="flex shrink-0 items-center gap-2.5 border-t border-white/10 pt-3 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-paper/80">
+      <div className="flex shrink-0 items-center gap-2.5 border-t border-primary-foreground/10 pt-3 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15 text-xs font-semibold text-primary-foreground/80">
           {email ? email.charAt(0).toUpperCase() : "?"}
         </span>
-        <span className="min-w-0 max-w-[10rem] truncate text-xs text-paper/55">
+        <span className="min-w-0 max-w-[10rem] truncate text-xs text-primary-foreground/55">
           {email}
         </span>
         <button
@@ -104,7 +104,7 @@ export function Navbar() {
           onClick={() => signOut()}
           aria-label="Sair"
           title="Sair"
-          className="shrink-0 rounded-md p-1.5 text-paper/50 transition-colors hover:bg-white/10 hover:text-paper"
+          className="shrink-0 rounded-lg p-1.5 text-primary-foreground/50 transition-colors hover:bg-primary-foreground/15 hover:text-primary-foreground"
         >
           <IconLogout className="h-4 w-4" />
         </button>

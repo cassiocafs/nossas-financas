@@ -7,7 +7,9 @@
     "icon": "./assets/images/icon.png",
     "scheme": "nossasfinancas",
     "userInterfaceStyle": "automatic",
+    "owner": "cassiocafs",
     "android": {
+      "package": "com.nossasfinancas.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -15,6 +17,9 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
+    },
+    "ios": {
+      "bundleIdentifier": "com.nossasfinancas.app"
     },
     "web": {
       "output": "static",
@@ -35,6 +40,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a7031a62-c9e5-4ff5-94a7-f8d4cdcc8577"
+      }
     }
   }
 }

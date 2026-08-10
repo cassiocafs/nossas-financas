@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { criarOrcamento, excluirOrcamento, listarAnosOrcamento } from "@/api/orcamento";
+import { excluirOrcamento, listarAnosOrcamento } from "@/api/orcamento";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Button } from "@/components/ui/Button";
+import { NovoOrcamentoModal } from "@/components/orcamento/NovoOrcamentoModal";
 
 interface AnoSelectorProps {
   orcamentoId: string | null;
@@ -13,20 +14,12 @@ export function AnoSelector({ orcamentoId, onSelecionar }: AnoSelectorProps) {
   const queryClient = useQueryClient();
   const [criandoAno, setCriandoAno] = useState(false);
   const [novoAno, setNovoAno] = useState(new Date().getFullYear());
+  const [modalNovoOrcamentoAberto, setModalNovoOrcamentoAberto] = useState(false);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
 
   const { data: anos = [] } = useQuery({
     queryKey: ["orcamento", "anos"],
     queryFn: listarAnosOrcamento,
-  });
-
-  const criarMutation = useMutation({
-    mutationFn: () => criarOrcamento(novoAno),
-    onSuccess: (orcamento) => {
-      queryClient.invalidateQueries({ queryKey: ["orcamento", "anos"] });
-      onSelecionar(orcamento.id);
-      setCriandoAno(false);
-    },
   });
 
   const excluirMutation = useMutation({
@@ -42,7 +35,7 @@ export function AnoSelector({ orcamentoId, onSelecionar }: AnoSelectorProps) {
       <select
         value={orcamentoId ?? ""}
         onChange={(e) => onSelecionar(e.target.value)}
-        className="rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:text-paper"
+        className="rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
       >
         <option value="" disabled>
           Selecione um ano
@@ -60,15 +53,13 @@ export function AnoSelector({ orcamentoId, onSelecionar }: AnoSelectorProps) {
             type="number"
             value={novoAno}
             onChange={(e) => setNovoAno(Number(e.target.value))}
-            className="w-24 rounded-md border border-line bg-transparent px-2 py-2 text-sm text-ink dark:border-line-night dark:text-paper"
+            className="w-24 rounded-md border border-input bg-background px-2 py-2 text-sm text-foreground"
           />
-          <Button onClick={() => criarMutation.mutate()} disabled={criarMutation.isPending}>
-            Criar
-          </Button>
+          <Button onClick={() => setModalNovoOrcamentoAberto(true)}>Continuar</Button>
           <button
             type="button"
             onClick={() => setCriandoAno(false)}
-            className="text-sm text-ink/60 underline dark:text-paper/60"
+            className="text-sm text-muted-foreground underline"
           >
             Cancelar
           </button>
@@ -77,7 +68,7 @@ export function AnoSelector({ orcamentoId, onSelecionar }: AnoSelectorProps) {
         <button
           type="button"
           onClick={() => setCriandoAno(true)}
-          className="rounded-md border border-line px-3 py-2 text-sm text-ink/80 dark:border-line-night dark:text-paper/80"
+          className="rounded-md border border-input px-3 py-2 text-sm text-foreground/80"
         >
           Novo orçamento
         </button>
@@ -87,17 +78,23 @@ export function AnoSelector({ orcamentoId, onSelecionar }: AnoSelectorProps) {
         <button
           type="button"
           onClick={() => setConfirmandoExclusao(true)}
-          className="text-sm text-vermelho underline dark:text-vermelho-night"
+          className="text-sm text-destructive underline"
         >
           Excluir orçamento
         </button>
       )}
 
-      {criarMutation.isError && (
-        <p className="text-sm text-vermelho dark:text-vermelho-night">
-          {criarMutation.error instanceof Error ? criarMutation.error.message : "Erro"}
-        </p>
-      )}
+      <NovoOrcamentoModal
+        open={modalNovoOrcamentoAberto}
+        ano={novoAno}
+        onClose={() => setModalNovoOrcamentoAberto(false)}
+        onCriado={(id) => {
+          queryClient.invalidateQueries({ queryKey: ["orcamento", "anos"] });
+          onSelecionar(id);
+          setModalNovoOrcamentoAberto(false);
+          setCriandoAno(false);
+        }}
+      />
 
       <ConfirmDialog
         open={confirmandoExclusao}

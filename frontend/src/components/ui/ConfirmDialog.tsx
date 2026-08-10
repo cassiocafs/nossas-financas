@@ -27,7 +27,7 @@ export function ConfirmDialog({
   return (
     <Modal open={open} onClose={onClose} title={title} closable={!confirmando}>
       <div className="space-y-4">
-        <div className="text-sm text-ink/70 dark:text-paper/70">
+        <div className="text-sm text-foreground/70">
           {children}
         </div>
         {confirmando && <ProgressBar label="Aguarde, processando..." />}

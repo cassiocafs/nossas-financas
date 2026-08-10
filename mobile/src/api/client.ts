@@ -11,6 +11,13 @@ export class ApiError extends Error {
   }
 }
 
+export class NetworkError extends Error {
+  constructor(message = 'Sem conexão com a internet. Verifique sua rede e tente novamente.') {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const {
     data: { session },
@@ -24,7 +31,12 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     headers.set('Authorization', `Bearer ${session.access_token}`);
   }
 
-  const res = await fetch(`${baseUrl}${path}`, { ...options, headers });
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}${path}`, { ...options, headers });
+  } catch {
+    throw new NetworkError();
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));

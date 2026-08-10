@@ -100,7 +100,7 @@ export function ExcluirContaDialog({ open, onClose, conta }: ExcluirContaDialogP
             <select
               value={contaDestinoId}
               onChange={(e) => setContaDestinoId(e.target.value)}
-              className="w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:text-paper"
+              className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
             >
               <option value="">Selecione a conta de destino</option>
               {outrasContas.map((c) => (

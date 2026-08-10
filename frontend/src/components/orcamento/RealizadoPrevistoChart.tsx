@@ -10,17 +10,15 @@ import {
 } from "recharts";
 import type { PontoSerie } from "@/api/orcamento";
 import { formatarMoeda } from "@/lib/format";
-import { useDarkMode } from "@/lib/useDarkMode";
 
 interface RealizadoPrevistoChartProps {
   serie: PontoSerie[];
 }
 
 export function RealizadoPrevistoChart({ serie }: RealizadoPrevistoChartProps) {
-  const escuro = useDarkMode();
-  const corRealizado = escuro ? "#4d9fff" : "#0066cc";
-  const corGrid = escuro ? "#262626" : "#e5e5e5";
-  const corEixo = "#8c8c8c";
+  const corRealizado = "var(--color-primary)";
+  const corGrid = "var(--color-border)";
+  const corEixo = "var(--color-muted-foreground)";
 
   return (
     <ResponsiveContainer width="100%" height={200}>

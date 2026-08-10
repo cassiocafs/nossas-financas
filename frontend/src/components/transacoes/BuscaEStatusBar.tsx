@@ -25,21 +25,19 @@ export function BuscaEStatusBar({
           onChange={(e) => setRascunhoBusca(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onTextoChange(rascunhoBusca)}
           placeholder="Buscar transações..."
-          className="w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:text-paper"
+          className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
         />
         <button
           type="button"
           onClick={() => onTextoChange(rascunhoBusca)}
-          className="shrink-0 rounded-md border border-line px-3 py-2 text-sm text-ink/80 dark:border-line-night dark:text-paper/80"
+          className="shrink-0 rounded-xl border border-input px-3 py-2 text-sm text-foreground/80"
         >
           Buscar
         </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <span className="font-mono text-xs tracking-widest text-ink/50 uppercase dark:text-paper/50">
-          Status
-        </span>
+        <span className="text-xs tracking-widest text-muted-foreground uppercase">Status</span>
         {(
           [
             ["todas", "Todas"],
@@ -47,12 +45,12 @@ export function BuscaEStatusBar({
             ["pendentes", "Não consolidadas"],
           ] as const
         ).map(([valor, label]) => (
-          <label key={valor} className="flex items-center gap-1.5 text-ink/80 dark:text-paper/80">
+          <label key={valor} className="flex items-center gap-1.5 text-foreground/80">
             <input
               type="radio"
               checked={status === valor}
               onChange={() => onStatusChange(valor)}
-              className="accent-marca"
+              className="accent-primary"
             />
             {label}
           </label>

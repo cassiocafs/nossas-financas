@@ -3,26 +3,35 @@ import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 import { Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+export type ThemedTextType =
+  | 'display'
+  | 'title'
+  | 'subtitle'
+  | 'default'
+  | 'small'
+  | 'smallBold'
+  | 'caption'
+  | 'link'
+  | 'linkPrimary'
+  | 'code';
+
 export type ThemedTextProps = TextProps & {
-  type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';
+  type?: ThemedTextType;
   themeColor?: ThemeColor;
+  /** Aplica algarismos tabulares — usar em qualquer valor monetário. */
+  numeric?: boolean;
 };
 
-export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
+export function ThemedText({ style, type = 'default', themeColor, numeric, ...rest }: ThemedTextProps) {
   const theme = useTheme();
+  const color = theme[themeColor ?? (type === 'linkPrimary' ? 'primary' : 'text')];
 
   return (
     <Text
       style={[
-        { color: theme[themeColor ?? 'text'] },
-        type === 'default' && styles.default,
-        type === 'title' && styles.title,
-        type === 'small' && styles.small,
-        type === 'smallBold' && styles.smallBold,
-        type === 'subtitle' && styles.subtitle,
-        type === 'link' && styles.link,
-        type === 'linkPrimary' && styles.linkPrimary,
-        type === 'code' && styles.code,
+        { color },
+        styles[type],
+        numeric && styles.numeric,
         style,
       ]}
       {...rest}
@@ -31,43 +40,63 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
 }
 
 const styles = StyleSheet.create({
-  small: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 500,
+  display: {
+    fontSize: 36,
+    lineHeight: 42,
+    fontWeight: '700',
+    letterSpacing: -0.4,
   },
-  smallBold: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 700,
+  title: {
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 19,
+    lineHeight: 25,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   default: {
     fontSize: 16,
-    lineHeight: 24,
-    fontWeight: 500,
+    lineHeight: 22,
+    fontWeight: '500',
   },
-  title: {
-    fontSize: 48,
-    fontWeight: 600,
-    lineHeight: 52,
+  small: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
   },
-  subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
+  smallBold: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '700',
+  },
+  caption: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   link: {
-    lineHeight: 30,
     fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
   },
   linkPrimary: {
-    lineHeight: 30,
     fontSize: 14,
-    color: '#3c87f7',
+    lineHeight: 20,
+    fontWeight: '600',
   },
   code: {
     fontFamily: Fonts.mono,
-    fontWeight: Platform.select({ android: 700 }) ?? 500,
+    fontWeight: Platform.select({ android: '700' }) ?? '500',
     fontSize: 12,
+  },
+  numeric: {
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.2,
   },
 });

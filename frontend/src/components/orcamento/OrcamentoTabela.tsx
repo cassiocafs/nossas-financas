@@ -93,11 +93,18 @@ function LinhaCategoria({
   bloqueado: boolean;
 }) {
   const { categoriaNome, previsto, realizado, estourado } = linha;
-  const percentualBarra = previsto > 0 ? Math.min((realizado / previsto) * 100, 100) : realizado > 0 ? 100 : 0;
+  const excedente = Math.max(realizado - previsto, 0);
+  const percentualBarra = estourado
+    ? (previsto / realizado) * 100
+    : previsto > 0
+      ? (realizado / previsto) * 100
+      : realizado > 0
+        ? 100
+        : 0;
+  const percentualExcedente = estourado ? (excedente / realizado) * 100 : 0;
   const percentualExibido = previsto > 0 ? Math.round((realizado / previsto) * 100) : realizado > 0 ? 100 : 0;
 
-  const corValor = estourado ? "text-vermelho dark:text-vermelho-night" : "text-ink dark:text-paper";
-  const corBarra = estourado ? "bg-vermelho dark:bg-vermelho-night" : "bg-verde dark:bg-verde-night";
+  const corValor = estourado ? "text-expense" : "text-foreground";
 
   return (
     <li className={`group flex items-center gap-3 py-1.5 transition-opacity ${removendo ? "opacity-50" : ""}`}>
@@ -105,20 +112,29 @@ function LinhaCategoria({
         type="button"
         onClick={onEditar}
         disabled={bloqueado}
-        className="w-28 shrink-0 truncate text-left text-sm font-medium text-ink hover:text-marca disabled:cursor-not-allowed disabled:hover:text-ink dark:text-paper dark:hover:text-marca-night dark:disabled:hover:text-paper sm:w-40"
+        className="w-28 shrink-0 truncate text-left text-sm font-medium text-foreground hover:text-primary disabled:cursor-not-allowed disabled:hover:text-foreground sm:w-40"
       >
         {categoriaNome}
       </button>
 
       <div className="min-w-0 flex-1">
-        <div className="relative h-6 overflow-hidden rounded-full bg-ink/10 dark:bg-white/10">
+        <div className="relative h-6 overflow-hidden rounded-full bg-foreground/10">
           <div
-            className={`absolute inset-y-0 left-0 rounded-full transition-[width] duration-300 ease-out ${corBarra}`}
+            className={`absolute inset-y-0 left-0 rounded-l-full bg-black transition-[width] duration-300 ease-out ${
+              estourado ? "" : "rounded-r-full"
+            }`}
             style={{ width: `${percentualBarra}%` }}
           />
+          {estourado && (
+            <div
+              className="absolute inset-y-0 rounded-r-full bg-expense/70 transition-[width] duration-300 ease-out"
+              style={{ left: `${percentualBarra}%`, width: `${percentualExcedente}%` }}
+            />
+          )}
           <span
-            className="absolute inset-0 flex items-center justify-center font-mono text-xs font-semibold text-white tabular-nums"
-            style={{ mixBlendMode: "difference" }}
+            className={`num absolute inset-0 flex items-center justify-center text-xs font-semibold ${
+              percentualBarra + percentualExcedente > 50 ? "text-white" : "text-foreground"
+            }`}
           >
             {percentualExibido}%
           </span>
@@ -128,12 +144,12 @@ function LinhaCategoria({
       <div className="flex shrink-0 items-center gap-1.5">
         {estourado && (
           <span title={`Estourou o previsto em ${formatarMoeda(realizado - previsto)}`}>
-            <IconAlert className="h-3.5 w-3.5 text-vermelho dark:text-vermelho-night" />
+            <IconAlert className="h-3.5 w-3.5 text-expense" />
           </span>
         )}
-        <span className="font-mono text-xs tabular-nums whitespace-nowrap">
+        <span className="num text-xs whitespace-nowrap">
           <span className={corValor}>{formatarMoeda(realizado)}</span>
-          <span className="text-ink/30 dark:text-paper/30"> / {formatarMoeda(previsto)}</span>
+          <span className="text-foreground/30"> / {formatarMoeda(previsto)}</span>
         </span>
       </div>
 
@@ -143,7 +159,7 @@ function LinhaCategoria({
         }`}
       >
         {removendo ? (
-          <span className="p-0.5 text-ink/40 dark:text-paper/40" aria-label="Removendo...">
+          <span className="p-0.5 text-foreground/40" aria-label="Removendo...">
             <IconSpinner className="h-3.5 w-3.5" />
           </span>
         ) : (
@@ -153,7 +169,7 @@ function LinhaCategoria({
               onClick={onEditar}
               disabled={bloqueado}
               aria-label={`Editar ${categoriaNome}`}
-              className="rounded p-0.5 text-ink/35 hover:!text-marca disabled:cursor-not-allowed disabled:hover:!text-ink/35 dark:text-paper/35 dark:hover:!text-marca-night"
+              className="rounded p-0.5 text-foreground/35 hover:!text-primary disabled:cursor-not-allowed disabled:hover:!text-foreground/35"
             >
               <IconPencil className="h-3.5 w-3.5" />
             </button>
@@ -162,7 +178,7 @@ function LinhaCategoria({
               onClick={onRemover}
               disabled={bloqueado}
               aria-label={`Remover ${categoriaNome} do orçamento`}
-              className="rounded p-0.5 text-ink/35 hover:!text-vermelho disabled:cursor-not-allowed disabled:hover:!text-ink/35 dark:text-paper/35 dark:hover:!text-vermelho-night"
+              className="rounded p-0.5 text-foreground/35 hover:!text-destructive disabled:cursor-not-allowed disabled:hover:!text-foreground/35"
             >
               <IconTrash className="h-3.5 w-3.5" />
             </button>
@@ -189,9 +205,9 @@ export function OrcamentoTabela({ orcamentoId, mes, grupos, onEditarCategoria }:
 
   if (grupos.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-line px-6 py-14 text-center dark:border-line-night">
-        <IconInbox className="h-7 w-7 text-ink/20 dark:text-paper/20" />
-        <p className="max-w-xs text-sm text-ink/50 dark:text-paper/50">
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border px-6 py-14 text-center">
+        <IconInbox className="h-7 w-7 text-foreground/20" />
+        <p className="max-w-xs text-sm text-muted-foreground">
           Nenhuma categoria no orçamento de {MESES[mes - 1]}. Clique em "Adicionar categoria" para definir
           quanto pretende gastar.
         </p>
@@ -201,7 +217,7 @@ export function OrcamentoTabela({ orcamentoId, mes, grupos, onEditarCategoria }:
 
   function renderLista(categorias: CategoriaGrade[]) {
     return (
-      <ul className="divide-y divide-line dark:divide-line-night">
+      <ul className="divide-y divide-border">
         {categorias.map((c) => (
           <LinhaCategoria
             key={c.categoriaId}
@@ -218,12 +234,10 @@ export function OrcamentoTabela({ orcamentoId, mes, grupos, onEditarCategoria }:
 
   function renderSubgrupo(sub: SubgrupoGrade) {
     return (
-      <div key={sub.subgrupoId} className="mt-2.5 border-l-2 border-marca/20 pl-3 dark:border-marca-night/25">
+      <div key={sub.subgrupoId} className="mt-2.5 border-l-2 border-primary/20 pl-3">
         <div className="mb-0.5 flex items-baseline justify-between gap-3">
-          <span className="font-display text-xs font-medium text-marca dark:text-marca-night">
-            {sub.subgrupoNome}
-          </span>
-          <span className="shrink-0 font-mono text-[11px] tabular-nums text-ink/40 dark:text-paper/40">
+          <span className="text-xs font-medium text-primary">{sub.subgrupoNome}</span>
+          <span className="num shrink-0 text-[11px] text-muted-foreground">
             {formatarMoeda(sub.subtotalRealizado)} / {formatarMoeda(sub.subtotalPrevisto)}
           </span>
         </div>
@@ -238,15 +252,15 @@ export function OrcamentoTabela({ orcamentoId, mes, grupos, onEditarCategoria }:
         const estouradoGrupo = grupo.subtotalRealizado > grupo.subtotalPrevisto;
         return (
           <Card key={grupo.grupoId ?? "sem-grupo"} className="p-3 sm:p-4">
-            <div className="mb-0.5 flex items-baseline justify-between gap-3 border-b border-line pb-2 dark:border-line-night">
-              <h3 className="font-mono text-xs font-semibold tracking-widest text-ink uppercase dark:text-paper">
+            <div className="mb-0.5 flex items-baseline justify-between gap-3 border-b border-border pb-2">
+              <h3 className="text-xs font-semibold tracking-widest text-foreground uppercase">
                 {grupo.grupoNome}
               </h3>
-              <div className="shrink-0 font-mono text-xs tabular-nums">
-                <span className={estouradoGrupo ? "text-vermelho dark:text-vermelho-night" : "text-ink/70 dark:text-paper/70"}>
+              <div className="num shrink-0 text-xs">
+                <span className={estouradoGrupo ? "text-expense" : "text-foreground/70"}>
                   {formatarMoeda(grupo.subtotalRealizado)}
                 </span>
-                <span className="text-ink/30 dark:text-paper/30"> / {formatarMoeda(grupo.subtotalPrevisto)}</span>
+                <span className="text-foreground/30"> / {formatarMoeda(grupo.subtotalPrevisto)}</span>
               </div>
             </div>
             {grupo.categorias.length > 0 && renderLista(grupo.categorias)}

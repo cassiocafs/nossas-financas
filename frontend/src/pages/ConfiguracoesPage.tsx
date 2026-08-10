@@ -9,20 +9,18 @@ const tabs = [
 export function ConfiguracoesPage() {
   return (
     <div className="space-y-8">
-      <h1 className="font-display text-3xl font-semibold text-ink dark:text-paper">
-        Configurações
-      </h1>
+      <h1 className="text-3xl font-semibold text-foreground">Configurações</h1>
 
-      <nav className="flex gap-1 border-b border-line dark:border-line-night">
+      <nav className="flex gap-1 border-b border-border">
         {tabs.map((tab) => (
           <NavLink
             key={tab.to}
             to={tab.to}
             className={({ isActive }) =>
-              `border-b-2 px-3 py-2 font-mono text-xs tracking-wide uppercase transition-colors ${
+              `border-b-2 px-3 py-2 text-xs tracking-wide uppercase transition-colors ${
                 isActive
-                  ? "border-marca text-ink dark:text-paper"
-                  : "border-transparent text-ink/50 hover:text-ink dark:text-paper/50 dark:hover:text-paper"
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`
             }
           >

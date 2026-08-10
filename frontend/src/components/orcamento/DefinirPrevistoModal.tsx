@@ -70,7 +70,7 @@ export function DefinirPrevistoModal({
       <fieldset disabled={mutation.isPending} className="space-y-4">
         {!categoriaIdInicial && (
           <div>
-            <label className="block text-sm font-medium text-ink/80 dark:text-paper/80">
+            <label className="block text-sm font-medium text-foreground/80">
               Categoria
             </label>
             <CategoriaAutocomplete value={categoriaId} onChange={setCategoriaId} />
@@ -83,7 +83,7 @@ export function DefinirPrevistoModal({
               type="radio"
               checked={modo === "mesmoValorTodosMeses"}
               onChange={() => setModo("mesmoValorTodosMeses")}
-              className="accent-ink dark:accent-paper"
+              className="accent-primary"
             />
             Aplicar o mesmo valor a todos os meses
           </label>
@@ -92,7 +92,7 @@ export function DefinirPrevistoModal({
               type="radio"
               checked={modo === "porMes"}
               onChange={() => setModo("porMes")}
-              className="accent-ink dark:accent-paper"
+              className="accent-primary"
             />
             Definir um valor específico por mês
           </label>
@@ -104,7 +104,7 @@ export function DefinirPrevistoModal({
           <div className="grid grid-cols-3 gap-2">
             {MESES_ABREV.map((label, i) => (
               <div key={label}>
-                <label className="block text-xs text-ink/50 dark:text-paper/50">{label}</label>
+                <label className="block text-xs text-muted-foreground">{label}</label>
                 <CurrencyInput
                   value={valoresPorMes[i]}
                   onChange={(v) =>
@@ -117,7 +117,7 @@ export function DefinirPrevistoModal({
         )}
 
         {mutation.isError && (
-          <p className="text-sm text-vermelho dark:text-vermelho-night">
+          <p className="text-sm text-destructive">
             {mutation.error instanceof Error ? mutation.error.message : "Erro ao salvar"}
           </p>
         )}

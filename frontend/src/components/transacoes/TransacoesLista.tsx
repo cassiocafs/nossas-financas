@@ -1,11 +1,42 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { editarTransacao, type DiaTransacoes } from "@/api/transacoes";
+import { editarTransacao, type DiaTransacoes, type TipoTransacao } from "@/api/transacoes";
 import { formatarData } from "@/lib/format";
 import { Valor } from "@/components/ui/Valor";
 import { Card } from "@/components/ui/Card";
 import { TransacaoFormInline } from "./TransacaoFormInline";
 
-const COLUNAS = "grid-cols-[auto_1fr_140px_160px_140px]";
+const COLUNAS = "grid-cols-[auto_auto_1fr_140px_160px_140px]";
+
+const TIPO_TONE: Record<TipoTransacao, string> = {
+  RECEITA: "bg-income-soft text-income",
+  DESPESA: "bg-expense-soft text-expense",
+  TRANSFERENCIA: "bg-transfer-soft text-transfer",
+};
+
+export function TypeIcon({ tipo }: { tipo: TipoTransacao }) {
+  return (
+    <span className={`grid size-7 shrink-0 place-items-center rounded-lg ${TIPO_TONE[tipo]}`}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="size-3.5" aria-hidden="true">
+        {tipo === "RECEITA" ? (
+          <>
+            <path d="M17 7 7 17" />
+            <path d="M17 17H7V7" />
+          </>
+        ) : tipo === "DESPESA" ? (
+          <>
+            <path d="M7 17 17 7" />
+            <path d="M7 7h10v10" />
+          </>
+        ) : (
+          <>
+            <path d="M4 7h13l-3-3" />
+            <path d="M20 17H7l3 3" />
+          </>
+        )}
+      </svg>
+    </span>
+  );
+}
 
 interface TransacoesListaProps {
   dias: DiaTransacoes[];
@@ -38,7 +69,7 @@ export function TransacoesLista({
 
   if (dias.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-ink/50 dark:text-paper/50">
+      <p className="py-8 text-center text-sm text-muted-foreground">
         Nenhuma transação neste período.
       </p>
     );
@@ -48,8 +79,9 @@ export function TransacoesLista({
     <div className="space-y-4">
       <div
         style={{ top: headerOffset }}
-        className={`sticky z-10 hidden ${COLUNAS} items-center gap-3 bg-paper px-4 py-2 text-xs font-medium uppercase tracking-wide text-ink/40 sm:grid dark:bg-paper-night dark:text-paper/40`}
+        className={`sticky z-10 hidden ${COLUNAS} items-center gap-3 bg-background px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:grid`}
       >
+        <span />
         <span />
         <span>Descrição</span>
         <span>Conta</span>
@@ -58,13 +90,11 @@ export function TransacoesLista({
       </div>
 
       {dias.map((dia) => (
-        <Card key={dia.data} className="overflow-hidden">
-          <div className="flex items-center justify-between bg-ink/5 px-4 py-2 text-sm dark:bg-white/5">
-            <span className="font-medium text-ink/80 dark:text-paper/80">
-              {formatarData(dia.data)}
-            </span>
+        <Card key={dia.data}>
+          <div className="flex items-center justify-between rounded-t-2xl bg-muted px-4 py-2 text-sm">
+            <span className="font-medium text-foreground/80">{formatarData(dia.data)}</span>
           </div>
-          <ul className="divide-y divide-line dark:divide-line-night">
+          <ul className="divide-y divide-border">
             {dia.transacoes.map((t) =>
               editandoId === t.id ? (
                 <li key={t.id}>
@@ -78,7 +108,7 @@ export function TransacoesLista({
                 <li
                   key={t.id}
                   onClick={() => !desabilitada && onEdit(t.id)}
-                  className={`grid ${COLUNAS} items-center gap-3 px-4 py-2 text-sm hover:bg-ink/5 dark:hover:bg-white/5 ${
+                  className={`grid ${COLUNAS} items-center gap-3 px-4 py-2 text-sm hover:bg-muted ${
                     desabilitada ? "cursor-not-allowed opacity-50" : "cursor-pointer"
                   }`}
                 >
@@ -88,31 +118,30 @@ export function TransacoesLista({
                     onChange={() => onToggleSelect(t.id)}
                     onClick={(e) => e.stopPropagation()}
                     disabled={desabilitada}
-                    className="accent-ink disabled:cursor-not-allowed disabled:opacity-50 dark:accent-paper"
+                    className="accent-primary disabled:cursor-not-allowed disabled:opacity-50"
                   />
+                  <TypeIcon tipo={t.tipo} />
                   <span className="flex min-w-0 items-center gap-2">
                     <span
-                      className={`truncate text-ink dark:text-paper ${
-                        t.consolidado ? "" : "font-bold"
-                      }`}
+                      className={`truncate text-foreground ${t.consolidado ? "" : "font-bold"}`}
                     >
                       {t.descricao}
                     </span>
                     {t.tipo === "TRANSFERENCIA" && (
-                      <span className="shrink-0 border border-line px-1.5 py-0.5 font-mono text-xs text-ink/70 dark:border-line-night dark:text-paper/70">
+                      <span className="shrink-0 rounded-md border border-border bg-transfer-soft px-1.5 py-0.5 text-xs text-transfer">
                         Transferência
                       </span>
                     )}
                   </span>
                   <span
-                    className={`truncate text-xs text-ink/50 dark:text-paper/50 ${
+                    className={`truncate text-xs text-muted-foreground ${
                       t.consolidado ? "" : "font-bold"
                     }`}
                   >
                     {t.conta.nome}
                   </span>
                   <span
-                    className={`truncate text-xs text-ink/50 dark:text-paper/50 ${
+                    className={`truncate text-xs text-muted-foreground ${
                       t.consolidado ? "" : "font-bold"
                     }`}
                   >
@@ -134,8 +163,8 @@ export function TransacoesLista({
                       disabled={desabilitada || consolidarMutation.isPending}
                       className={`ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                         t.consolidado
-                          ? "border-ink bg-ink text-paper dark:border-paper dark:bg-paper dark:text-paper-night"
-                          : "border-line text-transparent hover:border-ink/40 dark:border-line-night dark:hover:border-paper/40"
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border text-transparent hover:border-foreground/40"
                       }`}
                     >
                       <svg viewBox="0 0 20 20" fill="currentColor" className="h-2.5 w-2.5" aria-hidden="true">
@@ -151,8 +180,8 @@ export function TransacoesLista({
               ),
             )}
           </ul>
-          <div className="flex items-center justify-end bg-ink/5 px-4 py-2 text-sm dark:bg-white/5">
-            <span className="text-ink/50 dark:text-paper/50">
+          <div className="flex items-center justify-end rounded-b-2xl bg-muted px-4 py-2 text-sm">
+            <span className="text-muted-foreground">
               Saldo do dia: <Valor valor={dia.saldoDia} neutro />
             </span>
           </div>

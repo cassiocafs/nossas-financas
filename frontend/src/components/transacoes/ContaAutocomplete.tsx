@@ -69,24 +69,24 @@ export function ContaAutocomplete({
           setBusca(e.target.value);
         }}
         placeholder={placeholder}
-        className="w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:bg-transparent dark:text-paper"
+        className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
       />
       {aberto && !disabled && (
-        <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border border-line bg-surface py-1 shadow-sm dark:border-line-night dark:bg-surface-night">
+        <ul className="card-surface absolute z-20 mt-1 max-h-64 w-full overflow-auto py-1">
           {contasFiltradas.map((c) => (
             <li key={c.id}>
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => selecionar(c.id)}
-                className="block w-full px-3 py-1.5 text-left text-sm text-ink hover:bg-ink/5 dark:text-paper dark:hover:bg-white/5"
+                className="block w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted"
               >
                 {c.nome}
               </button>
             </li>
           ))}
           {contasFiltradas.length === 0 && (
-            <li className="px-3 py-1.5 text-sm text-ink/50 dark:text-paper/50">
+            <li className="px-3 py-1.5 text-sm text-muted-foreground">
               Nenhuma conta encontrada
             </li>
           )}

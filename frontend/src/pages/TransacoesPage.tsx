@@ -40,6 +40,16 @@ export function TransacoesPage() {
   const { data: contas = [] } = useQuery({ queryKey: ["contas"], queryFn: () => listarContas(true) });
 
   useEffect(() => {
+    if (searchParams.get("novo") === "1") {
+      setCriando(true);
+      const proximos = new URLSearchParams(searchParams);
+      proximos.delete("novo");
+      setSearchParams(proximos, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     if (contas.length > 0 && contaIds.length === 0) {
       setContaIds(contas.map((c) => c.id));
     }
@@ -97,16 +107,16 @@ export function TransacoesPage() {
     <div className="space-y-4">
       <div
         ref={topoRef}
-        className="sticky top-0 z-20 -mx-4 -mt-4 space-y-4 bg-paper px-4 pb-4 sm:-mx-6 sm:-mt-6 sm:px-6 lg:-mx-8 lg:-mt-8 lg:px-8 dark:bg-paper-night"
+        className="sticky top-0 z-20 -mx-4 -mt-4 space-y-4 bg-background px-4 pb-4 sm:-mx-6 sm:-mt-6 sm:px-6 lg:-mx-8 lg:-mt-8 lg:px-8"
       >
         <div className="flex flex-wrap items-center justify-between gap-3 pt-4 sm:pt-6 lg:pt-8">
-          <h1 className="font-display text-2xl font-semibold text-ink dark:text-paper">Transações</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Transações</h1>
           <div className="flex items-center gap-4">
             <MesNavigator ano={ano} mes={mes} onChange={mudarMes} />
             <button
               type="button"
               onClick={() => mudarMes(padrao.ano, padrao.mes)}
-              className="rounded-md border border-line px-2 py-1 text-sm text-ink/70 hover:bg-ink/5 dark:border-line-night dark:text-paper/70 dark:hover:bg-white/5"
+              className="rounded-xl border border-border px-2 py-1 text-sm text-foreground/70 hover:bg-muted"
             >
               Hoje
             </button>
@@ -118,23 +128,23 @@ export function TransacoesPage() {
 
         {data && (
           <Card className="flex flex-wrap gap-6 px-4 py-3 text-sm">
-            <span className="text-ink/60 dark:text-paper/60">
+            <span className="text-muted-foreground">
               Saldo anterior: <Valor valor={data.saldoAnterior} neutro className="font-medium" />
             </span>
-            <span className="text-ink/60 dark:text-paper/60">
+            <span className="text-muted-foreground">
               Entradas: <Valor valor={data.totalEntradas} className="font-medium" />
             </span>
-            <span className="text-ink/60 dark:text-paper/60">
+            <span className="text-muted-foreground">
               Saídas: <Valor valor={-Math.abs(data.totalSaidas)} className="font-medium" />
             </span>
-            <span className="text-ink/60 dark:text-paper/60">
+            <span className="text-muted-foreground">
               Saldo final: <Valor valor={data.saldoFinal} className="font-medium" />
             </span>
           </Card>
         )}
 
         {mensagemSucesso && (
-          <div className="relative flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-10 py-2.5 text-sm font-bold text-emerald-700 shadow-sm dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+          <div className="relative flex items-center justify-center rounded-xl border border-income/20 bg-income-soft px-10 py-2.5 text-sm font-bold text-income shadow-soft">
             <span className="flex items-center gap-2">
               <svg
                 viewBox="0 0 20 20"
@@ -154,7 +164,7 @@ export function TransacoesPage() {
               type="button"
               onClick={fecharMensagemSucesso}
               aria-label="Fechar mensagem"
-              className="absolute right-3 rounded p-1 text-emerald-700/60 hover:text-emerald-700 dark:text-emerald-300/60 dark:hover:text-emerald-300"
+              className="absolute right-3 rounded p-1 text-income/60 hover:text-income"
             >
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
                 <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
@@ -195,6 +205,7 @@ export function TransacoesPage() {
         <div className="flex-1 space-y-4">
           {criando && (
             <TransacaoFormInline
+              contaIdPadrao={contaIds.length === 1 ? contaIds[0] : undefined}
               onSaved={() => {
                 setCriando(false);
                 mostrarMensagemSucesso("Transação criada com sucesso");
@@ -204,7 +215,7 @@ export function TransacoesPage() {
           )}
 
           {isLoading ? (
-            <p className="font-mono text-sm text-ink/50 dark:text-paper/50">Carregando...</p>
+            <p className="text-sm text-muted-foreground">Carregando...</p>
           ) : (
             <TransacoesLista
               dias={data?.dias ?? []}

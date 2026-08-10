@@ -60,13 +60,13 @@ export function AcoesLoteBar({
   if (selectedIds.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3 text-sm dark:border-line-night dark:bg-surface-night">
+    <div className="card-surface flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
       {excluindo ? (
-        <span className="flex items-center gap-2 font-medium text-ink dark:text-paper">
+        <span className="flex items-center gap-2 font-medium text-foreground">
           <svg
             viewBox="0 0 24 24"
             fill="none"
-            className="h-4 w-4 animate-spin text-ink/60 dark:text-paper/60"
+            className="h-4 w-4 animate-spin text-foreground/60"
             aria-hidden="true"
           >
             <circle
@@ -87,15 +87,13 @@ export function AcoesLoteBar({
           Excluindo {selectedIds.length} transação(ões)...
         </span>
       ) : (
-        <span className="font-medium text-ink dark:text-paper">
-          {selectedIds.length} selecionada(s)
-        </span>
+        <span className="font-medium text-foreground">{selectedIds.length} selecionada(s)</span>
       )}
       <button
         type="button"
         disabled={excluindo}
         onClick={() => consolidarMutation.mutate(true)}
-        className="rounded-md border border-line px-3 py-1 text-ink/80 disabled:cursor-not-allowed disabled:opacity-50 dark:border-line-night dark:text-paper/80"
+        className="rounded-xl border border-input px-3 py-1 text-foreground/80 disabled:cursor-not-allowed disabled:opacity-50"
       >
         Consolidar
       </button>
@@ -103,7 +101,7 @@ export function AcoesLoteBar({
         type="button"
         disabled={excluindo}
         onClick={() => consolidarMutation.mutate(false)}
-        className="rounded-md border border-line px-3 py-1 text-ink/80 disabled:cursor-not-allowed disabled:opacity-50 dark:border-line-night dark:text-paper/80"
+        className="rounded-xl border border-input px-3 py-1 text-foreground/80 disabled:cursor-not-allowed disabled:opacity-50"
       >
         Desmarcar consolidação
       </button>
@@ -119,7 +117,7 @@ export function AcoesLoteBar({
           type="button"
           disabled={categorizarMutation.isPending || excluindo}
           onClick={() => categorizarMutation.mutate()}
-          className="rounded-md border border-line px-3 py-1 text-ink/80 disabled:cursor-not-allowed disabled:opacity-50 dark:border-line-night dark:text-paper/80"
+          className="rounded-xl border border-input px-3 py-1 text-foreground/80 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Alterar categoria
         </button>
@@ -128,7 +126,7 @@ export function AcoesLoteBar({
         type="button"
         disabled={excluindo}
         onClick={() => setConfirmandoExclusao(true)}
-        className="rounded-md border border-vermelho/40 px-3 py-1 text-vermelho hover:bg-vermelho/10 disabled:cursor-not-allowed disabled:opacity-50 dark:border-vermelho-night/40 dark:text-vermelho-night"
+        className="rounded-xl border border-destructive/40 px-3 py-1 text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
       >
         Excluir
       </button>

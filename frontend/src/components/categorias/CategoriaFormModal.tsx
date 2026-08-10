@@ -143,27 +143,27 @@ export function CategoriaFormModal({ open, onClose, categoria }: CategoriaFormMo
         className="space-y-4"
       >
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-ink/80 dark:text-paper/80">
+          <label className="block text-sm font-medium text-foreground/80">
             Nome
           </label>
           <input
             {...register("nome")}
-            className="w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:text-paper"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
           />
           {errors.nome && (
-            <p className="text-sm text-vermelho dark:text-vermelho-night">{errors.nome.message}</p>
+            <p className="text-sm text-destructive">{errors.nome.message}</p>
           )}
         </div>
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-ink/80 dark:text-paper/80">
+          <label className="block text-sm font-medium text-foreground/80">
             Grupo
           </label>
           <select
             {...register("grupoSelecionado", {
               onChange: () => setValue("subgrupoSelecionado", ""),
             })}
-            className="w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:text-paper"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
           >
             <option value="">Sem grupo</option>
             {gruposQuery.data?.grupos.map((g) => (
@@ -177,19 +177,19 @@ export function CategoriaFormModal({ open, onClose, categoria }: CategoriaFormMo
             <input
               {...register("novoGrupoNome")}
               placeholder="Nome do novo grupo"
-              className="mt-2 w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:text-paper"
+              className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
             />
           )}
         </div>
 
         {grupoSelecionado !== "" && grupoSelecionado !== NOVO_GRUPO && (
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-ink/80 dark:text-paper/80">
+            <label className="block text-sm font-medium text-foreground/80">
               Subgrupo
             </label>
             <select
               {...register("subgrupoSelecionado")}
-              className="w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:text-paper"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
             >
               <option value="">Sem subgrupo</option>
               {subgruposDoGrupo.map((s) => (
@@ -203,19 +203,19 @@ export function CategoriaFormModal({ open, onClose, categoria }: CategoriaFormMo
               <input
                 {...register("novoSubgrupoNome")}
                 placeholder="Nome do novo subgrupo"
-                className="mt-2 w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:text-paper"
+                className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
               />
             )}
           </div>
         )}
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-ink/80 dark:text-paper/80">
+          <label className="block text-sm font-medium text-foreground/80">
             Tipo
           </label>
           <select
             {...register("tipo")}
-            className="w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:text-paper"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
           >
             <option value="AMBOS">Ambos</option>
             <option value="DESPESA">Despesa</option>
@@ -225,20 +225,20 @@ export function CategoriaFormModal({ open, onClose, categoria }: CategoriaFormMo
 
         {editando && (
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-ink/80 dark:text-paper/80">
+            <label className="block text-sm font-medium text-foreground/80">
               Palavras-chave (categorização automática)
             </label>
             <div className="flex flex-wrap gap-2">
               {categoria!.regras.map((regra) => (
                 <span
                   key={regra.id}
-                  className="flex items-center gap-1 border border-line px-3 py-1 text-xs text-ink dark:border-line-night dark:text-paper"
+                  className="flex items-center gap-1 border border-input px-3 py-1 text-xs text-foreground"
                 >
                   {regra.palavraChave}
                   <button
                     type="button"
                     onClick={() => removerRegraMutation.mutate(regra.id)}
-                    className="text-ink/40 hover:text-vermelho dark:text-paper/40 dark:hover:text-vermelho-night"
+                    className="text-foreground/40 hover:text-destructive"
                   >
                     ✕
                   </button>
@@ -256,14 +256,14 @@ export function CategoriaFormModal({ open, onClose, categoria }: CategoriaFormMo
                   }
                 }}
                 placeholder="Adicionar palavra-chave e pressionar Enter"
-                className="flex-1 rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:text-paper"
+                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
               />
             </div>
           </div>
         )}
 
         {mutation.isError && (
-          <p className="text-sm text-vermelho dark:text-vermelho-night">
+          <p className="text-sm text-destructive">
             {mutation.error instanceof Error ? mutation.error.message : "Erro ao salvar"}
           </p>
         )}

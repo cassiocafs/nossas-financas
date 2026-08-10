@@ -29,31 +29,31 @@ export function OrcamentoResumoCard({ ano, mes }: OrcamentoResumoCardProps) {
   return (
     <Card className="p-4">
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="font-display text-sm font-semibold text-ink dark:text-paper">
+        <h3 className="text-sm font-semibold text-foreground">
           Orçamento do mês
         </h3>
-        <Link to="/orcamento" className="text-xs text-ink/50 hover:underline dark:text-paper/50">
+        <Link to="/orcamento" className="text-xs text-muted-foreground hover:underline">
           ver tudo
         </Link>
       </div>
 
       {carregandoAnos ? (
-        <p className="text-sm text-ink/50 dark:text-paper/50">Carregando...</p>
+        <p className="text-sm text-muted-foreground">Carregando...</p>
       ) : !orcamentoAtual ? (
-        <p className="text-sm text-ink/50 dark:text-paper/50">
+        <p className="text-sm text-muted-foreground">
           Nenhum orçamento criado para {ano}.{" "}
           <Link to="/orcamento" className="underline">
             Criar orçamento
           </Link>
         </p>
       ) : carregandoGrade || !grade ? (
-        <p className="text-sm text-ink/50 dark:text-paper/50">Carregando...</p>
+        <p className="text-sm text-muted-foreground">Carregando...</p>
       ) : (
         <>
           <div className="flex gap-6 text-sm">
             <span>
               Previsto:{" "}
-              <strong className="text-ink dark:text-paper">
+              <strong className="text-foreground">
                 {formatarMoeda(grade.totalPrevisto)}
               </strong>
             </span>
@@ -62,8 +62,8 @@ export function OrcamentoResumoCard({ ano, mes }: OrcamentoResumoCardProps) {
               <strong
                 className={
                   grade.totalRealizado > grade.totalPrevisto
-                    ? "text-vermelho dark:text-vermelho-night"
-                    : "text-ink dark:text-paper"
+                    ? "text-expense"
+                    : "text-foreground"
                 }
               >
                 {formatarMoeda(grade.totalRealizado)}
@@ -72,14 +72,14 @@ export function OrcamentoResumoCard({ ano, mes }: OrcamentoResumoCardProps) {
           </div>
 
           {categoriasEstouradas.length > 0 && (
-            <ul className="mt-3 space-y-1 border-t border-line pt-3 text-xs dark:border-line-night">
+            <ul className="mt-3 space-y-1 border-t border-border pt-3 text-xs">
               {categoriasEstouradas.slice(0, 5).map((c) => (
                 <li
                   key={c.categoriaId}
-                  className="flex justify-between text-vermelho dark:text-vermelho-night"
+                  className="flex justify-between text-expense"
                 >
                   <span>{c.categoriaNome}</span>
-                  <span className="font-mono tabular-nums">
+                  <span className="num">
                     {formatarMoeda(c.realizado)} / {formatarMoeda(c.previsto)}
                   </span>
                 </li>

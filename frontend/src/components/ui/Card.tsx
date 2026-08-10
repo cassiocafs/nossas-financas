@@ -1,7 +1,6 @@
 import type { HTMLAttributes } from "react";
 
-export const cardClassName =
-  "rounded-lg border border-line bg-surface shadow-sm dark:border-line-night dark:bg-surface-night";
+export const cardClassName = "card-surface";
 
 export function Card({
   className = "",

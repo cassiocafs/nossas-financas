@@ -91,16 +91,16 @@ export function CategoriaAutocomplete({ value, onChange, disabled }: CategoriaAu
           setBusca(e.target.value);
         }}
         placeholder="Buscar categoria..."
-        className="w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink dark:border-line-night dark:bg-transparent dark:text-paper"
+        className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
       />
       {aberto && !disabled && (
-        <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border border-line bg-surface py-1 shadow-sm dark:border-line-night dark:bg-surface-night">
+        <ul className="card-surface absolute z-20 mt-1 max-h-64 w-full overflow-auto py-1">
           <li>
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => selecionar("")}
-              className="block w-full px-3 py-1.5 text-left text-sm text-ink hover:bg-ink/5 dark:text-paper dark:hover:bg-white/5"
+              className="block w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted"
             >
               Sem Categoria
             </button>
@@ -111,11 +111,11 @@ export function CategoriaAutocomplete({ value, onChange, disabled }: CategoriaAu
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => selecionar(item.id)}
-                className="block w-full px-3 py-1.5 text-left text-sm text-ink hover:bg-ink/5 dark:text-paper dark:hover:bg-white/5"
+                className="block w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted"
               >
                 <span className="block">{item.nome}</span>
                 {(item.grupoNome || item.subgrupoNome) && (
-                  <span className="block text-xs text-ink/50 dark:text-paper/50">
+                  <span className="block text-xs text-muted-foreground">
                     {[item.grupoNome, item.subgrupoNome].filter(Boolean).join(" · ")}
                   </span>
                 )}
@@ -123,7 +123,7 @@ export function CategoriaAutocomplete({ value, onChange, disabled }: CategoriaAu
             </li>
           ))}
           {itensFiltrados.length === 0 && (
-            <li className="px-3 py-1.5 text-sm text-ink/50 dark:text-paper/50">
+            <li className="px-3 py-1.5 text-sm text-muted-foreground">
               Nenhuma categoria encontrada
             </li>
           )}
