@@ -68,6 +68,15 @@ export function buscarGradeOrcamento(id: string, mes: number): Promise<GradeOrca
   return apiFetch<GradeOrcamento>(`/api/orcamento/${id}/itens?mes=${mes}`);
 }
 
+export function buscarGradeOrcamentoPorAno(
+  ano: number,
+  mes: number,
+): Promise<(GradeOrcamento & { orcamentoId: string }) | null> {
+  return apiFetch<(GradeOrcamento & { orcamentoId: string }) | null>(
+    `/api/orcamento/grade?ano=${ano}&mes=${mes}`,
+  );
+}
+
 export function definirPrevisto(id: string, input: DefinirPrevistoInput): Promise<void> {
   return apiFetch<void>(`/api/orcamento/${id}/itens`, {
     method: "POST",

@@ -1,20 +1,20 @@
 import { Feather } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listarContas } from '@/api/contas';
-import { listarTransacoesMes, type DiaTransacoes, type StatusFiltro, type Transacao } from '@/api/transacoes';
+import { listarTransacoesMes, type StatusFiltro, type Transacao } from '@/api/transacoes';
 import { AcoesLoteBar } from '@/components/transacoes/AcoesLoteBar';
-import { FiltrosModal } from '@/components/transacoes/FiltrosModal';
+import { FiltrosModal, type FiltrosAplicados } from '@/components/transacoes/FiltrosModal';
 import { MesNavigator } from '@/components/transacoes/MesNavigator';
 import { TransacaoFormModal } from '@/components/transacoes/TransacaoFormModal';
 import { TransacaoItem } from '@/components/transacoes/TransacaoItem';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Card } from '@/components/ui/Card';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { formatarDataCurta, formatarValor } from '@/lib/format';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -26,12 +26,20 @@ function hoje() {
 export default function TransacoesScreen() {
   const theme = useTheme();
   const padrao = hoje();
+  const params = useLocalSearchParams<{ contaId?: string; ano?: string; mes?: string }>();
+  const contaIdParam = Array.isArray(params.contaId) ? params.contaId[0] : params.contaId;
+  const anoParam = Array.isArray(params.ano) ? params.ano[0] : params.ano;
+  const mesParam = Array.isArray(params.mes) ? params.mes[0] : params.mes;
+  const contaIdParamAplicado = useRef<string | undefined>(undefined);
+  const periodoParamAplicado = useRef<string | undefined>(undefined);
 
   const [ano, setAno] = useState(padrao.ano);
   const [mes, setMes] = useState(padrao.mes);
   const [status, setStatus] = useState<StatusFiltro>('todas');
   const [contaIds, setContaIds] = useState<string[]>([]);
   const [categoriaIds, setCategoriaIds] = useState<string[]>([]);
+  const [dataInicio, setDataInicio] = useState<string | null>(null);
+  const [dataFim, setDataFim] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
   const [criando, setCriando] = useState(false);
@@ -43,7 +51,28 @@ export default function TransacoesScreen() {
   });
 
   useEffect(() => {
-    if (contas.length > 0 && contaIds.length === 0) {
+    if (contaIdParam && contaIdParam !== contaIdParamAplicado.current) {
+      contaIdParamAplicado.current = contaIdParam;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- aplica filtro vindo da navegação (saldo por conta)
+      setContaIds([contaIdParam]);
+      setSelectedIds([]);
+    }
+  }, [contaIdParam]);
+
+  useEffect(() => {
+    if (!anoParam || !mesParam) return;
+    const chave = `${anoParam}-${mesParam}`;
+    if (chave !== periodoParamAplicado.current) {
+      periodoParamAplicado.current = chave;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- aplica mês vindo da navegação (saldo por conta)
+      setAno(Number(anoParam));
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- aplica mês vindo da navegação (saldo por conta)
+      setMes(Number(mesParam));
+    }
+  }, [anoParam, mesParam]);
+
+  useEffect(() => {
+    if (contas.length > 0 && contaIds.length === 0 && !contaIdParam) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- seleciona todas as contas apenas na primeira carga
       setContaIds(contas.map((c) => c.id));
     }
@@ -51,7 +80,7 @@ export default function TransacoesScreen() {
   }, [contas]);
 
   const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['transacoes', { ano, mes, contaIds, categoriaIds, status }],
+    queryKey: ['transacoes', { ano, mes, contaIds, categoriaIds, status, dataInicio, dataFim }],
     queryFn: () =>
       listarTransacoesMes({
         ano,
@@ -59,6 +88,8 @@ export default function TransacoesScreen() {
         contaIds: contaIds.length > 0 ? contaIds : undefined,
         categoriaIds: categoriaIds.length > 0 ? categoriaIds : undefined,
         status,
+        dataInicio: dataInicio ?? undefined,
+        dataFim: dataFim ?? undefined,
       }),
     enabled: contaIds.length > 0,
   });
@@ -67,6 +98,16 @@ export default function TransacoesScreen() {
     setAno(novoAno);
     setMes(novoMes);
     setSelectedIds([]);
+    setDataInicio(null);
+    setDataFim(null);
+  }
+
+  function aplicarFiltros(filtros: FiltrosAplicados) {
+    setStatus(filtros.status);
+    setContaIds(filtros.contaIds);
+    setCategoriaIds(filtros.categoriaIds);
+    setDataInicio(filtros.dataInicio);
+    setDataFim(filtros.dataFim);
   }
 
   function toggleSelect(id: string) {
@@ -89,6 +130,29 @@ export default function TransacoesScreen() {
 
   const dias = data?.dias ?? [];
 
+  type ItemLista =
+    | { tipo: 'cabecalho'; key: string; data: string; saldoDia: number }
+    | { tipo: 'transacao'; key: string; transacao: Transacao };
+
+  const itensLista = useMemo<ItemLista[]>(
+    () =>
+      (data?.dias ?? []).flatMap((dia) => [
+        { tipo: 'cabecalho' as const, key: `cabecalho-${dia.data}`, data: dia.data, saldoDia: dia.saldoDia },
+        ...dia.transacoes.map((transacao) => ({
+          tipo: 'transacao' as const,
+          key: transacao.id,
+          transacao,
+        })),
+      ]),
+    [data?.dias],
+  );
+
+  const filtrosAtivos =
+    status !== 'todas' ||
+    categoriaIds.length > 0 ||
+    (contas.length > 0 && contaIds.length < contas.length) ||
+    Boolean(dataInicio || dataFim);
+
   return (
     <ThemedView type="background" style={styles.container}>
       <SafeAreaView edges={['bottom']} style={styles.safeArea}>
@@ -98,54 +162,18 @@ export default function TransacoesScreen() {
             <ThemedView style={styles.topoAcoes}>
               <Pressable
                 onPress={() => setFiltrosVisiveis(true)}
-                style={[styles.botaoTopo, { borderColor: theme.border }]}>
+                style={[styles.botaoTopo, { borderColor: filtrosAtivos ? theme.primary : theme.border }]}>
                 <Feather name="sliders" size={14} color={theme.text} />
                 <ThemedText type="small">Filtros</ThemedText>
-              </Pressable>
-              <Pressable
-                onPress={() => setCriando(true)}
-                accessibilityLabel="Nova transação"
-                style={[styles.botaoTopo, styles.botaoAdicionar, { backgroundColor: theme.primary }]}>
-                <Feather name="plus" size={16} color={theme.primaryForeground} />
+                {filtrosAtivos && <ThemedView style={[styles.pontoFiltro, { backgroundColor: theme.primary }]} />}
               </Pressable>
             </ThemedView>
           </ThemedView>
 
           {data && (
-            <Card variant="flat" style={styles.resumo}>
-              <ThemedView style={styles.resumoItem}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Anterior
-                </ThemedText>
-                <ThemedText type="smallBold" numeric>
-                  {formatarValor(data.saldoAnterior)}
-                </ThemedText>
-              </ThemedView>
-              <ThemedView style={styles.resumoItem}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Entradas
-                </ThemedText>
-                <ThemedText type="smallBold" numeric themeColor="income">
-                  {formatarValor(data.totalEntradas)}
-                </ThemedText>
-              </ThemedView>
-              <ThemedView style={styles.resumoItem}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Saídas
-                </ThemedText>
-                <ThemedText type="smallBold" numeric themeColor="expense">
-                  {formatarValor(-Math.abs(data.totalSaidas))}
-                </ThemedText>
-              </ThemedView>
-              <ThemedView style={styles.resumoItem}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Final
-                </ThemedText>
-                <ThemedText type="smallBold" numeric>
-                  {formatarValor(data.saldoFinal)}
-                </ThemedText>
-              </ThemedView>
-            </Card>
+            <ThemedText type="small" themeColor="textSecondary">
+              Saldo anterior: {formatarValor(data.saldoAnterior)}
+            </ThemedText>
           )}
         </ThemedView>
 
@@ -158,48 +186,57 @@ export default function TransacoesScreen() {
         )}
 
         <FlatList
-          data={dias}
-          keyExtractor={(dia) => dia.data}
+          data={itensLista}
+          keyExtractor={(item) => item.key}
           contentContainerStyle={styles.lista}
           refreshControl={
             <RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={theme.primary} />
           }
-          renderItem={({ item: dia }: { item: DiaTransacoes }) => (
-            <ThemedView style={styles.diaBloco}>
+          renderItem={({ item }: { item: ItemLista }) =>
+            item.tipo === 'cabecalho' ? (
               <ThemedView style={styles.diaHeader}>
-                <ThemedText type="smallBold">{formatarDataCurta(dia.data)}</ThemedText>
+                <ThemedText type="smallBold">{formatarDataCurta(item.data)}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary" numeric>
-                  Saldo do dia: {formatarValor(dia.saldoDia)}
+                  Saldo do dia: {formatarValor(item.saldoDia)}
                 </ThemedText>
               </ThemedView>
-              <ThemedView style={styles.diaItens}>
-                {dia.transacoes.map((transacao) => (
-                  <TransacaoItem
-                    key={transacao.id}
-                    transacao={transacao}
-                    selecionado={selectedIds.includes(transacao.id)}
-                    modoSelecao={selectedIds.length > 0}
-                    onPress={() => aoPressionar(transacao)}
-                    onLongPress={() => aoSegurar(transacao)}
-                  />
-                ))}
-              </ThemedView>
-            </ThemedView>
-          )}
+            ) : (
+              <TransacaoItem
+                transacao={item.transacao}
+                selecionado={selectedIds.includes(item.transacao.id)}
+                modoSelecao={selectedIds.length > 0}
+                onPress={() => aoPressionar(item.transacao)}
+                onLongPress={() => aoSegurar(item.transacao)}
+              />
+            )
+          }
         />
 
         <AcoesLoteBar selectedIds={selectedIds} onDone={() => setSelectedIds([])} />
+
+        <Pressable
+          onPress={() => setCriando(true)}
+          accessibilityLabel="Nova transação"
+          style={(state) => [
+            styles.fab,
+            { backgroundColor: theme.primary, opacity: state.pressed ? 0.9 : 1 },
+            Shadow.lift,
+          ]}>
+          <Feather name="plus" size={26} color={theme.primaryForeground} />
+        </Pressable>
       </SafeAreaView>
 
       <FiltrosModal
         visible={filtrosVisiveis}
         onClose={() => setFiltrosVisiveis(false)}
+        ano={ano}
+        mes={mes}
         status={status}
-        onStatusChange={setStatus}
         contaIds={contaIds}
-        onContaIdsChange={setContaIds}
         categoriaIds={categoriaIds}
-        onCategoriaIdsChange={setCategoriaIds}
+        dataInicio={dataInicio}
+        dataFim={dataFim}
+        onAplicar={aplicarFiltros}
       />
 
       <TransacaoFormModal
@@ -233,22 +270,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
-  botaoAdicionar: {
-    borderWidth: 0,
-    paddingHorizontal: Spacing.three,
-    minWidth: 36,
+  pontoFiltro: { width: 6, height: 6, borderRadius: 3 },
+  fab: {
+    position: 'absolute',
+    right: Spacing.four,
+    bottom: Spacing.four,
+    width: 56,
+    height: 56,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  resumo: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.three,
-  },
-  resumoItem: { gap: 2 },
   centro: { marginTop: Spacing.five },
-  lista: { padding: Spacing.three, gap: Spacing.three, flexGrow: 1 },
-  diaBloco: { gap: Spacing.two },
+  lista: { padding: Spacing.three, gap: Spacing.two, flexGrow: 1 },
   diaHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  diaItens: { gap: Spacing.two },
 });

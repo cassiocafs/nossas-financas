@@ -8,6 +8,7 @@ import { categoriasRouter } from "./modules/categorias/categorias.routes.js";
 import { transacoesRouter } from "./modules/transacoes/transacoes.routes.js";
 import { orcamentoRouter } from "./modules/orcamento/orcamento.routes.js";
 import { importacaoRouter } from "./modules/importacao/importacao.routes.js";
+import { regrasRouter } from "./modules/regras/regras.routes.js";
 
 export function createApp() {
   const app = express();
@@ -25,6 +26,7 @@ export function createApp() {
   app.use("/api/transacoes", transacoesRouter);
   app.use("/api/orcamento", orcamentoRouter);
   app.use("/api/importacoes", importacaoRouter);
+  app.use("/api/regras", regrasRouter);
 
   app.use(errorHandler);
 

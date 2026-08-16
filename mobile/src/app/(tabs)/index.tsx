@@ -7,9 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { buscarResumoMensal } from '@/api/transacoes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { RelatorioCategoriaCard } from '@/components/home/RelatorioCategoriaCard';
-import { ResumoMesCard } from '@/components/home/ResumoMesCard';
 import { SaldoPorContasCard } from '@/components/home/SaldoPorContasCard';
+import { SaldoTotalCard } from '@/components/home/SaldoTotalCard';
 import { MesNavigator } from '@/components/transacoes/MesNavigator';
 import { TransacaoFormModal } from '@/components/transacoes/TransacaoFormModal';
 import { StatCard } from '@/components/ui/StatCard';
@@ -63,26 +62,14 @@ export default function InicioScreen() {
             </ThemedText>
           ) : (
             <>
-              <ResumoMesCard saldoAnterior={data.saldoAnterior} saldoFinal={data.saldoFinal} />
+              <SaldoTotalCard />
 
               <ThemedView style={styles.statsRow}>
                 <StatCard label="Entradas" value={data.totalEntradas} tone="income" icon="arrow-down-left" />
                 <StatCard label="Saídas" value={-Math.abs(data.totalSaidas)} tone="expense" icon="arrow-up-right" />
               </ThemedView>
 
-              <SaldoPorContasCard />
-
-              <RelatorioCategoriaCard
-                titulo="Despesas por categoria"
-                dados={data.despesasPorCategoria}
-                tipo="expense"
-              />
-
-              <RelatorioCategoriaCard
-                titulo="Receitas por categoria"
-                dados={data.receitasPorCategoria}
-                tipo="income"
-              />
+              <SaldoPorContasCard ano={ano} mes={mes} />
             </>
           )}
         </ScrollView>

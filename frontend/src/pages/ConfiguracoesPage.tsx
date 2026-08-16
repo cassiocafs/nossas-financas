@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router";
 const tabs = [
   { to: "contas", label: "Configurar Contas" },
   { to: "categorias", label: "Configurar categorias" },
+  { to: "regras", label: "Regras de inserção" },
   { to: "importacao", label: "Importação" },
 ];
 

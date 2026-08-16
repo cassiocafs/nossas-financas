@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listarContas } from "@/api/contas";
 import { sugerirCategoria } from "@/api/categorias";
+import { sugerirTransacao } from "@/api/regras";
 import {
   criarTransacao,
   criarTransferencia,
@@ -17,6 +18,24 @@ import { ContaAutocomplete } from "./ContaAutocomplete";
 
 function hojeISO(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+const CHAVE_ULTIMA_DATA = "nossas-financas:ultima-data-transacao";
+
+function obterUltimaDataUsada(): string {
+  try {
+    return localStorage.getItem(CHAVE_ULTIMA_DATA) ?? hojeISO();
+  } catch {
+    return hojeISO();
+  }
+}
+
+function salvarUltimaDataUsada(data: string) {
+  try {
+    localStorage.setItem(CHAVE_ULTIMA_DATA, data);
+  } catch {
+    // localStorage indisponível, ignora
+  }
 }
 
 interface TransacaoFormInlineProps {
@@ -46,11 +65,12 @@ export function TransacaoFormInline({
   );
 
   const [tipo, setTipo] = useState<TipoTransacao>(transacao?.tipo ?? "DESPESA");
-  const [data, setData] = useState(transacao?.data ?? hojeISO());
+  const [data, setData] = useState(transacao?.data ?? obterUltimaDataUsada());
   const [descricao, setDescricao] = useState(transacao?.descricao ?? "");
   const [contaId, setContaId] = useState(transacao?.contaId ?? contaIdPadrao ?? "");
   const [categoriaId, setCategoriaId] = useState(transacao?.categoriaId ?? "");
   const [categoriaTocada, setCategoriaTocada] = useState(editando);
+  const [contaTocada, setContaTocada] = useState(editando || !!contaIdPadrao);
   const [valor, setValor] = useState(transacao ? Math.abs(transacao.valor) : 0);
   const [consolidado, setConsolidado] = useState(transacao ? transacao.consolidado : true);
   const [nota, setNota] = useState(transacao?.nota ?? "");
@@ -60,15 +80,24 @@ export function TransacaoFormInline({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (isEdicaoTransferencia || tipo === "TRANSFERENCIA" || categoriaTocada) return;
+    if (isEdicaoTransferencia || tipo === "TRANSFERENCIA") return;
+    if (categoriaTocada && contaTocada) return;
     if (!descricao.trim()) return;
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       try {
-        const sugestao = await sugerirCategoria(descricao.trim());
-        if (sugestao.categoriaId && !categoriaTocada) {
-          setCategoriaId(sugestao.categoriaId);
+        const regra = await sugerirTransacao(descricao.trim());
+        if (regra.contaId && !contaTocada) {
+          setContaId(regra.contaId);
+        }
+        if (regra.categoriaId && !categoriaTocada) {
+          setCategoriaId(regra.categoriaId);
+        } else if (!regra.categoriaId && !categoriaTocada) {
+          const sugestao = await sugerirCategoria(descricao.trim());
+          if (sugestao.categoriaId && !categoriaTocada) {
+            setCategoriaId(sugestao.categoriaId);
+          }
         }
       } catch {
         // sugestão é best-effort, ignora falha
@@ -176,7 +205,10 @@ export function TransacaoFormInline({
         <input
           type="date"
           value={data}
-          onChange={(e) => setData(e.target.value)}
+          onChange={(e) => {
+            setData(e.target.value);
+            if (!editando) salvarUltimaDataUsada(e.target.value);
+          }}
           className={`w-[145px] shrink-0 ${campoClasse}`}
         />
 
@@ -237,7 +269,14 @@ export function TransacaoFormInline({
               />
             </div>
             <div className="w-[150px] shrink-0">
-              <ContaAutocomplete value={contaId} onChange={setContaId} contas={contas} />
+              <ContaAutocomplete
+                value={contaId}
+                onChange={(v) => {
+                  setContaId(v);
+                  setContaTocada(true);
+                }}
+                contas={contas}
+              />
             </div>
           </>
         )}

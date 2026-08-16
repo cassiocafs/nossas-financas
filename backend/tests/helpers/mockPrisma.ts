@@ -29,6 +29,7 @@ export const mockPrisma = {
   subgrupoCategoria: modelMock(),
   categoria: modelMock(),
   regraCategorizacao: modelMock(),
+  regraTransacao: modelMock(),
   transacao: modelMock(),
   orcamentoAnual: modelMock(),
   orcamentoCategoriaMes: modelMock(),

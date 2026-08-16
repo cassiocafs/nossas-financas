@@ -107,6 +107,48 @@ describe("transacoes.service — transferências", () => {
   });
 });
 
+describe("transacoes.service — aprendizado automático de regras", () => {
+  it("criarTransacao grava/atualiza a regra da descrição com a conta e categoria usadas", async () => {
+    mockPrisma.conta.findFirst.mockResolvedValue({ id: "conta-1" });
+    mockPrisma.categoria.findFirst.mockResolvedValue({ id: "categoria-1" });
+    mockPrisma.transacao.create.mockResolvedValue({
+      id: "t-1",
+      tipo: "DESPESA",
+      data: new Date("2026-07-10T00:00:00.000Z"),
+      descricao: "Uber",
+      contaId: "conta-1",
+      categoriaId: "categoria-1",
+      valor: -50,
+      consolidado: false,
+      nota: null,
+      transferenciaGrupoId: null,
+      ...INCLUDE_PADRAO,
+    });
+
+    await transacoesService.criarTransacao(ESPACO_ID, {
+      tipo: "DESPESA",
+      data: new Date("2026-07-10T00:00:00.000Z"),
+      descricao: "Uber",
+      contaId: "conta-1",
+      categoriaId: "categoria-1",
+      valor: 50,
+      consolidado: false,
+    });
+
+    expect(mockPrisma.regraTransacao.upsert).toHaveBeenCalledWith({
+      where: { espacoId_descricaoNormalizada: { espacoId: ESPACO_ID, descricaoNormalizada: "uber" } },
+      update: { descricao: "Uber", contaId: "conta-1", categoriaId: "categoria-1" },
+      create: {
+        espacoId: ESPACO_ID,
+        descricao: "Uber",
+        descricaoNormalizada: "uber",
+        contaId: "conta-1",
+        categoriaId: "categoria-1",
+      },
+    });
+  });
+});
+
 describe("transacoes.service — lote", () => {
   it("categorizarLote nunca recategoriza transações do tipo TRANSFERENCIA", async () => {
     mockPrisma.categoria.findFirst.mockResolvedValue({ id: "categoria-1" });

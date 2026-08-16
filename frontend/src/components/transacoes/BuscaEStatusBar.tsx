@@ -20,13 +20,27 @@ export function BuscaEStatusBar({
   return (
     <Card className="flex flex-wrap items-center gap-4 px-4 py-3 text-sm">
       <div className="flex min-w-[200px] flex-1 gap-2">
-        <input
-          value={rascunhoBusca}
-          onChange={(e) => setRascunhoBusca(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && onTextoChange(rascunhoBusca)}
-          placeholder="Buscar transações..."
-          className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
-        />
+        <div className="relative w-full">
+          <input
+            value={rascunhoBusca}
+            onChange={(e) => setRascunhoBusca(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && onTextoChange(rascunhoBusca)}
+            placeholder="Buscar transações..."
+            className="w-full rounded-xl border border-input bg-background px-3 py-2 pr-16 text-sm text-foreground"
+          />
+          {rascunhoBusca && (
+            <button
+              type="button"
+              onClick={() => {
+                setRascunhoBusca("");
+                onTextoChange("");
+              }}
+              className="absolute top-1/2 right-2 -translate-y-1/2 text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              Limpar
+            </button>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => onTextoChange(rascunhoBusca)}

@@ -23,8 +23,8 @@ transacoesRouter.use(authenticate, resolveEspaco);
 transacoesRouter.get(
   "/resumo",
   asyncHandler(async (req, res) => {
-    const { ano, mes } = resumoQuerySchema.parse(req.query);
-    const resumo = await transacoesService.buscarResumoMensal(req.espacoId!, ano, mes);
+    const { ano, mes, contaIds } = resumoQuerySchema.parse(req.query);
+    const resumo = await transacoesService.buscarResumoMensal(req.espacoId!, ano, mes, contaIds);
     res.json(resumo);
   }),
 );
@@ -32,11 +32,14 @@ transacoesRouter.get(
 transacoesRouter.get(
   "/evolucao-saldo",
   asyncHandler(async (req, res) => {
-    const { anoInicio, mesInicio, anoFim, mesFim } = evolucaoSaldoQuerySchema.parse(req.query);
+    const { anoInicio, mesInicio, anoFim, mesFim, contaIds } = evolucaoSaldoQuerySchema.parse(
+      req.query,
+    );
     const evolucao = await transacoesService.buscarEvolucaoSaldo(
       req.espacoId!,
       { ano: anoInicio, mes: mesInicio },
       { ano: anoFim, mes: mesFim },
+      contaIds,
     );
     res.json(evolucao);
   }),

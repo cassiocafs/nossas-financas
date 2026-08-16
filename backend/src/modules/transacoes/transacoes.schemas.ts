@@ -43,25 +43,30 @@ export const criarTransferenciaSchema = z
   });
 export type CriarTransferenciaInput = z.infer<typeof criarTransferenciaSchema>;
 
+const contaIdsSchema = z
+  .string()
+  .optional()
+  .transform((v) => (v ? v.split(",").filter(Boolean) : undefined));
+
 export const listarTransacoesQuerySchema = z.object({
   ano: z.coerce.number().int(),
   mes: z.coerce.number().int().min(1).max(12),
-  contaIds: z
-    .string()
-    .optional()
-    .transform((v) => (v ? v.split(",").filter(Boolean) : undefined)),
+  contaIds: contaIdsSchema,
   categoriaIds: z
     .string()
     .optional()
     .transform((v) => (v ? v.split(",").filter(Boolean) : undefined)),
   status: z.enum(["todas", "consolidadas", "pendentes"]).default("todas"),
   texto: z.string().trim().optional(),
+  dataInicio: dataSchema.optional(),
+  dataFim: dataSchema.optional(),
 });
 export type ListarTransacoesQuery = z.infer<typeof listarTransacoesQuerySchema>;
 
 export const resumoQuerySchema = z.object({
   ano: z.coerce.number().int(),
   mes: z.coerce.number().int().min(1).max(12),
+  contaIds: contaIdsSchema,
 });
 
 export const evolucaoSaldoQuerySchema = z
@@ -70,6 +75,7 @@ export const evolucaoSaldoQuerySchema = z
     mesInicio: z.coerce.number().int().min(1).max(12),
     anoFim: z.coerce.number().int(),
     mesFim: z.coerce.number().int().min(1).max(12),
+    contaIds: contaIdsSchema,
   })
   .refine((v) => v.anoInicio * 12 + v.mesInicio <= v.anoFim * 12 + v.mesFim, {
     message: "Início deve ser anterior ou igual ao fim",

@@ -1,25 +1,29 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/client';
 import { listarContas } from '@/api/contas';
-import { listarGrupos } from '@/api/categorias';
+import { sugerirTransacao } from '@/api/regras';
 import {
   criarTransacao,
+  criarTransferencia,
   editarTransacao,
   excluirTransacao,
   type Transacao,
 } from '@/api/transacoes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { CategoriaSelect } from '@/components/transacoes/CategoriaSelect';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
+import { DateField } from '@/components/ui/DateField';
+import { Select } from '@/components/ui/Select';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-type Tipo = 'DESPESA' | 'RECEITA';
+type Tipo = 'DESPESA' | 'RECEITA' | 'TRANSFERENCIA';
 
 function hojeISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -32,6 +36,16 @@ interface TransacaoFormModalProps {
   onSaved: () => void;
 }
 
+function CampoLabel({ children, obrigatorio, cor }: { children: string; obrigatorio?: boolean; cor: string }) {
+  return (
+    <ThemedText
+      type="smallBold"
+      style={obrigatorio ? { color: cor, textDecorationLine: 'underline' } : undefined}>
+      {children}
+    </ThemedText>
+  );
+}
+
 export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: TransacaoFormModalProps) {
   const theme = useTheme();
   const queryClient = useQueryClient();
@@ -42,61 +56,116 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
     queryKey: ['contas'],
     queryFn: () => listarContas(false),
   });
-  const { data: gruposData } = useQuery({
-    queryKey: ['categorias', 'grupos'],
-    queryFn: listarGrupos,
-  });
-
   const [tipo, setTipo] = useState<Tipo>('DESPESA');
   const [data, setData] = useState(hojeISO());
   const [descricao, setDescricao] = useState('');
   const [contaId, setContaId] = useState<string | null>(null);
+  const [contaOrigemId, setContaOrigemId] = useState<string | null>(null);
+  const [contaDestinoId, setContaDestinoId] = useState<string | null>(null);
   const [categoriaId, setCategoriaId] = useState<string | null>(null);
-  const [valor, setValor] = useState('');
+  const [valorCentavos, setValorCentavos] = useState<number | null>(null);
   const [consolidado, setConsolidado] = useState(true);
   const [nota, setNota] = useState('');
   const [erro, setErro] = useState<string | null>(null);
+  const [contaTocada, setContaTocada] = useState(false);
+  const [categoriaTocada, setCategoriaTocada] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!visible) return;
     if (transacao) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- reinicializa o formulário sempre que o modal abre ou a transação alvo muda
-      setTipo(transacao.tipo === 'RECEITA' ? 'RECEITA' : 'DESPESA');
+      setTipo(transacao.tipo === 'RECEITA' ? 'RECEITA' : transacao.tipo === 'TRANSFERENCIA' ? 'TRANSFERENCIA' : 'DESPESA');
       setData(transacao.data);
       setDescricao(transacao.descricao);
       setContaId(transacao.contaId);
+      setContaOrigemId(null);
+      setContaDestinoId(null);
       setCategoriaId(transacao.categoriaId);
-      setValor(String(Math.abs(transacao.valor)).replace('.', ','));
+      setValorCentavos(Math.round(Math.abs(transacao.valor) * 100));
       setConsolidado(transacao.consolidado);
       setNota(transacao.nota ?? '');
+      setContaTocada(true);
+      setCategoriaTocada(true);
+      setErro(null);
     } else {
-      setTipo('DESPESA');
-      setData(hojeISO());
-      setDescricao('');
-      setContaId(null);
-      setCategoriaId(null);
-      setValor('');
-      setConsolidado(true);
-      setNota('');
+      resetarFormulario();
     }
-    setErro(null);
   }, [visible, transacao]);
 
-  const contaSelecionada = contaId ?? contas[0]?.id ?? null;
-  const valorNumerico = Number(valor.replace(',', '.'));
+  function resetarFormulario() {
+    setTipo('DESPESA');
+    setData(hojeISO());
+    setDescricao('');
+    setContaId(null);
+    setContaOrigemId(null);
+    setContaDestinoId(null);
+    setCategoriaId(null);
+    setValorCentavos(null);
+    setConsolidado(true);
+    setNota('');
+    setContaTocada(false);
+    setCategoriaTocada(false);
+    setErro(null);
+  }
 
-  const categoriasLista = [
-    ...(gruposData?.grupos.flatMap((g) => [
-      ...g.categorias,
-      ...g.subgrupos.flatMap((s) => s.categorias),
-    ]) ?? []),
-    ...(gruposData?.semGrupo ?? []),
-  ];
+  useEffect(() => {
+    if (!visible || editando || tipo === 'TRANSFERENCIA') return;
+    if (contaTocada && categoriaTocada) return;
+    if (!descricao.trim()) return;
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const regra = await sugerirTransacao(descricao.trim());
+        if (regra.contaId && !contaTocada) {
+          setContaId(regra.contaId);
+        }
+        if (regra.categoriaId && !categoriaTocada) {
+          setCategoriaId(regra.categoriaId);
+        }
+      } catch {
+        // sugestão é best-effort, ignora falha
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [descricao, visible, editando, tipo]);
+
+  const contaSelecionada = contaId ?? contas[0]?.id ?? null;
+  const valorNumerico = (valorCentavos ?? 0) / 100;
+  const valorExibicao =
+    valorCentavos == null
+      ? ''
+      : (valorCentavos / 100).toLocaleString('pt-BR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+
+  function handleValorChange(texto: string) {
+    const digitos = texto.replace(/\D/g, '');
+    setValorCentavos(digitos ? parseInt(digitos, 10) : null);
+  }
 
   const salvarMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (opcao: 'fechar' | 'novo') => {
       if (isEdicaoTransferencia) {
         return editarTransacao(transacao!.id, { data, descricao, nota, consolidado });
+      }
+      if (tipo === 'TRANSFERENCIA') {
+        if (editando) await excluirTransacao(transacao!.id);
+        return criarTransferencia({
+          data,
+          descricao: descricao.trim() || undefined,
+          contaOrigemId: contaOrigemId!,
+          contaDestinoId: contaDestinoId!,
+          valor: valorNumerico,
+          consolidado,
+          nota: nota || undefined,
+        });
       }
       const payload = {
         tipo,
@@ -110,9 +179,13 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
       };
       return editando ? editarTransacao(transacao!.id, payload) : criarTransacao(payload);
     },
-    onSuccess: () => {
+    onSuccess: (_dados, opcao) => {
       queryClient.invalidateQueries({ queryKey: ['transacoes'] });
-      onSaved();
+      if (opcao === 'novo') {
+        resetarFormulario();
+      } else {
+        onSaved();
+      }
     },
     onError: (err) => {
       setErro(err instanceof ApiError ? err.message : 'Falha ao salvar transação');
@@ -137,14 +210,24 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
     ]);
   }
 
-  const podeSalvar =
-    isEdicaoTransferencia
-      ? descricao.trim().length > 0 && data.length > 0 && !salvarMutation.isPending
+  const podeSalvar = isEdicaoTransferencia
+    ? descricao.trim().length > 0 && data.length > 0 && !salvarMutation.isPending
+    : tipo === 'TRANSFERENCIA'
+      ? !!contaOrigemId &&
+        !!contaDestinoId &&
+        contaOrigemId !== contaDestinoId &&
+        valorNumerico > 0 &&
+        data.length > 0 &&
+        !salvarMutation.isPending
       : descricao.trim().length > 0 &&
         valorNumerico > 0 &&
         !!contaSelecionada &&
         data.length > 0 &&
         !salvarMutation.isPending;
+
+  const descricaoObrigatoria = isEdicaoTransferencia || tipo !== 'TRANSFERENCIA';
+  const contaObrigatoria = !isEdicaoTransferencia && tipo !== 'TRANSFERENCIA';
+  const contasTransferenciaObrigatorias = !isEdicaoTransferencia && tipo === 'TRANSFERENCIA';
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -173,10 +256,12 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
               <ThemedView style={styles.field}>
                 <ThemedText type="smallBold">Tipo</ThemedText>
                 <ThemedView style={styles.row}>
-                  {(['DESPESA', 'RECEITA'] as const).map((opcao) => (
+                  {(['DESPESA', 'RECEITA', 'TRANSFERENCIA'] as const).map((opcao) => (
                     <Chip
                       key={opcao}
-                      label={opcao === 'DESPESA' ? 'Despesa' : 'Receita'}
+                      label={
+                        opcao === 'DESPESA' ? 'Despesa' : opcao === 'RECEITA' ? 'Receita' : 'Transferência'
+                      }
                       selected={tipo === opcao}
                       onPress={() => setTipo(opcao)}
                     />
@@ -194,26 +279,37 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
               </ThemedView>
             )}
 
+            {!isEdicaoTransferencia && (
+              <ThemedView style={styles.field}>
+                <CampoLabel obrigatorio cor={theme.expense}>Valor</CampoLabel>
+                <TextInput
+                  value={valorExibicao}
+                  onChangeText={handleValorChange}
+                  placeholder="0,00"
+                  placeholderTextColor={theme.textTertiary}
+                  keyboardType="number-pad"
+                  selection={{ start: valorExibicao.length, end: valorExibicao.length }}
+                  style={[styles.input, { borderColor: theme.border, color: theme.text }]}
+                />
+              </ThemedView>
+            )}
+
             <ThemedView style={styles.field}>
               <ThemedView style={styles.rowSpaced}>
-                <ThemedText type="smallBold">Data</ThemedText>
+                <CampoLabel obrigatorio cor={theme.expense}>Data</CampoLabel>
                 <Pressable onPress={() => setData(hojeISO())}>
                   <ThemedText type="small" themeColor="textSecondary">
                     Hoje
                   </ThemedText>
                 </Pressable>
               </ThemedView>
-              <TextInput
-                value={data}
-                onChangeText={setData}
-                placeholder="AAAA-MM-DD"
-                placeholderTextColor={theme.textTertiary}
-                style={[styles.input, { borderColor: theme.border, color: theme.text }]}
-              />
+              <DateField value={data} onChange={setData} />
             </ThemedView>
 
             <ThemedView style={styles.field}>
-              <ThemedText type="smallBold">Descrição</ThemedText>
+              <CampoLabel obrigatorio={descricaoObrigatoria} cor={theme.expense}>
+                Descrição
+              </CampoLabel>
               <TextInput
                 value={descricao}
                 onChangeText={setDescricao}
@@ -223,51 +319,70 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
               />
             </ThemedView>
 
-            {!isEdicaoTransferencia && (
+            {!isEdicaoTransferencia && tipo !== 'TRANSFERENCIA' && (
               <ThemedView style={styles.field}>
-                <ThemedText type="smallBold">Valor</ThemedText>
-                <TextInput
-                  value={valor}
-                  onChangeText={setValor}
-                  placeholder="0,00"
-                  placeholderTextColor={theme.textTertiary}
-                  keyboardType="decimal-pad"
-                  style={[styles.input, { borderColor: theme.border, color: theme.text }]}
+                <ThemedText type="smallBold">Categoria</ThemedText>
+                <CategoriaSelect
+                  value={categoriaId}
+                  onChange={(v) => {
+                    setCategoriaId(v);
+                    setCategoriaTocada(true);
+                  }}
+                  title="Selecionar categoria"
+                  placeholder="Sem categoria"
+                  clearLabel="Sem categoria"
                 />
               </ThemedView>
             )}
 
-            {!isEdicaoTransferencia && (
+            {!isEdicaoTransferencia && tipo !== 'TRANSFERENCIA' && (
               <ThemedView style={styles.field}>
-                <ThemedText type="smallBold">Categoria</ThemedText>
-                <ThemedView style={styles.row}>
-                  <Chip label="Sem categoria" selected={!categoriaId} onPress={() => setCategoriaId(null)} />
-                  {categoriasLista.map((categoria) => (
-                    <Chip
-                      key={categoria.id}
-                      label={categoria.nome}
-                      selected={categoriaId === categoria.id}
-                      onPress={() => setCategoriaId(categoria.id)}
-                    />
-                  ))}
-                </ThemedView>
+                <CampoLabel obrigatorio={contaObrigatoria} cor={theme.expense}>
+                  Conta
+                </CampoLabel>
+                <Select
+                  value={contaSelecionada}
+                  onChange={(v) => {
+                    setContaId(v);
+                    setContaTocada(true);
+                  }}
+                  title="Selecionar conta"
+                  placeholder="Selecionar conta"
+                  clearLabel="Nenhuma"
+                  options={contas.map((conta) => ({ value: conta.id, label: conta.nome }))}
+                />
               </ThemedView>
             )}
 
-            {!isEdicaoTransferencia && (
-              <ThemedView style={styles.field}>
-                <ThemedText type="smallBold">Conta</ThemedText>
-                <ThemedView style={styles.row}>
-                  {contas.map((conta) => (
-                    <Chip
-                      key={conta.id}
-                      label={conta.nome}
-                      selected={contaSelecionada === conta.id}
-                      onPress={() => setContaId(conta.id)}
-                    />
-                  ))}
+            {!isEdicaoTransferencia && tipo === 'TRANSFERENCIA' && (
+              <>
+                <ThemedView style={styles.field}>
+                  <CampoLabel obrigatorio={contasTransferenciaObrigatorias} cor={theme.expense}>
+                    Conta origem
+                  </CampoLabel>
+                  <Select
+                    value={contaOrigemId}
+                    onChange={setContaOrigemId}
+                    title="Selecionar conta de origem"
+                    placeholder="Selecionar conta"
+                    clearLabel="Nenhuma"
+                    options={contas.map((conta) => ({ value: conta.id, label: conta.nome }))}
+                  />
                 </ThemedView>
-              </ThemedView>
+                <ThemedView style={styles.field}>
+                  <CampoLabel obrigatorio={contasTransferenciaObrigatorias} cor={theme.expense}>
+                    Conta destino
+                  </CampoLabel>
+                  <Select
+                    value={contaDestinoId}
+                    onChange={setContaDestinoId}
+                    title="Selecionar conta de destino"
+                    placeholder="Selecionar conta"
+                    clearLabel="Nenhuma"
+                    options={contas.map((conta) => ({ value: conta.id, label: conta.nome }))}
+                  />
+                </ThemedView>
+              </>
             )}
 
             <ThemedView style={styles.rowSpaced}>
@@ -296,13 +411,39 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
               </ThemedText>
             )}
 
-            <Button
-              title={salvarMutation.isPending ? 'Salvando...' : 'Salvar'}
-              onPress={() => salvarMutation.mutate()}
-              disabled={!podeSalvar}
-              loading={salvarMutation.isPending}
-              style={styles.button}
-            />
+            {editando ? (
+              <Button
+                title={salvarMutation.isPending ? 'Salvando...' : 'Salvar'}
+                onPress={() => salvarMutation.mutate('fechar')}
+                disabled={!podeSalvar}
+                loading={salvarMutation.isPending}
+                style={styles.button}
+              />
+            ) : (
+              <ThemedView style={[styles.row, styles.button]}>
+                <Button
+                  title={
+                    salvarMutation.isPending && salvarMutation.variables === 'fechar' ? 'Salvando...' : 'Salvar'
+                  }
+                  onPress={() => salvarMutation.mutate('fechar')}
+                  disabled={!podeSalvar}
+                  loading={salvarMutation.isPending && salvarMutation.variables === 'fechar'}
+                  style={styles.flexButton}
+                />
+                <Button
+                  title={
+                    salvarMutation.isPending && salvarMutation.variables === 'novo'
+                      ? 'Salvando...'
+                      : 'Salvar e Novo'
+                  }
+                  variant="secondary"
+                  onPress={() => salvarMutation.mutate('novo')}
+                  disabled={!podeSalvar}
+                  loading={salvarMutation.isPending && salvarMutation.variables === 'novo'}
+                  style={styles.flexButton}
+                />
+              </ThemedView>
+            )}
 
             {editando && (
               <Button
@@ -342,4 +483,5 @@ const styles = StyleSheet.create({
   },
   avisoBox: { borderRadius: Radius.md, padding: Spacing.three },
   button: { marginTop: Spacing.one },
+  flexButton: { flex: 1 },
 });

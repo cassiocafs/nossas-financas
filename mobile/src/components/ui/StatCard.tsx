@@ -40,7 +40,7 @@ export function StatCard({
           {label}
         </ThemedText>
       </View>
-      <ThemedText type="subtitle" numeric>
+      <ThemedText type="subtitle" numeric numberOfLines={1} adjustsFontSizeToFit>
         {formatarValor(value)}
       </ThemedText>
     </Card>

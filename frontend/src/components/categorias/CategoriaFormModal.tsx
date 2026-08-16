@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import {
   criarCategoria,
   criarGrupo,
@@ -34,9 +35,10 @@ interface CategoriaFormModalProps {
   open: boolean;
   onClose: () => void;
   categoria?: Categoria | null;
+  onSaved?: () => void;
 }
 
-export function CategoriaFormModal({ open, onClose, categoria }: CategoriaFormModalProps) {
+export function CategoriaFormModal({ open, onClose, categoria, onSaved }: CategoriaFormModalProps) {
   const queryClient = useQueryClient();
   const editando = !!categoria;
   const [novaPalavra, setNovaPalavra] = useState("");
@@ -53,7 +55,7 @@ export function CategoriaFormModal({ open, onClose, categoria }: CategoriaFormMo
     watch,
     reset,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -65,30 +67,6 @@ export function CategoriaFormModal({ open, onClose, categoria }: CategoriaFormMo
       tipo: "AMBOS",
     },
   });
-
-  useEffect(() => {
-    if (open) {
-      reset(
-        categoria
-          ? {
-              nome: categoria.nome,
-              grupoSelecionado: categoria.grupoId ?? "",
-              novoGrupoNome: "",
-              subgrupoSelecionado: categoria.subgrupoId ?? "",
-              novoSubgrupoNome: "",
-              tipo: categoria.tipo,
-            }
-          : {
-              nome: "",
-              grupoSelecionado: "",
-              novoGrupoNome: "",
-              subgrupoSelecionado: "",
-              novoSubgrupoNome: "",
-              tipo: "AMBOS",
-            },
-      );
-    }
-  }, [open, categoria, reset]);
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
@@ -112,11 +90,37 @@ export function CategoriaFormModal({ open, onClose, categoria }: CategoriaFormMo
       const input = { nome: values.nome, grupoId, subgrupoId, tipo: values.tipo };
       return editando ? editarCategoria(categoria!.id, input) : criarCategoria(input);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categorias"] });
-      onClose();
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["categorias"] });
+      onSaved?.();
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      mutation.reset();
+      reset(
+        categoria
+          ? {
+              nome: categoria.nome,
+              grupoSelecionado: categoria.grupoId ?? "",
+              novoGrupoNome: "",
+              subgrupoSelecionado: categoria.subgrupoId ?? "",
+              novoSubgrupoNome: "",
+              tipo: categoria.tipo,
+            }
+          : {
+              nome: "",
+              grupoSelecionado: "",
+              novoGrupoNome: "",
+              subgrupoSelecionado: "",
+              novoSubgrupoNome: "",
+              tipo: "AMBOS",
+            },
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, categoria, reset]);
 
   const regraMutation = useMutation({
     mutationFn: (palavraChave: string) => criarRegra(categoria!.id, palavraChave),
@@ -137,11 +141,17 @@ export function CategoriaFormModal({ open, onClose, categoria }: CategoriaFormMo
     gruposQuery.data?.grupos.find((g) => g.id === grupoSelecionado)?.subgrupos ?? [];
 
   return (
-    <Modal open={open} onClose={onClose} title={editando ? "Editar categoria" : "Nova categoria"}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={editando ? "Editar categoria" : "Nova categoria"}
+      closable={!mutation.isPending}
+    >
       <form
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
         className="space-y-4"
       >
+        <fieldset disabled={mutation.isPending || mutation.isSuccess} className="space-y-4">
         <div className="space-y-1">
           <label className="block text-sm font-medium text-foreground/80">
             Nome
@@ -261,6 +271,7 @@ export function CategoriaFormModal({ open, onClose, categoria }: CategoriaFormMo
             </div>
           </div>
         )}
+        </fieldset>
 
         {mutation.isError && (
           <p className="text-sm text-destructive">
@@ -268,13 +279,27 @@ export function CategoriaFormModal({ open, onClose, categoria }: CategoriaFormMo
           </p>
         )}
 
+        {mutation.isPending && <ProgressBar label="Salvando..." />}
+
+        {mutation.isSuccess && (
+          <p className="text-sm font-medium text-green-600">Alterado com sucesso</p>
+        )}
+
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="ghost" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Salvando..." : "Salvar"}
-          </Button>
+          {mutation.isSuccess ? (
+            <Button type="button" onClick={onClose}>
+              Fechar
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={onClose} disabled={mutation.isPending}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={mutation.isPending}>
+                {mutation.isPending ? "Salvando..." : "Salvar"}
+              </Button>
+            </>
+          )}
         </div>
       </form>
     </Modal>

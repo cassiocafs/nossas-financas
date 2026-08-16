@@ -30,6 +30,7 @@ model EspacoFinanceiro {
   orcamentos         OrcamentoAnual[]
   convites           Convite[]
   seriesRecorrencia  SerieRecorrencia[]
+  regrasTransacao    RegraTransacao[]
 }
 
 enum PapelMembro {
@@ -76,15 +77,16 @@ model Convite {
 }
 
 model Conta {
-  id           String           @id @default(uuid())
-  espacoId     String
-  nome         String
-  saldoInicial Decimal          @default(0) @db.Decimal(14, 2)
-  ativa        Boolean          @default(true)
-  criadoEm     DateTime         @default(now())
-  atualizadoEm DateTime         @updatedAt
-  espaco       EspacoFinanceiro @relation(fields: [espacoId], references: [id])
-  transacoes   Transacao[]
+  id              String           @id @default(uuid())
+  espacoId        String
+  nome            String
+  saldoInicial    Decimal          @default(0) @db.Decimal(14, 2)
+  ativa           Boolean          @default(true)
+  criadoEm        DateTime         @default(now())
+  atualizadoEm    DateTime         @updatedAt
+  espaco          EspacoFinanceiro @relation(fields: [espacoId], references: [id])
+  transacoes      Transacao[]
+  regrasTransacao RegraTransacao[]
 
   @@index([espacoId])
 }
@@ -121,20 +123,21 @@ enum TipoCategoria {
 }
 
 model Categoria {
-  id             String                  @id @default(uuid())
-  espacoId       String
-  grupoId        String?
-  subgrupoId     String?
-  nome           String
-  tipo           TipoCategoria           @default(AMBOS)
-  ativa          Boolean                 @default(true)
-  criadoEm       DateTime                @default(now())
-  espaco         EspacoFinanceiro        @relation(fields: [espacoId], references: [id])
-  grupo          GrupoCategoria?         @relation(fields: [grupoId], references: [id])
-  subgrupo       SubgrupoCategoria?      @relation(fields: [subgrupoId], references: [id])
-  regras         RegraCategorizacao[]
-  transacoes     Transacao[]
-  orcamentoItens OrcamentoCategoriaMes[]
+  id              String                  @id @default(uuid())
+  espacoId        String
+  grupoId         String?
+  subgrupoId      String?
+  nome            String
+  tipo            TipoCategoria           @default(AMBOS)
+  ativa           Boolean                 @default(true)
+  criadoEm        DateTime                @default(now())
+  espaco          EspacoFinanceiro        @relation(fields: [espacoId], references: [id])
+  grupo           GrupoCategoria?         @relation(fields: [grupoId], references: [id])
+  subgrupo        SubgrupoCategoria?      @relation(fields: [subgrupoId], references: [id])
+  regras          RegraCategorizacao[]
+  transacoes      Transacao[]
+  orcamentoItens  OrcamentoCategoriaMes[]
+  regrasTransacao RegraTransacao[]
 
   @@unique([espacoId, grupoId, subgrupoId, nome])
 }
@@ -147,6 +150,24 @@ model RegraCategorizacao {
   categoria    Categoria @relation(fields: [categoriaId], references: [id])
 
   @@unique([categoriaId, palavraChave])
+}
+
+model RegraTransacao {
+  id                   String           @id @default(uuid())
+  espacoId             String
+  descricao            String
+  descricaoNormalizada String
+  contaId              String
+  categoriaId          String?
+  criadoEm             DateTime         @default(now())
+  atualizadoEm         DateTime         @updatedAt
+  espaco               EspacoFinanceiro @relation(fields: [espacoId], references: [id])
+  conta                Conta            @relation(fields: [contaId], references: [id])
+  categoria            Categoria?       @relation(fields: [categoriaId], references: [id])
+
+  @@unique([espacoId, descricaoNormalizada])
+  @@index([contaId])
+  @@index([categoriaId])
 }
 
 enum TipoTransacao {

@@ -23,17 +23,30 @@ export const resolveEspaco = asyncHandler(async function resolveEspaco(
 
   const { userId, email } = req.auth;
 
+  // Caminho comum: o usuário já tem espaço, então evitamos abrir transação
+  // e tirar lock a cada requisição.
+  const existente = await prisma.membroEspaco.findFirst({
+    where: { usuarioId: userId },
+    orderBy: { criadoEm: "desc" },
+  });
+
+  if (existente) {
+    req.espacoId = existente.espacoId;
+    next();
+    return;
+  }
+
+  // Caminho raro: primeiro acesso do usuário. Usa transação + lock para
+  // evitar que duas requisições concorrentes criem espaços duplicados.
   const membro = await prisma.$transaction(async (tx) => {
-    // Serializa requisições concorrentes do mesmo usuário para que duas não
-    // passem juntas pelo "findFirst" antes de qualquer uma criar o espaço.
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId})::bigint)`;
 
-    const existente = await tx.membroEspaco.findFirst({
+    const existenteAposLock = await tx.membroEspaco.findFirst({
       where: { usuarioId: userId },
       orderBy: { criadoEm: "desc" },
     });
-    if (existente) {
-      return existente;
+    if (existenteAposLock) {
+      return existenteAposLock;
     }
 
     const usuario = await tx.usuario.upsert({

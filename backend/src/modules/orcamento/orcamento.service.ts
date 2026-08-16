@@ -44,6 +44,21 @@ interface LinhaCategoria {
 
 export async function buscarGrade(espacoId: string, orcamentoId: string, mes: number) {
   const orcamento = await buscarOrcamentoOuFalhar(espacoId, orcamentoId);
+  return montarGrade(espacoId, orcamento, mes);
+}
+
+export async function buscarGradePorAno(espacoId: string, ano: number, mes: number) {
+  const orcamento = await prisma.orcamentoAnual.findFirst({ where: { espacoId, ano } });
+  if (!orcamento) return null;
+  return { orcamentoId: orcamento.id, ...(await montarGrade(espacoId, orcamento, mes)) };
+}
+
+async function montarGrade(
+  espacoId: string,
+  orcamento: { id: string; ano: number },
+  mes: number,
+) {
+  const orcamentoId = orcamento.id;
 
   const itensMes = await prisma.orcamentoCategoriaMes.findMany({
     where: { orcamentoAnualId: orcamentoId, mes },

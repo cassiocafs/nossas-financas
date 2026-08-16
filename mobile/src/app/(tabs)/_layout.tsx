@@ -37,6 +37,10 @@ export default function TabsLayout() {
         options={{ title: 'Transações', tabBarIcon: ({ color }) => <TabIcon name="list" color={color} /> }}
       />
       <Tabs.Screen
+        name="relatorios"
+        options={{ title: 'Relatórios', tabBarIcon: ({ color }) => <TabIcon name="pie-chart" color={color} /> }}
+      />
+      <Tabs.Screen
         name="perfil"
         options={{ title: 'Perfil', tabBarIcon: ({ color }) => <TabIcon name="user" color={color} /> }}
       />

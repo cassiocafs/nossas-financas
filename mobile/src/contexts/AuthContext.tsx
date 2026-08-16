@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 
 import { apiFetch } from '@/api/client';
+import { addLog } from '@/lib/logStore';
 import { supabase } from '@/lib/supabaseClient';
 
 interface AuthContextValue {
@@ -26,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch((err) => {
         console.error('Falha ao recuperar sessão do Supabase', err);
+        addLog('error', 'Falha ao recuperar sessão do Supabase', err);
       })
       .finally(() => {
         setLoading(false);

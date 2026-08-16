@@ -84,8 +84,8 @@ export function TransacoesLista({
         <span />
         <span />
         <span>Descrição</span>
-        <span>Conta</span>
         <span>Categoria</span>
+        <span>Conta</span>
         <span className="text-right">Valor</span>
       </div>
 
@@ -138,14 +138,14 @@ export function TransacoesLista({
                       t.consolidado ? "" : "font-bold"
                     }`}
                   >
-                    {t.conta.nome}
+                    {t.categoria ? t.categoria.nome : "—"}
                   </span>
                   <span
                     className={`truncate text-xs text-muted-foreground ${
                       t.consolidado ? "" : "font-bold"
                     }`}
                   >
-                    {t.categoria ? t.categoria.nome : "—"}
+                    {t.conta.nome}
                   </span>
                   <span className="flex items-center justify-end gap-3">
                     <Valor

@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listarContas, type Conta } from "@/api/contas";
-import { listarGrupos } from "@/api/categorias";
+import { listarGrupos, type Categoria } from "@/api/categorias";
 import { Valor } from "@/components/ui/Valor";
 import { ContaFormModal } from "@/components/contas/ContaFormModal";
+import { CategoriaFormModal } from "@/components/categorias/CategoriaFormModal";
 
 interface FiltrosLateraisProps {
   contaIds: string[];
@@ -20,6 +21,27 @@ export function FiltrosLaterais({
 }: FiltrosLateraisProps) {
   const [gruposExpandidos, setGruposExpandidos] = useState<Record<string, boolean>>({});
   const [contaEditando, setContaEditando] = useState<Conta | null>(null);
+  const [categoriaEditando, setCategoriaEditando] = useState<Categoria | null>(null);
+  const [criandoCategoria, setCriandoCategoria] = useState(false);
+  const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
+  const mensagemTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function mostrarMensagemSucesso(mensagem: string) {
+    if (mensagemTimeoutRef.current) clearTimeout(mensagemTimeoutRef.current);
+    setMensagemSucesso(mensagem);
+    mensagemTimeoutRef.current = setTimeout(() => setMensagemSucesso(null), 6000);
+  }
+
+  function fecharMensagemSucesso() {
+    if (mensagemTimeoutRef.current) clearTimeout(mensagemTimeoutRef.current);
+    setMensagemSucesso(null);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (mensagemTimeoutRef.current) clearTimeout(mensagemTimeoutRef.current);
+    };
+  }, []);
 
   const { data: contasData = [] } = useQuery({
     queryKey: ["contas"],
@@ -78,6 +100,34 @@ export function FiltrosLaterais({
 
   return (
     <aside className="space-y-6 text-sm lg:w-64 lg:shrink-0">
+      {mensagemSucesso && (
+        <div className="relative flex items-center justify-center gap-2 rounded-xl border border-income/20 bg-income-soft px-8 py-2 text-xs font-bold text-income shadow-soft">
+          <svg
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="h-3.5 w-3.5 shrink-0"
+            aria-hidden="true"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+              clipRule="evenodd"
+            />
+          </svg>
+          {mensagemSucesso}
+          <button
+            type="button"
+            onClick={fecharMensagemSucesso}
+            aria-label="Fechar mensagem"
+            className="absolute right-2 rounded p-1 text-income/60 hover:text-income"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       <div>
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-xs tracking-widest text-muted-foreground uppercase">Contas</h3>
@@ -102,7 +152,7 @@ export function FiltrosLaterais({
                   onChange={() => alternarConta(conta.id)}
                   className="accent-primary"
                 />
-                <span className="truncate">{conta.nome}</span>
+                <span className="min-w-0 truncate">{conta.nome}</span>
                 <button
                   type="button"
                   onClick={() => onContaIdsChange([conta.id])}
@@ -121,7 +171,7 @@ export function FiltrosLaterais({
                   Editar
                 </button>
               </span>
-              <Valor valor={conta.saldoAtual} className="text-xs" />
+              <Valor valor={conta.saldoAtual} className="shrink-0 text-xs" />
             </label>
           ))}
         </div>
@@ -129,7 +179,16 @@ export function FiltrosLaterais({
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-xs tracking-widest text-muted-foreground uppercase">Categorias</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-xs tracking-widest text-muted-foreground uppercase">Categorias</h3>
+            <button
+              type="button"
+              onClick={() => setCriandoCategoria(true)}
+              className="text-xs text-primary underline"
+            >
+              Nova
+            </button>
+          </div>
           {idsExpansiveis.length > 0 && (
             <button
               type="button"
@@ -160,7 +219,7 @@ export function FiltrosLaterais({
                     {grupo.categorias.map((categoria) => (
                       <label
                         key={categoria.id}
-                        className="flex items-center gap-2 pl-5 text-foreground/80"
+                        className="group flex items-center gap-2 pl-5 text-foreground/80"
                       >
                         <input
                           type="checkbox"
@@ -168,7 +227,17 @@ export function FiltrosLaterais({
                           onChange={() => alternarCategoria(categoria.id)}
                           className="accent-primary"
                         />
-                        {categoria.nome}
+                        <span className="min-w-0 truncate">{categoria.nome}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCategoriaEditando(categoria);
+                          }}
+                          className="hidden shrink-0 text-xs text-primary underline group-hover:inline"
+                        >
+                          Editar
+                        </button>
                       </label>
                     ))}
                     {grupo.subgrupos.map((subgrupo) => {
@@ -190,7 +259,7 @@ export function FiltrosLaterais({
                             subgrupo.categorias.map((categoria) => (
                               <label
                                 key={categoria.id}
-                                className="flex items-center gap-2 pl-8 text-foreground/80"
+                                className="group flex items-center gap-2 pl-8 text-foreground/80"
                               >
                                 <input
                                   type="checkbox"
@@ -198,7 +267,17 @@ export function FiltrosLaterais({
                                   onChange={() => alternarCategoria(categoria.id)}
                                   className="accent-primary"
                                 />
-                                {categoria.nome}
+                                <span className="min-w-0 truncate">{categoria.nome}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setCategoriaEditando(categoria);
+                                  }}
+                                  className="hidden shrink-0 text-xs text-primary underline group-hover:inline"
+                                >
+                                  Editar
+                                </button>
                               </label>
                             ))}
                         </div>
@@ -219,7 +298,7 @@ export function FiltrosLaterais({
               {gruposData.semGrupo.map((categoria) => (
                 <label
                   key={categoria.id}
-                  className="flex items-center gap-2 pl-5 text-foreground/80"
+                  className="group flex items-center gap-2 pl-5 text-foreground/80"
                 >
                   <input
                     type="checkbox"
@@ -227,7 +306,17 @@ export function FiltrosLaterais({
                     onChange={() => alternarCategoria(categoria.id)}
                     className="accent-primary"
                   />
-                  {categoria.nome}
+                  <span className="min-w-0 truncate">{categoria.nome}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCategoriaEditando(categoria);
+                    }}
+                    className="hidden shrink-0 text-xs text-primary underline group-hover:inline"
+                  >
+                    Editar
+                  </button>
                 </label>
               ))}
             </div>
@@ -239,6 +328,19 @@ export function FiltrosLaterais({
         open={!!contaEditando}
         onClose={() => setContaEditando(null)}
         conta={contaEditando}
+      />
+      <CategoriaFormModal
+        open={!!categoriaEditando || criandoCategoria}
+        onClose={() => {
+          setCategoriaEditando(null);
+          setCriandoCategoria(false);
+        }}
+        categoria={categoriaEditando}
+        onSaved={() =>
+          mostrarMensagemSucesso(
+            criandoCategoria ? "Categoria criada com sucesso" : "Categoria atualizada com sucesso",
+          )
+        }
       />
     </aside>
   );

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { listarContas } from '@/api/contas';
 import { ThemedText } from '@/components/themed-text';
@@ -8,7 +9,14 @@ import { Card } from '@/components/ui/Card';
 import { Radius, Spacing } from '@/constants/theme';
 import { formatarValor } from '@/lib/format';
 
-export function SaldoPorContasCard() {
+interface SaldoPorContasCardProps {
+  ano: number;
+  mes: number;
+}
+
+export function SaldoPorContasCard({ ano, mes }: SaldoPorContasCardProps) {
+  const router = useRouter();
+
   const { data: contas, isLoading } = useQuery({
     queryKey: ['contas', 'ativas'],
     queryFn: () => listarContas(false),
@@ -29,14 +37,24 @@ export function SaldoPorContasCard() {
       ) : (
         <ThemedView style={styles.lista}>
           {contas.map((conta) => (
-            <ThemedView key={conta.id} type="surface" style={styles.linha}>
-              <ThemedText type="small" style={styles.nomeConta} numberOfLines={1}>
-                {conta.nome}
-              </ThemedText>
-              <ThemedText type="smallBold" numeric themeColor={conta.saldoAtual < 0 ? 'expense' : 'text'}>
-                {formatarValor(conta.saldoAtual)}
-              </ThemedText>
-            </ThemedView>
+            <Pressable
+              key={conta.id}
+              onPress={() =>
+                router.push({
+                  pathname: '/transacoes',
+                  params: { contaId: conta.id, ano: String(ano), mes: String(mes) },
+                })
+              }
+              style={(state) => [state.pressed && styles.linhaPressionada]}>
+              <ThemedView type="surface" style={styles.linha}>
+                <ThemedText type="small" style={styles.nomeConta} numberOfLines={1}>
+                  {conta.nome}
+                </ThemedText>
+                <ThemedText type="smallBold" numeric themeColor={conta.saldoAtual < 0 ? 'expense' : 'text'}>
+                  {formatarValor(conta.saldoAtual)}
+                </ThemedText>
+              </ThemedView>
+            </Pressable>
           ))}
         </ThemedView>
       )}
@@ -57,4 +75,5 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
   },
   nomeConta: { flex: 1 },
+  linhaPressionada: { opacity: 0.6 },
 });

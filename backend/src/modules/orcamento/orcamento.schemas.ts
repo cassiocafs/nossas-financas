@@ -10,6 +10,11 @@ export const itensQuerySchema = z.object({
   mes: z.coerce.number().int().min(1).max(12),
 });
 
+export const gradePorAnoQuerySchema = z.object({
+  ano: z.coerce.number().int().min(2000).max(2100),
+  mes: z.coerce.number().int().min(1).max(12),
+});
+
 export const definirPrevistoSchema = z.discriminatedUnion("modo", [
   z.object({
     categoriaId: idSchema,

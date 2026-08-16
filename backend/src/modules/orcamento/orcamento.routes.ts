@@ -6,6 +6,7 @@ import { idSchema } from "../../lib/schemas.js";
 import {
   criarOrcamentoSchema,
   definirPrevistoSchema,
+  gradePorAnoQuerySchema,
   itensQuerySchema,
 } from "./orcamento.schemas.js";
 import * as orcamentoService from "./orcamento.service.js";
@@ -13,6 +14,15 @@ import * as orcamentoService from "./orcamento.service.js";
 export const orcamentoRouter = Router();
 
 orcamentoRouter.use(authenticate, resolveEspaco);
+
+orcamentoRouter.get(
+  "/grade",
+  asyncHandler(async (req, res) => {
+    const { ano, mes } = gradePorAnoQuerySchema.parse(req.query);
+    const grade = await orcamentoService.buscarGradePorAno(req.espacoId!, ano, mes);
+    res.json(grade);
+  }),
+);
 
 orcamentoRouter.get(
   "/anos",

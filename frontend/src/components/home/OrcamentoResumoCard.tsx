@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { buscarGradeOrcamento, listarAnosOrcamento } from "@/api/orcamento";
+import { buscarGradeOrcamentoPorAno } from "@/api/orcamento";
 import { Card } from "@/components/ui/Card";
 import { formatarMoeda } from "@/lib/format";
 
@@ -10,17 +10,9 @@ interface OrcamentoResumoCardProps {
 }
 
 export function OrcamentoResumoCard({ ano, mes }: OrcamentoResumoCardProps) {
-  const { data: anos, isLoading: carregandoAnos } = useQuery({
-    queryKey: ["orcamento", "anos"],
-    queryFn: listarAnosOrcamento,
-  });
-
-  const orcamentoAtual = anos?.find((a) => a.ano === ano);
-
-  const { data: grade, isLoading: carregandoGrade } = useQuery({
-    queryKey: ["orcamento", orcamentoAtual?.id, "itens", mes],
-    queryFn: () => buscarGradeOrcamento(orcamentoAtual!.id, mes),
-    enabled: !!orcamentoAtual,
+  const { data: grade, isLoading: carregando } = useQuery({
+    queryKey: ["orcamento", "grade", ano, mes],
+    queryFn: () => buscarGradeOrcamentoPorAno(ano, mes),
   });
 
   const categoriasEstouradas =
@@ -37,17 +29,15 @@ export function OrcamentoResumoCard({ ano, mes }: OrcamentoResumoCardProps) {
         </Link>
       </div>
 
-      {carregandoAnos ? (
+      {carregando ? (
         <p className="text-sm text-muted-foreground">Carregando...</p>
-      ) : !orcamentoAtual ? (
+      ) : !grade ? (
         <p className="text-sm text-muted-foreground">
           Nenhum orçamento criado para {ano}.{" "}
           <Link to="/orcamento" className="underline">
             Criar orçamento
           </Link>
         </p>
-      ) : carregandoGrade || !grade ? (
-        <p className="text-sm text-muted-foreground">Carregando...</p>
       ) : (
         <>
           <div className="flex gap-6 text-sm">

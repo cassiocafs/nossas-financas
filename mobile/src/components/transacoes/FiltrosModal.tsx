@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
@@ -8,7 +9,9 @@ import { listarGrupos } from '@/api/categorias';
 import type { StatusFiltro } from '@/api/transacoes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
+import { DateField } from '@/components/ui/DateField';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -18,15 +21,34 @@ const OPCOES_STATUS: { valor: StatusFiltro; label: string }[] = [
   { valor: 'pendentes', label: 'Pendentes' },
 ];
 
+export interface FiltrosAplicados {
+  status: StatusFiltro;
+  contaIds: string[];
+  categoriaIds: string[];
+  dataInicio: string | null;
+  dataFim: string | null;
+}
+
 interface FiltrosModalProps {
   visible: boolean;
   onClose: () => void;
+  ano: number;
+  mes: number;
   status: StatusFiltro;
-  onStatusChange: (status: StatusFiltro) => void;
   contaIds: string[];
-  onContaIdsChange: (ids: string[]) => void;
   categoriaIds: string[];
-  onCategoriaIdsChange: (ids: string[]) => void;
+  dataInicio: string | null;
+  dataFim: string | null;
+  onAplicar: (filtros: FiltrosAplicados) => void;
+}
+
+function primeiroDiaDoMes(ano: number, mes: number): string {
+  return `${ano}-${String(mes).padStart(2, '0')}-01`;
+}
+
+function ultimoDiaDoMes(ano: number, mes: number): string {
+  const ultimoDia = new Date(ano, mes, 0).getDate();
+  return `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia).padStart(2, '0')}`;
 }
 
 function Marcador({ marcado }: { marcado: boolean }) {
@@ -52,14 +74,39 @@ function Marcador({ marcado }: { marcado: boolean }) {
 export function FiltrosModal({
   visible,
   onClose,
+  ano,
+  mes,
   status,
-  onStatusChange,
   contaIds,
-  onContaIdsChange,
   categoriaIds,
-  onCategoriaIdsChange,
+  dataInicio,
+  dataFim,
+  onAplicar,
 }: FiltrosModalProps) {
+  const theme = useTheme();
   const [gruposExpandidos, setGruposExpandidos] = useState<Record<string, boolean>>({});
+
+  const [statusDraft, setStatusDraft] = useState(status);
+  const [contaIdsDraft, setContaIdsDraft] = useState(contaIds);
+  const [categoriaIdsDraft, setCategoriaIdsDraft] = useState(categoriaIds);
+  const [periodoPersonalizado, setPeriodoPersonalizado] = useState(Boolean(dataInicio || dataFim));
+  const [dataInicioDraft, setDataInicioDraft] = useState(dataInicio ?? primeiroDiaDoMes(ano, mes));
+  const [dataFimDraft, setDataFimDraft] = useState(dataFim ?? ultimoDiaDoMes(ano, mes));
+
+  // Sincroniza o rascunho com os filtros aplicados sempre que o modal reabre,
+  // ajustado durante a renderização (em vez de um efeito) para evitar re-render em cascata.
+  const [visibleAnterior, setVisibleAnterior] = useState(visible);
+  if (visible !== visibleAnterior) {
+    setVisibleAnterior(visible);
+    if (visible) {
+      setStatusDraft(status);
+      setContaIdsDraft(contaIds);
+      setCategoriaIdsDraft(categoriaIds);
+      setPeriodoPersonalizado(Boolean(dataInicio || dataFim));
+      setDataInicioDraft(dataInicio ?? primeiroDiaDoMes(ano, mes));
+      setDataFimDraft(dataFim ?? ultimoDiaDoMes(ano, mes));
+    }
+  }
 
   const { data: contas = [] } = useQuery({
     queryKey: ['contas'],
@@ -76,27 +123,55 @@ export function FiltrosModal({
   });
 
   function alternarConta(id: string) {
-    onContaIdsChange(contaIds.includes(id) ? contaIds.filter((c) => c !== id) : [...contaIds, id]);
+    setContaIdsDraft((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
   }
 
   function alternarTodasContas() {
-    onContaIdsChange(
-      contaIds.length === contasOrdenadas.length ? [] : contasOrdenadas.map((c) => c.id),
+    setContaIdsDraft((prev) =>
+      prev.length === contasOrdenadas.length ? [] : contasOrdenadas.map((c) => c.id),
     );
   }
 
   function alternarCategoria(id: string) {
-    onCategoriaIdsChange(
-      categoriaIds.includes(id) ? categoriaIds.filter((c) => c !== id) : [...categoriaIds, id],
-    );
+    setCategoriaIdsDraft((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
   }
 
   function grupoExpandido(id: string) {
-    return gruposExpandidos[id] ?? true;
+    return gruposExpandidos[id] ?? false;
   }
 
   function alternarGrupo(id: string) {
     setGruposExpandidos((prev) => ({ ...prev, [id]: !grupoExpandido(id) }));
+  }
+
+  function mudarDataInicio(valor: string) {
+    setDataInicioDraft(valor);
+    if (valor > dataFimDraft) setDataFimDraft(valor);
+  }
+
+  function mudarDataFim(valor: string) {
+    setDataFimDraft(valor);
+    if (valor < dataInicioDraft) setDataInicioDraft(valor);
+  }
+
+  function limpar() {
+    setStatusDraft('todas');
+    setContaIdsDraft(contasOrdenadas.map((c) => c.id));
+    setCategoriaIdsDraft([]);
+    setPeriodoPersonalizado(false);
+    setDataInicioDraft(primeiroDiaDoMes(ano, mes));
+    setDataFimDraft(ultimoDiaDoMes(ano, mes));
+  }
+
+  function aplicar() {
+    onAplicar({
+      status: statusDraft,
+      contaIds: contaIdsDraft,
+      categoriaIds: categoriaIdsDraft,
+      dataInicio: periodoPersonalizado ? dataInicioDraft : null,
+      dataFim: periodoPersonalizado ? dataFimDraft : null,
+    });
+    onClose();
   }
 
   return (
@@ -105,11 +180,16 @@ export function FiltrosModal({
         <SafeAreaView edges={['bottom']} style={styles.safeArea}>
           <ThemedView style={styles.header}>
             <ThemedText type="subtitle">Filtros</ThemedText>
-            <Pressable onPress={onClose}>
-              <ThemedText type="small" themeColor="textSecondary">
-                Fechar
-              </ThemedText>
-            </Pressable>
+            <ThemedView style={styles.headerAcoes}>
+              <Pressable onPress={limpar} hitSlop={8}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Limpar
+                </ThemedText>
+              </Pressable>
+              <Pressable onPress={onClose} hitSlop={8}>
+                <Feather name="x" size={20} color={theme.text} />
+              </Pressable>
+            </ThemedView>
           </ThemedView>
 
           <ScrollView contentContainerStyle={styles.scroll}>
@@ -120,8 +200,57 @@ export function FiltrosModal({
                   <Chip
                     key={opcao.valor}
                     label={opcao.label}
-                    selected={status === opcao.valor}
-                    onPress={() => onStatusChange(opcao.valor)}
+                    selected={statusDraft === opcao.valor}
+                    onPress={() => setStatusDraft(opcao.valor)}
+                  />
+                ))}
+              </ThemedView>
+            </ThemedView>
+
+            <ThemedView style={styles.secao}>
+              <ThemedText type="smallBold">Período</ThemedText>
+              <ThemedView style={styles.chipsRow}>
+                <Chip label="Mês inteiro" selected={!periodoPersonalizado} onPress={() => setPeriodoPersonalizado(false)} />
+                <Chip label="Personalizado" selected={periodoPersonalizado} onPress={() => setPeriodoPersonalizado(true)} />
+              </ThemedView>
+              {periodoPersonalizado && (
+                <ThemedView style={styles.periodoLinha}>
+                  <ThemedView style={styles.periodoCampo}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      De
+                    </ThemedText>
+                    <DateField value={dataInicioDraft} onChange={mudarDataInicio} />
+                  </ThemedView>
+                  <ThemedView style={styles.periodoCampo}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Até
+                    </ThemedText>
+                    <DateField value={dataFimDraft} onChange={mudarDataFim} />
+                  </ThemedView>
+                </ThemedView>
+              )}
+            </ThemedView>
+
+            <ThemedView style={styles.secao}>
+              <ThemedView style={styles.secaoHeader}>
+                <ThemedText type="smallBold">
+                  Contas{contaIdsDraft.length > 0 && contaIdsDraft.length < contasOrdenadas.length
+                    ? ` (${contaIdsDraft.length})`
+                    : ''}
+                </ThemedText>
+                <Pressable onPress={alternarTodasContas} hitSlop={8}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {contaIdsDraft.length === contasOrdenadas.length ? 'Limpar' : 'Todas'}
+                  </ThemedText>
+                </Pressable>
+              </ThemedView>
+              <ThemedView style={styles.chipsRow}>
+                {contasOrdenadas.map((conta) => (
+                  <Chip
+                    key={conta.id}
+                    label={conta.nome}
+                    selected={contaIdsDraft.includes(conta.id)}
+                    onPress={() => alternarConta(conta.id)}
                   />
                 ))}
               </ThemedView>
@@ -129,26 +258,17 @@ export function FiltrosModal({
 
             <ThemedView style={styles.secao}>
               <ThemedView style={styles.secaoHeader}>
-                <ThemedText type="smallBold">Contas</ThemedText>
-                <Pressable onPress={alternarTodasContas}>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    Todos
-                  </ThemedText>
-                </Pressable>
+                <ThemedText type="smallBold">
+                  Categorias{categoriaIdsDraft.length > 0 ? ` (${categoriaIdsDraft.length})` : ''}
+                </ThemedText>
+                {categoriaIdsDraft.length > 0 && (
+                  <Pressable onPress={() => setCategoriaIdsDraft([])} hitSlop={8}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Limpar
+                    </ThemedText>
+                  </Pressable>
+                )}
               </ThemedView>
-              {contasOrdenadas.map((conta) => (
-                <Pressable
-                  key={conta.id}
-                  onPress={() => alternarConta(conta.id)}
-                  style={styles.linhaSelecionavel}>
-                  <Marcador marcado={contaIds.includes(conta.id)} />
-                  <ThemedText type="small">{conta.nome}</ThemedText>
-                </Pressable>
-              ))}
-            </ThemedView>
-
-            <ThemedView style={styles.secao}>
-              <ThemedText type="smallBold">Categorias</ThemedText>
               {gruposData?.grupos.map((grupo) => {
                 const expandido = grupoExpandido(grupo.id);
                 return (
@@ -164,7 +284,7 @@ export function FiltrosModal({
                             key={categoria.id}
                             onPress={() => alternarCategoria(categoria.id)}
                             style={styles.linhaSelecionavel}>
-                            <Marcador marcado={categoriaIds.includes(categoria.id)} />
+                            <Marcador marcado={categoriaIdsDraft.includes(categoria.id)} />
                             <ThemedText type="small">{categoria.nome}</ThemedText>
                           </Pressable>
                         ))}
@@ -188,7 +308,7 @@ export function FiltrosModal({
                                       key={categoria.id}
                                       onPress={() => alternarCategoria(categoria.id)}
                                       style={styles.linhaSelecionavel}>
-                                      <Marcador marcado={categoriaIds.includes(categoria.id)} />
+                                      <Marcador marcado={categoriaIdsDraft.includes(categoria.id)} />
                                       <ThemedText type="small">{categoria.nome}</ThemedText>
                                     </Pressable>
                                   ))}
@@ -204,24 +324,33 @@ export function FiltrosModal({
               })}
               {gruposData?.semGrupo && gruposData.semGrupo.length > 0 && (
                 <ThemedView style={styles.grupo}>
-                  {gruposData.grupos.length > 0 && (
+                  <Pressable onPress={() => alternarGrupo('sem-grupo')} style={styles.grupoHeader}>
+                    <ThemedText type="small">{grupoExpandido('sem-grupo') ? '▾' : '▸'}</ThemedText>
                     <ThemedText type="smallBold" themeColor="textSecondary">
                       Sem grupo
                     </ThemedText>
+                  </Pressable>
+                  {grupoExpandido('sem-grupo') && (
+                    <ThemedView style={styles.grupoConteudo}>
+                      {gruposData.semGrupo.map((categoria) => (
+                        <Pressable
+                          key={categoria.id}
+                          onPress={() => alternarCategoria(categoria.id)}
+                          style={styles.linhaSelecionavel}>
+                          <Marcador marcado={categoriaIdsDraft.includes(categoria.id)} />
+                          <ThemedText type="small">{categoria.nome}</ThemedText>
+                        </Pressable>
+                      ))}
+                    </ThemedView>
                   )}
-                  {gruposData.semGrupo.map((categoria) => (
-                    <Pressable
-                      key={categoria.id}
-                      onPress={() => alternarCategoria(categoria.id)}
-                      style={styles.linhaSelecionavel}>
-                      <Marcador marcado={categoriaIds.includes(categoria.id)} />
-                      <ThemedText type="small">{categoria.nome}</ThemedText>
-                    </Pressable>
-                  ))}
                 </ThemedView>
               )}
             </ThemedView>
           </ScrollView>
+
+          <ThemedView style={[styles.rodape, { borderTopColor: theme.border }]}>
+            <Button title="Filtrar" onPress={aplicar} style={styles.botaoFiltrar} />
+          </ThemedView>
         </SafeAreaView>
       </ThemedView>
     </Modal>
@@ -237,10 +366,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: Spacing.four,
   },
+  headerAcoes: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },
   scroll: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six, gap: Spacing.four },
   secao: { gap: Spacing.two },
   secaoHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  periodoLinha: { flexDirection: 'row', gap: Spacing.two },
+  periodoCampo: { flex: 1, gap: Spacing.one },
   linhaSelecionavel: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -260,4 +392,9 @@ const styles = StyleSheet.create({
   grupoHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, paddingVertical: Spacing.one },
   grupoConteudo: { paddingLeft: Spacing.three, gap: Spacing.half },
   subgrupo: { paddingLeft: Spacing.two, gap: Spacing.half },
+  rodape: {
+    borderTopWidth: 1,
+    padding: Spacing.four,
+  },
+  botaoFiltrar: { width: '100%' },
 });

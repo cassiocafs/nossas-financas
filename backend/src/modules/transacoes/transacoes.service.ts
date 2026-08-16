@@ -8,6 +8,7 @@ import {
   ultimoDiaMesUTC,
 } from "../../lib/datas.js";
 import { toNumber } from "../../lib/decimal.js";
+import { aprenderComTransacao } from "../regras/regras.service.js";
 import type {
   CriarTransacaoInput,
   CriarTransferenciaInput,
@@ -162,6 +163,8 @@ export async function criarTransacao(
     include: TRANSACAO_INCLUDE,
   });
 
+  await aprenderComTransacao(espacoId, input.descricao, input.contaId, input.categoriaId ?? null);
+
   return serializarTransacao(transacao);
 }
 
@@ -227,6 +230,13 @@ export async function editarTransacao(
     },
     include: TRANSACAO_INCLUDE,
   });
+
+  await aprenderComTransacao(
+    espacoId,
+    atualizada.descricao,
+    atualizada.contaId,
+    atualizada.categoriaId,
+  );
 
   return serializarTransacao(atualizada);
 }
@@ -365,8 +375,11 @@ export async function listarTransacoesMes(espacoId: string, filtros: ListarTrans
   const contaIdsEmEscopo = contas.map((c) => c.id);
   const saldoInicialTotal = contas.reduce((soma, c) => soma + toNumber(c.saldoInicial), 0);
 
-  const primeiroDia = primeiroDiaMesUTC(filtros.ano, filtros.mes);
-  const ultimoDia = ultimoDiaMesUTC(filtros.ano, filtros.mes);
+  const primeiroDiaMes = primeiroDiaMesUTC(filtros.ano, filtros.mes);
+  const ultimoDiaMes = ultimoDiaMesUTC(filtros.ano, filtros.mes);
+  const primeiroDia =
+    filtros.dataInicio && filtros.dataInicio > primeiroDiaMes ? filtros.dataInicio : primeiroDiaMes;
+  const ultimoDia = filtros.dataFim && filtros.dataFim < ultimoDiaMes ? filtros.dataFim : ultimoDiaMes;
   const buscaGlobal = Boolean(filtros.texto);
 
   const [saldoAnterior, transacoes] = await Promise.all([
@@ -385,6 +398,7 @@ export async function listarTransacoesMes(espacoId: string, filtros: ListarTrans
       },
       include: TRANSACAO_INCLUDE,
       orderBy: [{ data: "asc" }, { criadoEm: "asc" }],
+      ...(buscaGlobal ? { take: 200 } : {}),
     }),
   ]);
 
@@ -423,8 +437,13 @@ export async function listarTransacoesMes(espacoId: string, filtros: ListarTrans
   };
 }
 
-export async function buscarResumoMensal(espacoId: string, ano: number, mes: number) {
-  const contas = await resolverContasEmEscopo(espacoId, undefined);
+export async function buscarResumoMensal(
+  espacoId: string,
+  ano: number,
+  mes: number,
+  contaIds?: string[],
+) {
+  const contas = await resolverContasEmEscopo(espacoId, contaIds);
   const contaIdsEmEscopo = contas.map((c) => c.id);
   const saldoInicialTotal = contas.reduce((soma, c) => soma + toNumber(c.saldoInicial), 0);
 
@@ -522,18 +541,25 @@ export async function buscarEvolucaoSaldo(
   espacoId: string,
   inicio: { ano: number; mes: number },
   fim: { ano: number; mes: number },
+  contaIds?: string[],
 ) {
-  const contas = await resolverContasEmEscopo(espacoId, undefined);
+  const contas = await resolverContasEmEscopo(espacoId, contaIds);
   const contaIdsEmEscopo = contas.map((c) => c.id);
   const saldoInicialTotal = contas.reduce((soma, c) => soma + toNumber(c.saldoInicial), 0);
 
   const sequenciaMesesIntervalo = sequenciaMeses(inicio.ano, inicio.mes, fim.ano, fim.mes);
   const primeiroDia = primeiroDiaMesUTC(sequenciaMesesIntervalo[0].ano, sequenciaMesesIntervalo[0].mes);
+  const ultimoMesIntervalo = sequenciaMesesIntervalo[sequenciaMesesIntervalo.length - 1];
+  const ultimoDiaIntervalo = ultimoDiaMesUTC(ultimoMesIntervalo.ano, ultimoMesIntervalo.mes);
 
   const [saldoAnterior, transacoes] = await Promise.all([
     calcularSaldoAnterior(espacoId, contaIdsEmEscopo, saldoInicialTotal, primeiroDia),
     prisma.transacao.findMany({
-      where: { espacoId, contaId: { in: contaIdsEmEscopo }, data: { gte: primeiroDia } },
+      where: {
+        espacoId,
+        contaId: { in: contaIdsEmEscopo },
+        data: { gte: primeiroDia, lte: ultimoDiaIntervalo },
+      },
       select: { data: true, valor: true },
       orderBy: { data: "asc" },
     }),

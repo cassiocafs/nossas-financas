@@ -8,6 +8,7 @@ import { OrcamentoPage } from "@/pages/OrcamentoPage";
 import { ConfiguracoesPage } from "@/pages/ConfiguracoesPage";
 import { ContasSection } from "@/components/contas/ContasSection";
 import { CategoriasSection } from "@/components/categorias/CategoriasSection";
+import { RegrasSection } from "@/components/regras/RegrasSection";
 import { ImportarExtratoSection } from "@/components/importacao/ImportarExtratoSection";
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
           <Route index element={<Navigate to="contas" replace />} />
           <Route path="contas" element={<ContasSection />} />
           <Route path="categorias" element={<CategoriasSection />} />
+          <Route path="regras" element={<RegrasSection />} />
           <Route path="importacao" element={<ImportarExtratoSection />} />
         </Route>
       </Route>
