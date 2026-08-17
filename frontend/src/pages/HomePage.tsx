@@ -133,7 +133,7 @@ export function HomePage() {
   const resultado = data ? data.totalEntradas - data.totalSaidas : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-4 sm:pt-6 lg:pt-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm text-muted-foreground">Patrimônio nas contas</p>

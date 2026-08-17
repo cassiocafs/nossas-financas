@@ -14,6 +14,7 @@ import { useTheme } from '@/hooks/use-theme';
 interface DateFieldProps {
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }
 
 function paraDate(iso: string): Date {
@@ -34,7 +35,7 @@ function paraBR(iso: string): string {
   return `${dia}-${mes}-${ano}`;
 }
 
-export function DateField({ value, onChange }: DateFieldProps) {
+export function DateField({ value, onChange, disabled }: DateFieldProps) {
   const theme = useTheme();
   const scheme = useColorScheme();
   const [aberto, setAberto] = useState(false);
@@ -58,7 +59,8 @@ export function DateField({ value, onChange }: DateFieldProps) {
         }}
         placeholder="DD-MM-AAAA"
         placeholderTextColor={theme.textTertiary}
-        style={[styles.input, { borderColor: theme.border, color: theme.text }]}
+        editable={!disabled}
+        style={[styles.input, { borderColor: theme.border, color: theme.text }, disabled && styles.desabilitado]}
       />
     );
   }
@@ -66,8 +68,9 @@ export function DateField({ value, onChange }: DateFieldProps) {
   return (
     <>
       <Pressable
-        onPress={() => setAberto(true)}
-        style={[styles.input, { borderColor: theme.border }]}
+        onPress={() => !disabled && setAberto(true)}
+        disabled={disabled}
+        style={[styles.input, { borderColor: theme.border }, disabled && styles.desabilitado]}
         accessibilityRole="button">
         <ThemedText type="default" style={styles.inputText}>
           {paraBR(value)}
@@ -123,6 +126,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   inputText: { flex: 1 },
+  desabilitado: { opacity: 0.5 },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15, 23, 42, 0.4)' },
   sheet: {
     borderTopLeftRadius: Radius.card,

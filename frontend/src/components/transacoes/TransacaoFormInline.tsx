@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listarContas } from "@/api/contas";
-import { sugerirCategoria } from "@/api/categorias";
+import { listarGrupos, sugerirCategoria } from "@/api/categorias";
 import { sugerirTransacao } from "@/api/regras";
 import {
+  buscarTransferencia,
   criarTransacao,
   criarTransferencia,
   editarTransacao,
@@ -21,6 +22,7 @@ function hojeISO(): string {
 }
 
 const CHAVE_ULTIMA_DATA = "nossas-financas:ultima-data-transacao";
+const CHAVE_ULTIMA_CONTA = "nossas-financas:ultima-conta-transacao";
 
 function obterUltimaDataUsada(): string {
   try {
@@ -36,6 +38,51 @@ function salvarUltimaDataUsada(data: string) {
   } catch {
     // localStorage indisponível, ignora
   }
+}
+
+function obterUltimaContaUsada(): string {
+  try {
+    return localStorage.getItem(CHAVE_ULTIMA_CONTA) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function salvarUltimaContaUsada(contaId: string) {
+  try {
+    localStorage.setItem(CHAVE_ULTIMA_CONTA, contaId);
+  } catch {
+    // localStorage indisponível, ignora
+  }
+}
+
+const REGEX_DIACRITICOS = /[̀-ͯ]/g;
+
+function normalizar(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(REGEX_DIACRITICOS, "");
+}
+
+function escaparRegex(texto: string): string {
+  return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function encontrarCategoriaPorNome(
+  descricao: string,
+  categorias: { id: string; nome: string }[],
+): string | null {
+  const descricaoNormalizada = normalizar(descricao);
+  const candidatas = [...categorias]
+    .filter((c) => c.nome.trim().length > 0)
+    .sort((a, b) => b.nome.length - a.nome.length);
+  for (const categoria of candidatas) {
+    const nomeNormalizado = normalizar(categoria.nome);
+    const regex = new RegExp(`(^|[^a-z0-9])${escaparRegex(nomeNormalizado)}([^a-z0-9]|$)`, "i");
+    if (regex.test(descricaoNormalizada)) return categoria.id;
+  }
+  return null;
 }
 
 interface TransacaoFormInlineProps {
@@ -64,18 +111,51 @@ export function TransacaoFormInline({
     [contasData],
   );
 
+  const { data: categoriasData } = useQuery({
+    queryKey: ["categorias", "grupos"],
+    queryFn: listarGrupos,
+  });
+
+  const { data: transferencia } = useQuery({
+    queryKey: ["transferencia", transacao?.transferenciaGrupoId],
+    queryFn: () => buscarTransferencia(transacao!.transferenciaGrupoId!),
+    enabled: isEdicaoTransferencia,
+  });
+  const categoriasFlat = useMemo(() => {
+    if (!categoriasData) return [];
+    const lista: { id: string; nome: string }[] = [];
+    for (const grupo of categoriasData.grupos) {
+      for (const subgrupo of grupo.subgrupos) {
+        for (const c of subgrupo.categorias) lista.push({ id: c.id, nome: c.nome });
+      }
+      for (const c of grupo.categorias) lista.push({ id: c.id, nome: c.nome });
+    }
+    for (const c of categoriasData.semGrupo) lista.push({ id: c.id, nome: c.nome });
+    return lista;
+  }, [categoriasData]);
+
   const [tipo, setTipo] = useState<TipoTransacao>(transacao?.tipo ?? "DESPESA");
   const [data, setData] = useState(transacao?.data ?? obterUltimaDataUsada());
   const [descricao, setDescricao] = useState(transacao?.descricao ?? "");
-  const [contaId, setContaId] = useState(transacao?.contaId ?? contaIdPadrao ?? "");
+  const [contaId, setContaId] = useState(
+    transacao?.contaId ?? contaIdPadrao ?? obterUltimaContaUsada(),
+  );
   const [categoriaId, setCategoriaId] = useState(transacao?.categoriaId ?? "");
   const [categoriaTocada, setCategoriaTocada] = useState(editando);
-  const [contaTocada, setContaTocada] = useState(editando || !!contaIdPadrao);
+  const [contaTocada, setContaTocada] = useState(
+    editando || !!contaIdPadrao || !!obterUltimaContaUsada(),
+  );
   const [valor, setValor] = useState(transacao ? Math.abs(transacao.valor) : 0);
   const [consolidado, setConsolidado] = useState(transacao ? transacao.consolidado : true);
   const [nota, setNota] = useState(transacao?.nota ?? "");
   const [contaOrigemId, setContaOrigemId] = useState("");
   const [contaDestinoId, setContaDestinoId] = useState("");
+
+  useEffect(() => {
+    if (!transferencia || contaOrigemId || contaDestinoId) return;
+    setContaOrigemId(transferencia.contaOrigem?.id ?? "");
+    setContaDestinoId(transferencia.contaDestino?.id ?? "");
+  }, [transferencia, contaOrigemId, contaDestinoId]);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -97,6 +177,11 @@ export function TransacaoFormInline({
           const sugestao = await sugerirCategoria(descricao.trim());
           if (sugestao.categoriaId && !categoriaTocada) {
             setCategoriaId(sugestao.categoriaId);
+          } else if (!categoriaTocada) {
+            const categoriaPorNome = encontrarCategoriaPorNome(descricao.trim(), categoriasFlat);
+            if (categoriaPorNome && !categoriaTocada) {
+              setCategoriaId(categoriaPorNome);
+            }
           }
         }
       } catch {
@@ -112,17 +197,14 @@ export function TransacaoFormInline({
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onCancel();
+      if (e.key === "Escape" && !mutation.isPending) onCancel();
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onCancel]);
+  }, [onCancel, mutation.isPending]);
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (isEdicaoTransferencia && tipo === "TRANSFERENCIA") {
-        return editarTransacao(transacao!.id, { data, descricao, nota, consolidado });
-      }
       if (tipo === "TRANSFERENCIA") {
         if (editando) await excluirTransacao(transacao!.id);
         return criarTransferencia({
@@ -175,7 +257,8 @@ export function TransacaoFormInline({
               key={t}
               type="button"
               onClick={() => setTipo(t)}
-              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+              disabled={mutation.isPending}
+              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                 tipo === t ? `card-surface ${tone}` : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -209,6 +292,7 @@ export function TransacaoFormInline({
             setData(e.target.value);
             if (!editando) salvarUltimaDataUsada(e.target.value);
           }}
+          disabled={mutation.isPending}
           className={`w-[145px] shrink-0 ${campoClasse}`}
         />
 
@@ -217,46 +301,39 @@ export function TransacaoFormInline({
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
           placeholder="Descrição"
+          disabled={mutation.isPending}
           className={`min-w-[140px] flex-1 ${campoClasse}`}
         />
 
         {tipo === "TRANSFERENCIA" ? (
-          isEdicaoTransferencia ? (
+          <>
             <select
-              value={transacao!.contaId}
-              disabled
+              value={contaOrigemId}
+              onChange={(e) => setContaOrigemId(e.target.value)}
+              disabled={mutation.isPending}
               className={`w-[150px] shrink-0 ${campoClasse}`}
             >
-              <option value={transacao!.contaId}>{transacao!.conta.nome}</option>
+              <option value="">Conta origem</option>
+              {contas.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nome}
+                </option>
+              ))}
             </select>
-          ) : (
-            <>
-              <select
-                value={contaOrigemId}
-                onChange={(e) => setContaOrigemId(e.target.value)}
-                className={`w-[150px] shrink-0 ${campoClasse}`}
-              >
-                <option value="">Conta origem</option>
-                {contas.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={contaDestinoId}
-                onChange={(e) => setContaDestinoId(e.target.value)}
-                className={`w-[150px] shrink-0 ${campoClasse}`}
-              >
-                <option value="">Conta destino</option>
-                {contas.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome}
-                  </option>
-                ))}
-              </select>
-            </>
-          )
+            <select
+              value={contaDestinoId}
+              onChange={(e) => setContaDestinoId(e.target.value)}
+              disabled={mutation.isPending}
+              className={`w-[150px] shrink-0 ${campoClasse}`}
+            >
+              <option value="">Conta destino</option>
+              {contas.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nome}
+                </option>
+              ))}
+            </select>
+          </>
         ) : (
           <>
             <div className="w-[170px] shrink-0">
@@ -266,6 +343,7 @@ export function TransacaoFormInline({
                   setCategoriaId(v);
                   setCategoriaTocada(true);
                 }}
+                disabled={mutation.isPending}
               />
             </div>
             <div className="w-[150px] shrink-0">
@@ -274,19 +352,17 @@ export function TransacaoFormInline({
                 onChange={(v) => {
                   setContaId(v);
                   setContaTocada(true);
+                  if (!editando) salvarUltimaContaUsada(v);
                 }}
                 contas={contas}
+                disabled={mutation.isPending}
               />
             </div>
           </>
         )}
 
         <div className="w-[130px] shrink-0">
-          <CurrencyInput
-            value={valor}
-            onChange={setValor}
-            disabled={isEdicaoTransferencia && tipo === "TRANSFERENCIA"}
-          />
+          <CurrencyInput value={valor} onChange={setValor} disabled={mutation.isPending} />
         </div>
 
         <label
@@ -297,6 +373,7 @@ export function TransacaoFormInline({
             type="checkbox"
             checked={consolidado}
             onChange={(e) => setConsolidado(e.target.checked)}
+            disabled={mutation.isPending}
             className="accent-primary"
           />
         </label>
@@ -306,6 +383,7 @@ export function TransacaoFormInline({
             value={nota}
             onChange={(e) => setNota(e.target.value)}
             placeholder="Nota (opcional)"
+            disabled={mutation.isPending}
             className={`min-w-[160px] flex-1 basis-full ${campoClasse}`}
           />
         )}
@@ -317,7 +395,13 @@ export function TransacaoFormInline({
         )}
 
         {editando && (
-          <Button type="button" variant="ghost" onClick={onCancel} className="shrink-0">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onCancel}
+            disabled={mutation.isPending}
+            className="shrink-0"
+          >
             Cancelar
           </Button>
         )}

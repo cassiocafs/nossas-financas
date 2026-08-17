@@ -55,6 +55,15 @@ transacoesRouter.get(
 );
 
 transacoesRouter.get(
+  "/transferencias/:grupoId",
+  asyncHandler(async (req, res) => {
+    const grupoId = idSchema.parse(req.params.grupoId);
+    const transferencia = await transacoesService.buscarTransferencia(req.espacoId!, grupoId);
+    res.json(transferencia);
+  }),
+);
+
+transacoesRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
     const id = idSchema.parse(req.params.id);

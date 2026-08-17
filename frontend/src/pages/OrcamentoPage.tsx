@@ -69,7 +69,7 @@ export function OrcamentoPage() {
   const percentualUsado = grade && grade.totalPrevisto > 0 ? (grade.totalRealizado / grade.totalPrevisto) * 100 : 0;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pt-4 sm:pt-6 lg:pt-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-foreground">Orçamento</h1>
         <AnoSelector orcamentoId={orcamentoId} onSelecionar={setOrcamentoId} />

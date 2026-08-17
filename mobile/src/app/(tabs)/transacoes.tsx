@@ -131,18 +131,20 @@ export default function TransacoesScreen() {
   const dias = data?.dias ?? [];
 
   type ItemLista =
-    | { tipo: 'cabecalho'; key: string; data: string; saldoDia: number }
-    | { tipo: 'transacao'; key: string; transacao: Transacao };
+    | { tipo: 'cabecalho'; key: string; data: string }
+    | { tipo: 'transacao'; key: string; transacao: Transacao }
+    | { tipo: 'rodape'; key: string; saldoDia: number };
 
   const itensLista = useMemo<ItemLista[]>(
     () =>
       (data?.dias ?? []).flatMap((dia) => [
-        { tipo: 'cabecalho' as const, key: `cabecalho-${dia.data}`, data: dia.data, saldoDia: dia.saldoDia },
+        { tipo: 'cabecalho' as const, key: `cabecalho-${dia.data}`, data: dia.data },
         ...dia.transacoes.map((transacao) => ({
           tipo: 'transacao' as const,
           key: transacao.id,
           transacao,
         })),
+        { tipo: 'rodape' as const, key: `rodape-${dia.data}`, saldoDia: dia.saldoDia },
       ]),
     [data?.dias],
   );
@@ -192,15 +194,24 @@ export default function TransacoesScreen() {
           refreshControl={
             <RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={theme.primary} />
           }
-          renderItem={({ item }: { item: ItemLista }) =>
-            item.tipo === 'cabecalho' ? (
-              <ThemedView style={styles.diaHeader}>
-                <ThemedText type="smallBold">{formatarDataCurta(item.data)}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary" numeric>
-                  Saldo do dia: {formatarValor(item.saldoDia)}
-                </ThemedText>
-              </ThemedView>
-            ) : (
+          renderItem={({ item }: { item: ItemLista }) => {
+            if (item.tipo === 'cabecalho') {
+              return (
+                <ThemedView style={styles.diaHeader}>
+                  <ThemedText type="smallBold">{formatarDataCurta(item.data)}</ThemedText>
+                </ThemedView>
+              );
+            }
+            if (item.tipo === 'rodape') {
+              return (
+                <ThemedView style={styles.diaRodape}>
+                  <ThemedText type="small" themeColor="textSecondary" numeric>
+                    Saldo do dia: {formatarValor(item.saldoDia)}
+                  </ThemedText>
+                </ThemedView>
+              );
+            }
+            return (
               <TransacaoItem
                 transacao={item.transacao}
                 selecionado={selectedIds.includes(item.transacao.id)}
@@ -208,8 +219,8 @@ export default function TransacoesScreen() {
                 onPress={() => aoPressionar(item.transacao)}
                 onLongPress={() => aoSegurar(item.transacao)}
               />
-            )
-          }
+            );
+          }}
         />
 
         <AcoesLoteBar selectedIds={selectedIds} onDone={() => setSelectedIds([])} />
@@ -283,5 +294,6 @@ const styles = StyleSheet.create({
   },
   centro: { marginTop: Spacing.five },
   lista: { padding: Spacing.three, gap: Spacing.two, flexGrow: 1 },
-  diaHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  diaHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.two },
+  diaRodape: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
 });

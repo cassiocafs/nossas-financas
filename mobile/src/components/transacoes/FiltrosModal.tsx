@@ -12,6 +12,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { DateField } from '@/components/ui/DateField';
+import { DropdownField } from '@/components/ui/DropdownField';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -121,6 +122,27 @@ export function FiltrosModal({
     queryKey: ['categorias', 'grupos'],
     queryFn: listarGrupos,
   });
+
+  const resumoContas =
+    contasOrdenadas.length === 0
+      ? 'Nenhuma conta'
+      : contaIdsDraft.length === 0
+        ? 'Nenhuma conta selecionada'
+        : contaIdsDraft.length === contasOrdenadas.length
+          ? 'Todas as contas'
+          : `${contaIdsDraft.length} de ${contasOrdenadas.length} contas`;
+
+  const totalCategorias =
+    (gruposData?.grupos.reduce((total, grupo) => {
+      const doGrupo = grupo.categorias.length;
+      const dosSubgrupos = grupo.subgrupos.reduce((soma, sub) => soma + sub.categorias.length, 0);
+      return total + doGrupo + dosSubgrupos;
+    }, 0) ?? 0) + (gruposData?.semGrupo?.length ?? 0);
+
+  const resumoCategorias =
+    categoriaIdsDraft.length === 0
+      ? 'Todas as categorias'
+      : `${categoriaIdsDraft.length} de ${totalCategorias} selecionadas`;
 
   function alternarConta(id: string) {
     setContaIdsDraft((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
@@ -232,54 +254,110 @@ export function FiltrosModal({
             </ThemedView>
 
             <ThemedView style={styles.secao}>
-              <ThemedView style={styles.secaoHeader}>
-                <ThemedText type="smallBold">
-                  Contas{contaIdsDraft.length > 0 && contaIdsDraft.length < contasOrdenadas.length
-                    ? ` (${contaIdsDraft.length})`
-                    : ''}
-                </ThemedText>
-                <Pressable onPress={alternarTodasContas} hitSlop={8}>
+              <ThemedText type="smallBold">Contas</ThemedText>
+              <DropdownField label={resumoContas} title="Selecionar contas">
+                <ThemedView style={styles.secaoHeader}>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {contaIdsDraft.length === contasOrdenadas.length ? 'Limpar' : 'Todas'}
+                    {resumoContas}
                   </ThemedText>
-                </Pressable>
-              </ThemedView>
-              <ThemedView style={styles.chipsRow}>
-                {contasOrdenadas.map((conta) => (
-                  <Chip
-                    key={conta.id}
-                    label={conta.nome}
-                    selected={contaIdsDraft.includes(conta.id)}
-                    onPress={() => alternarConta(conta.id)}
-                  />
-                ))}
-              </ThemedView>
+                  <Pressable onPress={alternarTodasContas} hitSlop={8}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {contaIdsDraft.length === contasOrdenadas.length ? 'Limpar' : 'Todas'}
+                    </ThemedText>
+                  </Pressable>
+                </ThemedView>
+                <ThemedView style={styles.chipsRow}>
+                  {contasOrdenadas.map((conta) => (
+                    <Chip
+                      key={conta.id}
+                      label={conta.nome}
+                      selected={contaIdsDraft.includes(conta.id)}
+                      onPress={() => alternarConta(conta.id)}
+                    />
+                  ))}
+                </ThemedView>
+              </DropdownField>
             </ThemedView>
 
             <ThemedView style={styles.secao}>
-              <ThemedView style={styles.secaoHeader}>
-                <ThemedText type="smallBold">
-                  Categorias{categoriaIdsDraft.length > 0 ? ` (${categoriaIdsDraft.length})` : ''}
-                </ThemedText>
-                {categoriaIdsDraft.length > 0 && (
-                  <Pressable onPress={() => setCategoriaIdsDraft([])} hitSlop={8}>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      Limpar
-                    </ThemedText>
-                  </Pressable>
-                )}
-              </ThemedView>
-              {gruposData?.grupos.map((grupo) => {
-                const expandido = grupoExpandido(grupo.id);
-                return (
-                  <ThemedView key={grupo.id} style={styles.grupo}>
-                    <Pressable onPress={() => alternarGrupo(grupo.id)} style={styles.grupoHeader}>
-                      <ThemedText type="small">{expandido ? '▾' : '▸'}</ThemedText>
-                      <ThemedText type="smallBold">{grupo.nome}</ThemedText>
+              <ThemedText type="smallBold">Categorias</ThemedText>
+              <DropdownField label={resumoCategorias} title="Selecionar categorias">
+                <ThemedView style={styles.secaoHeader}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {resumoCategorias}
+                  </ThemedText>
+                  {categoriaIdsDraft.length > 0 && (
+                    <Pressable onPress={() => setCategoriaIdsDraft([])} hitSlop={8}>
+                      <ThemedText type="small" themeColor="textSecondary">
+                        Limpar
+                      </ThemedText>
                     </Pressable>
-                    {expandido && (
+                  )}
+                </ThemedView>
+                {gruposData?.grupos.map((grupo) => {
+                  const expandido = grupoExpandido(grupo.id);
+                  return (
+                    <ThemedView key={grupo.id} style={styles.grupo}>
+                      <Pressable onPress={() => alternarGrupo(grupo.id)} style={styles.grupoHeader}>
+                        <ThemedText type="small">{expandido ? '▾' : '▸'}</ThemedText>
+                        <ThemedText type="smallBold">{grupo.nome}</ThemedText>
+                      </Pressable>
+                      {expandido && (
+                        <ThemedView style={styles.grupoConteudo}>
+                          {grupo.categorias.map((categoria) => (
+                            <Pressable
+                              key={categoria.id}
+                              onPress={() => alternarCategoria(categoria.id)}
+                              style={styles.linhaSelecionavel}>
+                              <Marcador marcado={categoriaIdsDraft.includes(categoria.id)} />
+                              <ThemedText type="small">{categoria.nome}</ThemedText>
+                            </Pressable>
+                          ))}
+                          {grupo.subgrupos.map((subgrupo) => {
+                            const subChave = `sub-${subgrupo.id}`;
+                            const subExpandido = grupoExpandido(subChave);
+                            return (
+                              <ThemedView key={subgrupo.id} style={styles.subgrupo}>
+                                <Pressable
+                                  onPress={() => alternarGrupo(subChave)}
+                                  style={styles.grupoHeader}>
+                                  <ThemedText type="small">{subExpandido ? '▾' : '▸'}</ThemedText>
+                                  <ThemedText type="small" themeColor="textSecondary">
+                                    {subgrupo.nome}
+                                  </ThemedText>
+                                </Pressable>
+                                {subExpandido && (
+                                  <ThemedView style={styles.grupoConteudo}>
+                                    {subgrupo.categorias.map((categoria) => (
+                                      <Pressable
+                                        key={categoria.id}
+                                        onPress={() => alternarCategoria(categoria.id)}
+                                        style={styles.linhaSelecionavel}>
+                                        <Marcador marcado={categoriaIdsDraft.includes(categoria.id)} />
+                                        <ThemedText type="small">{categoria.nome}</ThemedText>
+                                      </Pressable>
+                                    ))}
+                                  </ThemedView>
+                                )}
+                              </ThemedView>
+                            );
+                          })}
+                        </ThemedView>
+                      )}
+                    </ThemedView>
+                  );
+                })}
+                {gruposData?.semGrupo && gruposData.semGrupo.length > 0 && (
+                  <ThemedView style={styles.grupo}>
+                    <Pressable onPress={() => alternarGrupo('sem-grupo')} style={styles.grupoHeader}>
+                      <ThemedText type="small">{grupoExpandido('sem-grupo') ? '▾' : '▸'}</ThemedText>
+                      <ThemedText type="smallBold" themeColor="textSecondary">
+                        Sem grupo
+                      </ThemedText>
+                    </Pressable>
+                    {grupoExpandido('sem-grupo') && (
                       <ThemedView style={styles.grupoConteudo}>
-                        {grupo.categorias.map((categoria) => (
+                        {gruposData.semGrupo.map((categoria) => (
                           <Pressable
                             key={categoria.id}
                             onPress={() => alternarCategoria(categoria.id)}
@@ -288,63 +366,11 @@ export function FiltrosModal({
                             <ThemedText type="small">{categoria.nome}</ThemedText>
                           </Pressable>
                         ))}
-                        {grupo.subgrupos.map((subgrupo) => {
-                          const subChave = `sub-${subgrupo.id}`;
-                          const subExpandido = grupoExpandido(subChave);
-                          return (
-                            <ThemedView key={subgrupo.id} style={styles.subgrupo}>
-                              <Pressable
-                                onPress={() => alternarGrupo(subChave)}
-                                style={styles.grupoHeader}>
-                                <ThemedText type="small">{subExpandido ? '▾' : '▸'}</ThemedText>
-                                <ThemedText type="small" themeColor="textSecondary">
-                                  {subgrupo.nome}
-                                </ThemedText>
-                              </Pressable>
-                              {subExpandido && (
-                                <ThemedView style={styles.grupoConteudo}>
-                                  {subgrupo.categorias.map((categoria) => (
-                                    <Pressable
-                                      key={categoria.id}
-                                      onPress={() => alternarCategoria(categoria.id)}
-                                      style={styles.linhaSelecionavel}>
-                                      <Marcador marcado={categoriaIdsDraft.includes(categoria.id)} />
-                                      <ThemedText type="small">{categoria.nome}</ThemedText>
-                                    </Pressable>
-                                  ))}
-                                </ThemedView>
-                              )}
-                            </ThemedView>
-                          );
-                        })}
                       </ThemedView>
                     )}
                   </ThemedView>
-                );
-              })}
-              {gruposData?.semGrupo && gruposData.semGrupo.length > 0 && (
-                <ThemedView style={styles.grupo}>
-                  <Pressable onPress={() => alternarGrupo('sem-grupo')} style={styles.grupoHeader}>
-                    <ThemedText type="small">{grupoExpandido('sem-grupo') ? '▾' : '▸'}</ThemedText>
-                    <ThemedText type="smallBold" themeColor="textSecondary">
-                      Sem grupo
-                    </ThemedText>
-                  </Pressable>
-                  {grupoExpandido('sem-grupo') && (
-                    <ThemedView style={styles.grupoConteudo}>
-                      {gruposData.semGrupo.map((categoria) => (
-                        <Pressable
-                          key={categoria.id}
-                          onPress={() => alternarCategoria(categoria.id)}
-                          style={styles.linhaSelecionavel}>
-                          <Marcador marcado={categoriaIdsDraft.includes(categoria.id)} />
-                          <ThemedText type="small">{categoria.nome}</ThemedText>
-                        </Pressable>
-                      ))}
-                    </ThemedView>
-                  )}
-                </ThemedView>
-              )}
+                )}
+              </DropdownField>
             </ThemedView>
           </ScrollView>
 

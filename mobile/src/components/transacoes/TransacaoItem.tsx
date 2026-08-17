@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { Pressable, StyleSheet } from 'react-native';
 
 import type { Transacao } from '@/api/transacoes';
@@ -57,21 +58,36 @@ export function TransacaoItem({
               <ThemedText type={transacao.consolidado ? 'small' : 'smallBold'} style={styles.descricao} numberOfLines={1}>
                 {transacao.descricao}
               </ThemedText>
-              {transacao.tipo === 'TRANSFERENCIA' && (
-                <ThemedView type="transferSoft" style={styles.tag}>
-                  <ThemedText type="small" themeColor="transfer" style={styles.tagTexto}>
-                    Transf.
-                  </ThemedText>
-                </ThemedView>
-              )}
             </ThemedView>
             <Amount tipo={transacao.tipo} valor={transacao.valor} />
           </ThemedView>
-          <ThemedText type="small" themeColor="textSecondary">
-            {transacao.conta.nome}
-            {transacao.categoria ? ` · ${transacao.categoria.nome}` : ' · Sem categoria'}
-            {!transacao.consolidado ? ' · Pendente' : ''}
-          </ThemedText>
+          <ThemedView style={styles.subLinha}>
+            <ThemedText type="small" themeColor="textSecondary">
+              {transacao.conta.nome} ·{' '}
+            </ThemedText>
+            {transacao.tipo === 'TRANSFERENCIA' ? (
+              <ThemedView style={styles.categoriaTransferencia}>
+                <ThemedText type="small" themeColor="transfer">
+                  Transferência
+                </ThemedText>
+                <Feather
+                  name={transacao.valor < 0 ? 'arrow-up-right' : 'arrow-down-left'}
+                  size={11}
+                  color={theme.transfer}
+                />
+              </ThemedView>
+            ) : (
+              <ThemedText type="small" themeColor="textSecondary">
+                {transacao.categoria ? transacao.categoria.nome : 'Sem categoria'}
+              </ThemedText>
+            )}
+            {!transacao.consolidado && (
+              <ThemedText type="small" themeColor="textSecondary">
+                {' '}
+                · Pendente
+              </ThemedText>
+            )}
+          </ThemedView>
         </ThemedView>
       </ThemedView>
     </Pressable>
@@ -99,6 +115,6 @@ const styles = StyleSheet.create({
   linha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   descricaoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, flexShrink: 1 },
   descricao: { flexShrink: 1 },
-  tag: { paddingHorizontal: Spacing.two, paddingVertical: 1, borderRadius: Radius.pill },
-  tagTexto: { fontSize: 11, lineHeight: 14 },
+  subLinha: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
+  categoriaTransferencia: { flexDirection: 'row', alignItems: 'center', gap: 2 },
 });

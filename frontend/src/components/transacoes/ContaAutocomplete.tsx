@@ -154,9 +154,10 @@ export function ContaAutocomplete({
             <li key={c.id}>
               <button
                 type="button"
+                title={c.nome}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => selecionar(c.id)}
-                className={`block w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted ${
+                className={`block w-full truncate px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted ${
                   indiceAtivo === i ? "bg-muted" : ""
                 }`}
               >

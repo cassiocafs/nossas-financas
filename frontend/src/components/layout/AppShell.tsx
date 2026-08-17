@@ -18,9 +18,9 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className="flex h-screen flex-col bg-background text-foreground">
       <Navbar />
-      <main className="flex-1 p-4 sm:p-6 lg:p-8">
+      <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
         <Outlet />
       </main>
     </div>

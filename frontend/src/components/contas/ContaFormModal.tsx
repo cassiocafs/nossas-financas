@@ -20,9 +20,10 @@ interface ContaFormModalProps {
   open: boolean;
   onClose: () => void;
   conta?: Conta | null;
+  onSaved?: () => void;
 }
 
-export function ContaFormModal({ open, onClose, conta }: ContaFormModalProps) {
+export function ContaFormModal({ open, onClose, conta, onSaved }: ContaFormModalProps) {
   const queryClient = useQueryClient();
   const editando = !!conta;
 
@@ -52,6 +53,7 @@ export function ContaFormModal({ open, onClose, conta }: ContaFormModalProps) {
       editando ? editarConta(conta!.id, values) : criarConta(values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contas"] });
+      onSaved?.();
       onClose();
     },
   });

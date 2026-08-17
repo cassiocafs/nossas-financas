@@ -16,6 +16,7 @@ interface CategoriaSelectProps {
   placeholder?: string;
   title?: string;
   clearLabel?: string;
+  disabled?: boolean;
 }
 
 interface ItemCategoria {
@@ -42,6 +43,7 @@ export function CategoriaSelect({
   placeholder = 'Sem categoria',
   title = 'Selecionar categoria',
   clearLabel = 'Sem categoria',
+  disabled,
 }: CategoriaSelectProps) {
   const theme = useTheme();
   const { data } = useQuery({ queryKey: ['categorias', 'grupos'], queryFn: listarGrupos });
@@ -114,8 +116,9 @@ export function CategoriaSelect({
   return (
     <>
       <Pressable
-        onPress={() => setAberto(true)}
-        style={[styles.input, { borderColor: theme.border }]}
+        onPress={() => !disabled && setAberto(true)}
+        disabled={disabled}
+        style={[styles.input, { borderColor: theme.border }, disabled && styles.desabilitado]}
         accessibilityRole="button">
         <ThemedText
           type="default"
@@ -221,6 +224,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   inputText: { flex: 1 },
+  desabilitado: { opacity: 0.5 },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15, 23, 42, 0.4)' },
   sheet: {
     height: '85%',

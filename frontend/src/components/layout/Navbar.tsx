@@ -62,7 +62,7 @@ export function Navbar() {
   const email = session?.user.email ?? "";
 
   return (
-    <header className="flex shrink-0 flex-col gap-3 bg-primary px-4 py-3 text-primary-foreground sm:flex-row sm:items-center sm:gap-5 sm:px-6">
+    <header className="sticky top-0 z-20 flex shrink-0 flex-col gap-3 bg-primary px-4 py-3 text-primary-foreground sm:flex-row sm:items-center sm:gap-5 sm:px-6">
       <div className="flex shrink-0 items-center gap-2.5">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-foreground/15 text-sm font-semibold text-primary-foreground">
           N

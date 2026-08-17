@@ -40,24 +40,26 @@ export function TypeIcon({ tipo }: { tipo: TipoTransacao }) {
 
 interface TransacoesListaProps {
   dias: DiaTransacoes[];
+  saldoAnterior?: number;
+  headerOffset?: number;
   selectedIds: string[];
   onToggleSelect: (id: string) => void;
   editandoId: string | null;
   onEdit: (id: string | null) => void;
   onSaved: () => void;
   desabilitada?: boolean;
-  headerOffset?: number;
 }
 
 export function TransacoesLista({
   dias,
+  saldoAnterior,
+  headerOffset = 0,
   selectedIds,
   onToggleSelect,
   editandoId,
   onEdit,
   onSaved,
   desabilitada = false,
-  headerOffset = 0,
 }: TransacoesListaProps) {
   const queryClient = useQueryClient();
 
@@ -67,19 +69,30 @@ export function TransacoesLista({
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["transacoes"] }),
   });
 
+  const saldoAnteriorEl = saldoAnterior !== undefined && (
+    <div className="flex items-center justify-end gap-1.5 px-4 text-sm text-muted-foreground">
+      Saldo anterior: <Valor valor={saldoAnterior} neutro className="font-medium" />
+    </div>
+  );
+
   if (dias.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        Nenhuma transação neste período.
-      </p>
+      <div className="space-y-4">
+        {saldoAnteriorEl}
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          Nenhuma transação neste período.
+        </p>
+      </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      {saldoAnteriorEl}
+
       <div
         style={{ top: headerOffset }}
-        className={`sticky z-10 hidden ${COLUNAS} items-center gap-3 bg-background px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:grid`}
+        className={`sticky z-10 hidden ${COLUNAS} items-center gap-3 border-b border-border bg-background px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:grid`}
       >
         <span />
         <span />
@@ -127,18 +140,43 @@ export function TransacoesLista({
                     >
                       {t.descricao}
                     </span>
-                    {t.tipo === "TRANSFERENCIA" && (
-                      <span className="shrink-0 rounded-md border border-border bg-transfer-soft px-1.5 py-0.5 text-xs text-transfer">
-                        Transferência
-                      </span>
-                    )}
                   </span>
                   <span
-                    className={`truncate text-xs text-muted-foreground ${
+                    className={`flex items-center gap-1 truncate text-xs text-muted-foreground ${
                       t.consolidado ? "" : "font-bold"
-                    }`}
+                    } ${t.tipo === "TRANSFERENCIA" ? "text-transfer" : ""}`}
                   >
-                    {t.categoria ? t.categoria.nome : "—"}
+                    {t.tipo === "TRANSFERENCIA" ? (
+                      <>
+                        Transferência
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="size-3 shrink-0"
+                          aria-hidden="true"
+                        >
+                          {t.valor < 0 ? (
+                            <>
+                              <path d="M7 17 17 7" />
+                              <path d="M7 7h10v10" />
+                            </>
+                          ) : (
+                            <>
+                              <path d="M17 7 7 17" />
+                              <path d="M17 17H7V7" />
+                            </>
+                          )}
+                        </svg>
+                      </>
+                    ) : t.categoria ? (
+                      t.categoria.nome
+                    ) : (
+                      "—"
+                    )}
                   </span>
                   <span
                     className={`truncate text-xs text-muted-foreground ${

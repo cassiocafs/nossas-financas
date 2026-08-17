@@ -60,7 +60,7 @@ export function AcoesLoteBar({
   if (selectedIds.length === 0) return null;
 
   return (
-    <div className="card-surface flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
+    <div className="flex flex-wrap items-center gap-3">
       {excluindo ? (
         <span className="flex items-center gap-2 font-medium text-foreground">
           <svg

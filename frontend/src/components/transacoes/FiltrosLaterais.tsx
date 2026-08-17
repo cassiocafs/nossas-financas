@@ -1,10 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listarContas, type Conta } from "@/api/contas";
-import { listarGrupos, type Categoria } from "@/api/categorias";
+import {
+  listarGrupos,
+  type Categoria,
+  type GrupoCategoria,
+  type SubgrupoCategoria,
+} from "@/api/categorias";
 import { Valor } from "@/components/ui/Valor";
 import { ContaFormModal } from "@/components/contas/ContaFormModal";
 import { CategoriaFormModal } from "@/components/categorias/CategoriaFormModal";
+import { ExcluirCategoriaDialog } from "@/components/categorias/ExcluirCategoriaDialog";
+import { GrupoFormModal } from "@/components/categorias/GrupoFormModal";
+import { ExcluirGrupoDialog } from "@/components/categorias/ExcluirGrupoDialog";
+import { SubgrupoFormModal } from "@/components/categorias/SubgrupoFormModal";
+import { ExcluirSubgrupoDialog } from "@/components/categorias/ExcluirSubgrupoDialog";
+import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 
 interface FiltrosLateraisProps {
   contaIds: string[];
@@ -22,7 +33,21 @@ export function FiltrosLaterais({
   const [gruposExpandidos, setGruposExpandidos] = useState<Record<string, boolean>>({});
   const [contaEditando, setContaEditando] = useState<Conta | null>(null);
   const [categoriaEditando, setCategoriaEditando] = useState<Categoria | null>(null);
+  const [categoriaExcluindo, setCategoriaExcluindo] = useState<Categoria | null>(null);
   const [criandoCategoria, setCriandoCategoria] = useState(false);
+  const [novaCategoriaContexto, setNovaCategoriaContexto] = useState<{
+    grupoId: string | null;
+    subgrupoId: string | null;
+  } | null>(null);
+  const [grupoEditando, setGrupoEditando] = useState<GrupoCategoria | null>(null);
+  const [grupoExcluindo, setGrupoExcluindo] = useState<GrupoCategoria | null>(null);
+  const [subgrupoEditando, setSubgrupoEditando] = useState<SubgrupoCategoria | null>(null);
+  const [subgrupoExcluindo, setSubgrupoExcluindo] = useState<SubgrupoCategoria | null>(null);
+  const [menuContexto, setMenuContexto] = useState<{
+    x: number;
+    y: number;
+    itens: ContextMenuItem[];
+  } | null>(null);
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
   const mensagemTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -80,6 +105,53 @@ export function FiltrosLaterais({
 
   function alternarGrupo(id: string) {
     setGruposExpandidos((prev) => ({ ...prev, [id]: !grupoExpandido(id) }));
+  }
+
+  function abrirCriacaoCategoria(contexto: { grupoId: string | null; subgrupoId: string | null }) {
+    setNovaCategoriaContexto(contexto);
+    setCriandoCategoria(true);
+  }
+
+  function abrirMenuContexto(e: React.MouseEvent, itens: ContextMenuItem[]) {
+    e.preventDefault();
+    setMenuContexto({ x: e.clientX, y: e.clientY, itens });
+  }
+
+  function itensMenuCategoria(categoria: Categoria): ContextMenuItem[] {
+    return [
+      { label: "Editar", onClick: () => setCategoriaEditando(categoria) },
+      {
+        label: "Adicionar subcategoria",
+        onClick: () =>
+          abrirCriacaoCategoria({ grupoId: categoria.grupoId, subgrupoId: categoria.subgrupoId }),
+      },
+      { label: "Excluir", onClick: () => setCategoriaExcluindo(categoria), danger: true },
+    ];
+  }
+
+  function itensMenuGrupo(grupo: GrupoCategoria): ContextMenuItem[] {
+    return [
+      { label: "Editar", onClick: () => setGrupoEditando(grupo) },
+      {
+        label: "Adicionar subcategoria",
+        onClick: () => abrirCriacaoCategoria({ grupoId: grupo.id, subgrupoId: null }),
+      },
+      { label: "Excluir", onClick: () => setGrupoExcluindo(grupo), danger: true },
+    ];
+  }
+
+  function itensMenuSubgrupo(
+    grupo: GrupoCategoria,
+    subgrupo: SubgrupoCategoria,
+  ): ContextMenuItem[] {
+    return [
+      { label: "Editar", onClick: () => setSubgrupoEditando(subgrupo) },
+      {
+        label: "Adicionar subcategoria",
+        onClick: () => abrirCriacaoCategoria({ grupoId: grupo.id, subgrupoId: subgrupo.id }),
+      },
+      { label: "Excluir", onClick: () => setSubgrupoExcluindo(subgrupo), danger: true },
+    ];
   }
 
   const idsExpansiveis = useMemo(() => {
@@ -207,6 +279,7 @@ export function FiltrosLaterais({
                 <button
                   type="button"
                   onClick={() => alternarGrupo(grupo.id)}
+                  onContextMenu={(e) => abrirMenuContexto(e, itensMenuGrupo(grupo))}
                   className="flex w-full items-center gap-1.5 rounded px-1 py-1 text-left text-xs font-bold text-foreground/70 uppercase hover:bg-muted"
                 >
                   <span className="inline-block w-4 text-lg leading-none">
@@ -219,6 +292,7 @@ export function FiltrosLaterais({
                     {grupo.categorias.map((categoria) => (
                       <label
                         key={categoria.id}
+                        onContextMenu={(e) => abrirMenuContexto(e, itensMenuCategoria(categoria))}
                         className="group flex items-center gap-2 pl-5 text-foreground/80"
                       >
                         <input
@@ -248,6 +322,9 @@ export function FiltrosLaterais({
                           <button
                             type="button"
                             onClick={() => alternarGrupo(subChave)}
+                            onContextMenu={(e) =>
+                              abrirMenuContexto(e, itensMenuSubgrupo(grupo, subgrupo))
+                            }
                             className="flex w-full items-center gap-1.5 rounded px-1 py-1 pl-3 text-left text-xs font-semibold text-foreground/60 uppercase hover:bg-muted"
                           >
                             <span className="inline-block w-4 text-lg leading-none">
@@ -259,6 +336,9 @@ export function FiltrosLaterais({
                             subgrupo.categorias.map((categoria) => (
                               <label
                                 key={categoria.id}
+                                onContextMenu={(e) =>
+                                  abrirMenuContexto(e, itensMenuCategoria(categoria))
+                                }
                                 className="group flex items-center gap-2 pl-8 text-foreground/80"
                               >
                                 <input
@@ -298,6 +378,7 @@ export function FiltrosLaterais({
               {gruposData.semGrupo.map((categoria) => (
                 <label
                   key={categoria.id}
+                  onContextMenu={(e) => abrirMenuContexto(e, itensMenuCategoria(categoria))}
                   className="group flex items-center gap-2 pl-5 text-foreground/80"
                 >
                   <input
@@ -328,20 +409,60 @@ export function FiltrosLaterais({
         open={!!contaEditando}
         onClose={() => setContaEditando(null)}
         conta={contaEditando}
+        onSaved={() => mostrarMensagemSucesso("Conta alterada com sucesso")}
       />
       <CategoriaFormModal
         open={!!categoriaEditando || criandoCategoria}
         onClose={() => {
           setCategoriaEditando(null);
           setCriandoCategoria(false);
+          setNovaCategoriaContexto(null);
         }}
         categoria={categoriaEditando}
+        grupoIdInicial={novaCategoriaContexto?.grupoId ?? null}
+        subgrupoIdInicial={novaCategoriaContexto?.subgrupoId ?? null}
         onSaved={() =>
           mostrarMensagemSucesso(
-            criandoCategoria ? "Categoria criada com sucesso" : "Categoria atualizada com sucesso",
+            criandoCategoria ? "Categoria incluída com sucesso" : "Categoria alterada com sucesso",
           )
         }
       />
+      <ExcluirCategoriaDialog
+        open={!!categoriaExcluindo}
+        onClose={() => setCategoriaExcluindo(null)}
+        categoria={categoriaExcluindo}
+        onExcluida={() => mostrarMensagemSucesso("Categoria excluída com sucesso")}
+      />
+      <GrupoFormModal
+        open={!!grupoEditando}
+        onClose={() => setGrupoEditando(null)}
+        grupo={grupoEditando}
+        onSaved={() => mostrarMensagemSucesso("Grupo atualizado com sucesso")}
+      />
+      <ExcluirGrupoDialog
+        open={!!grupoExcluindo}
+        onClose={() => setGrupoExcluindo(null)}
+        grupo={grupoExcluindo}
+      />
+      <SubgrupoFormModal
+        open={!!subgrupoEditando}
+        onClose={() => setSubgrupoEditando(null)}
+        subgrupo={subgrupoEditando}
+        onSaved={() => mostrarMensagemSucesso("Subgrupo atualizado com sucesso")}
+      />
+      <ExcluirSubgrupoDialog
+        open={!!subgrupoExcluindo}
+        onClose={() => setSubgrupoExcluindo(null)}
+        subgrupo={subgrupoExcluindo}
+      />
+      {menuContexto && (
+        <ContextMenu
+          x={menuContexto.x}
+          y={menuContexto.y}
+          items={menuContexto.itens}
+          onClose={() => setMenuContexto(null)}
+        />
+      )}
     </aside>
   );
 }

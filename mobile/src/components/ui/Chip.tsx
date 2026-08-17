@@ -10,18 +10,19 @@ export type ChipProps = Omit<PressableProps, 'style'> & {
   style?: PressableProps['style'];
 };
 
-export function Chip({ label, selected, style, ...rest }: ChipProps) {
+export function Chip({ label, selected, style, disabled, ...rest }: ChipProps) {
   const theme = useTheme();
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ selected: !!selected }}
+      accessibilityState={{ selected: !!selected, disabled: !!disabled }}
+      disabled={disabled}
       style={(state) => [
         styles.base,
         {
           backgroundColor: selected ? theme.primary : theme.surface,
-          opacity: state.pressed ? 0.85 : 1,
+          opacity: disabled ? 0.5 : state.pressed ? 0.85 : 1,
         },
         typeof style === 'function' ? style(state) : style,
       ]}

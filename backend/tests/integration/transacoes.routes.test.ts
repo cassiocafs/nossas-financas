@@ -67,4 +67,47 @@ describe("rotas de transações", () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("Dados inválidos");
   });
+
+  it("GET /api/transacoes/transferencias/:grupoId retorna contas de origem e destino", async () => {
+    const grupoId = "22222222-2222-4222-8222-222222222222";
+    const contaOrigemId = "11111111-1111-4111-8111-111111111111";
+    const contaDestinoId = "33333333-3333-4333-8333-333333333333";
+    mockPrisma.transacao.findMany.mockResolvedValue([
+      {
+        id: "t-1",
+        tipo: "TRANSFERENCIA",
+        data: new Date("2026-07-10T00:00:00.000Z"),
+        descricao: "Transferência entre contas",
+        contaId: contaOrigemId,
+        conta: { id: contaOrigemId, nome: "Carteira" },
+        categoriaId: null,
+        categoria: null,
+        valor: -100,
+        consolidado: true,
+        nota: null,
+        transferenciaGrupoId: grupoId,
+      },
+      {
+        id: "t-2",
+        tipo: "TRANSFERENCIA",
+        data: new Date("2026-07-10T00:00:00.000Z"),
+        descricao: "Transferência entre contas",
+        contaId: contaDestinoId,
+        conta: { id: contaDestinoId, nome: "Poupança" },
+        categoriaId: null,
+        categoria: null,
+        valor: 100,
+        consolidado: true,
+        nota: null,
+        transferenciaGrupoId: grupoId,
+      },
+    ]);
+
+    const app = createApp();
+    const res = await request(app).get(`/api/transacoes/transferencias/${grupoId}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.contaOrigem).toEqual({ id: contaOrigemId, nome: "Carteira" });
+    expect(res.body.contaDestino).toEqual({ id: contaDestinoId, nome: "Poupança" });
+  });
 });

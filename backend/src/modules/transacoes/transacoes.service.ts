@@ -139,6 +139,34 @@ export async function buscarTransacao(espacoId: string, id: string): Promise<Tra
   return serializarTransacao(transacao);
 }
 
+export interface TransferenciaDTO {
+  transferenciaGrupoId: string;
+  contaOrigem: { id: string; nome: string } | null;
+  contaDestino: { id: string; nome: string } | null;
+  transacoes: TransacaoDTO[];
+}
+
+export async function buscarTransferencia(
+  espacoId: string,
+  grupoId: string,
+): Promise<TransferenciaDTO> {
+  const transacoes = await prisma.transacao.findMany({
+    where: { espacoId, transferenciaGrupoId: grupoId },
+    include: TRANSACAO_INCLUDE,
+  });
+  if (transacoes.length === 0) throw new HttpError(404, "Transferência não encontrada");
+
+  const origem = transacoes.find((t) => toNumber(t.valor) < 0) ?? null;
+  const destino = transacoes.find((t) => toNumber(t.valor) > 0) ?? null;
+
+  return {
+    transferenciaGrupoId: grupoId,
+    contaOrigem: origem?.conta ?? null,
+    contaDestino: destino?.conta ?? null,
+    transacoes: transacoes.map(serializarTransacao),
+  };
+}
+
 export async function criarTransacao(
   espacoId: string,
   input: CriarTransacaoInput,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { StatusFiltro } from "@/api/transacoes";
 import { Card } from "@/components/ui/Card";
 
@@ -7,6 +7,9 @@ interface BuscaEStatusBarProps {
   onTextoChange: (texto: string) => void;
   status: StatusFiltro;
   onStatusChange: (status: StatusFiltro) => void;
+  extra?: ReactNode;
+  acoesLote?: ReactNode;
+  className?: string;
 }
 
 export function BuscaEStatusBar({
@@ -14,62 +17,63 @@ export function BuscaEStatusBar({
   onTextoChange,
   status,
   onStatusChange,
+  extra,
+  acoesLote,
+  className = "",
 }: BuscaEStatusBarProps) {
   const [rascunhoBusca, setRascunhoBusca] = useState(texto);
 
   return (
-    <Card className="flex flex-wrap items-center gap-4 px-4 py-3 text-sm">
-      <div className="flex min-w-[200px] flex-1 gap-2">
-        <div className="relative w-full">
-          <input
-            value={rascunhoBusca}
-            onChange={(e) => setRascunhoBusca(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onTextoChange(rascunhoBusca)}
-            placeholder="Buscar transações..."
-            className="w-full rounded-xl border border-input bg-background px-3 py-2 pr-16 text-sm text-foreground"
-          />
-          {rascunhoBusca && (
-            <button
-              type="button"
-              onClick={() => {
-                setRascunhoBusca("");
-                onTextoChange("");
-              }}
-              className="absolute top-1/2 right-2 -translate-y-1/2 text-xs font-medium text-muted-foreground hover:text-foreground"
-            >
-              Limpar
-            </button>
-          )}
+    <Card className={`flex flex-col gap-3 px-4 py-3 text-sm ${className}`}>
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex w-full max-w-xs gap-2">
+          <div className="relative w-full">
+            <input
+              value={rascunhoBusca}
+              onChange={(e) => setRascunhoBusca(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && onTextoChange(rascunhoBusca)}
+              placeholder="Buscar transações..."
+              className="w-full rounded-xl border border-input bg-background px-3 py-2 pr-16 text-sm text-foreground"
+            />
+            {rascunhoBusca && (
+              <button
+                type="button"
+                onClick={() => {
+                  setRascunhoBusca("");
+                  onTextoChange("");
+                }}
+                className="absolute top-1/2 right-2 -translate-y-1/2 text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                Limpar
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => onTextoChange(rascunhoBusca)}
+            className="shrink-0 rounded-xl border border-input px-3 py-2 text-sm text-foreground/80"
+          >
+            Buscar
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => onTextoChange(rascunhoBusca)}
-          className="shrink-0 rounded-xl border border-input px-3 py-2 text-sm text-foreground/80"
-        >
-          Buscar
-        </button>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs tracking-widest text-muted-foreground uppercase">Status</span>
+          <select
+            value={status}
+            onChange={(e) => onStatusChange(e.target.value as StatusFiltro)}
+            className="rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
+          >
+            <option value="todas">Todas</option>
+            <option value="consolidadas">Consolidadas</option>
+            <option value="pendentes">Não consolidadas</option>
+          </select>
+        </div>
+
+        {extra && <div className="ml-auto flex flex-wrap items-center gap-3">{extra}</div>}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs tracking-widest text-muted-foreground uppercase">Status</span>
-        {(
-          [
-            ["todas", "Todas"],
-            ["consolidadas", "Consolidadas"],
-            ["pendentes", "Não consolidadas"],
-          ] as const
-        ).map(([valor, label]) => (
-          <label key={valor} className="flex items-center gap-1.5 text-foreground/80">
-            <input
-              type="radio"
-              checked={status === valor}
-              onChange={() => onStatusChange(valor)}
-              className="accent-primary"
-            />
-            {label}
-          </label>
-        ))}
-      </div>
+      {acoesLote && <div className="border-t border-border pt-3">{acoesLote}</div>}
     </Card>
   );
 }

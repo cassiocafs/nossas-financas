@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 interface ModalProps {
   open: boolean;
@@ -9,6 +9,15 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children, closable = true }: ModalProps) {
+  useEffect(() => {
+    if (!open || !closable) return;
+    function aoPressionarTecla(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", aoPressionarTecla);
+    return () => document.removeEventListener("keydown", aoPressionarTecla);
+  }, [open, closable, onClose]);
+
   if (!open) return null;
 
   return (

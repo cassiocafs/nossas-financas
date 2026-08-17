@@ -13,12 +13,14 @@ interface ExcluirCategoriaDialogProps {
   open: boolean;
   onClose: () => void;
   categoria: Categoria | null;
+  onExcluida?: () => void;
 }
 
 export function ExcluirCategoriaDialog({
   open,
   onClose,
   categoria,
+  onExcluida,
 }: ExcluirCategoriaDialogProps) {
   const queryClient = useQueryClient();
   const [estrategia, setEstrategia] = useState<"semCategoria" | "realocarPara">("semCategoria");
@@ -58,6 +60,7 @@ export function ExcluirCategoriaDialog({
       queryClient.invalidateQueries({ queryKey: ["categorias"] });
       queryClient.invalidateQueries({ queryKey: ["transacoes"] });
       onClose();
+      onExcluida?.();
     },
   });
 

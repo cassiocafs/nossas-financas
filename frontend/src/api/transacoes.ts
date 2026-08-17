@@ -140,6 +140,17 @@ export function criarTransferencia(
   });
 }
 
+export interface Transferencia {
+  transferenciaGrupoId: string;
+  contaOrigem: { id: string; nome: string } | null;
+  contaDestino: { id: string; nome: string } | null;
+  transacoes: Transacao[];
+}
+
+export function buscarTransferencia(grupoId: string): Promise<Transferencia> {
+  return apiFetch<Transferencia>(`/api/transacoes/transferencias/${grupoId}`);
+}
+
 export function editarTransacao(id: string, input: EditarTransacaoInput): Promise<Transacao> {
   return apiFetch<Transacao>(`/api/transacoes/${id}`, {
     method: "PATCH",

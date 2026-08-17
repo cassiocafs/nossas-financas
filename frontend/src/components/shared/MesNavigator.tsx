@@ -21,6 +21,23 @@ interface MesNavigatorProps {
   onChange: (ano: number, mes: number) => void;
 }
 
+function IconeSeta({ aberta }: { aberta: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`size-4 shrink-0 transition-transform ${aberta ? "rotate-180" : ""}`}
+      aria-hidden="true"
+    >
+      <path d="M5 7.5 10 12.5 15 7.5" />
+    </svg>
+  );
+}
+
 export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
   const [aberto, setAberto] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -56,9 +73,11 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
       <button
         type="button"
         onClick={() => setAberto((v) => !v)}
-        className="min-w-36 rounded-xl px-2 py-1 text-center font-display text-sm font-medium text-foreground hover:bg-muted"
+        aria-expanded={aberto}
+        className="flex min-w-36 items-center justify-center gap-1 rounded-xl px-2 py-1 text-center font-display text-sm font-medium text-foreground hover:bg-muted"
       >
         {MESES[mes - 1]} {ano}
+        <IconeSeta aberta={aberto} />
       </button>
       <button
         type="button"

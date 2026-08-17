@@ -9,9 +9,7 @@ import { BuscaEStatusBar } from "@/components/transacoes/BuscaEStatusBar";
 import { TransacoesLista } from "@/components/transacoes/TransacoesLista";
 import { TransacaoFormInline } from "@/components/transacoes/TransacaoFormInline";
 import { AcoesLoteBar } from "@/components/transacoes/AcoesLoteBar";
-import { Valor } from "@/components/ui/Valor";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 
 function hoje() {
   const agora = new Date();
@@ -30,12 +28,13 @@ export function TransacoesPage() {
   const [texto, setTexto] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [criando, setCriando] = useState(false);
+  const [formCriacaoKey, setFormCriacaoKey] = useState(0);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
   const [excluindo, setExcluindo] = useState(false);
   const mensagemTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const topoRef = useRef<HTMLDivElement>(null);
-  const [alturaTopo, setAlturaTopo] = useState(0);
+  const topBarRef = useRef<HTMLDivElement>(null);
+  const [topBarHeight, setTopBarHeight] = useState(0);
 
   const { data: contas = [] } = useQuery({ queryKey: ["contas"], queryFn: () => listarContas(true) });
 
@@ -96,103 +95,90 @@ export function TransacoesPage() {
   }, []);
 
   useEffect(() => {
-    const elemento = topoRef.current;
-    if (!elemento) return;
-    const observer = new ResizeObserver(([entry]) => setAlturaTopo(entry.contentRect.height));
-    observer.observe(elemento);
+    const el = topBarRef.current;
+    if (!el) return;
+    const atualizarAltura = () => setTopBarHeight(el.getBoundingClientRect().height);
+    atualizarAltura();
+    const observer = new ResizeObserver(atualizarAltura);
+    observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
   return (
     <div className="space-y-4">
       <div
-        ref={topoRef}
-        className="sticky top-0 z-20 -mx-4 -mt-4 space-y-4 bg-background px-4 pb-4 sm:-mx-6 sm:-mt-6 sm:px-6 lg:-mx-8 lg:-mt-8 lg:px-8"
+        ref={topBarRef}
+        className="sticky top-0 z-20 -mx-4 space-y-3 bg-background px-4 pb-2 will-change-transform sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 sm:pt-6 lg:pt-8">
-          <h1 className="text-2xl font-semibold text-foreground">Transações</h1>
-          <div className="flex items-center gap-4">
-            <MesNavigator ano={ano} mes={mes} onChange={mudarMes} />
-            <button
-              type="button"
-              onClick={() => mudarMes(padrao.ano, padrao.mes)}
-              className="rounded-xl border border-border px-2 py-1 text-sm text-foreground/70 hover:bg-muted"
-            >
-              Hoje
-            </button>
-            <Button onClick={() => setCriando(true)} disabled={excluindo}>
-              Adicionar transação
-            </Button>
-          </div>
-        </div>
-
-        {data && (
-          <Card className="flex flex-wrap gap-6 px-4 py-3 text-sm">
-            <span className="text-muted-foreground">
-              Saldo anterior: <Valor valor={data.saldoAnterior} neutro className="font-medium" />
-            </span>
-            <span className="text-muted-foreground">
-              Entradas: <Valor valor={data.totalEntradas} className="font-medium" />
-            </span>
-            <span className="text-muted-foreground">
-              Saídas: <Valor valor={-Math.abs(data.totalSaidas)} className="font-medium" />
-            </span>
-            <span className="text-muted-foreground">
-              Saldo final: <Valor valor={data.saldoFinal} className="font-medium" />
-            </span>
-          </Card>
-        )}
-
-        {mensagemSucesso && (
-          <div className="relative flex items-center justify-center rounded-xl border border-income/20 bg-income-soft px-10 py-2.5 text-sm font-bold text-income shadow-soft">
-            <span className="flex items-center gap-2">
-              <svg
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="h-4 w-4 shrink-0"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              {mensagemSucesso}
-            </span>
-            <button
-              type="button"
-              onClick={fecharMensagemSucesso}
-              aria-label="Fechar mensagem"
-              className="absolute right-3 rounded p-1 text-income/60 hover:text-income"
-            >
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-                <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-              </svg>
-            </button>
-          </div>
-        )}
-
         <BuscaEStatusBar
           texto={texto}
           onTextoChange={setTexto}
           status={status}
           onStatusChange={setStatus}
-        />
-
-        <AcoesLoteBar
-          selectedIds={selectedIds}
-          onDone={() => setSelectedIds([])}
-          onExcluindoChange={setExcluindo}
-          onExcluida={(quantidade) =>
-            mostrarMensagemSucesso(
-              quantidade === 1
-                ? "Transação excluída com sucesso"
-                : `${quantidade} transações excluídas com sucesso`,
-            )
+          className="!rounded-t-none !border-t-0 !shadow-none"
+          extra={
+            <>
+              <MesNavigator ano={ano} mes={mes} onChange={mudarMes} />
+              <button
+                type="button"
+                onClick={() => mudarMes(padrao.ano, padrao.mes)}
+                className="rounded-xl border border-border px-2 py-1 text-sm text-foreground/70 hover:bg-muted"
+              >
+                Hoje
+              </button>
+              <Button onClick={() => setCriando(true)} disabled={excluindo}>
+                Adicionar transação
+              </Button>
+            </>
+          }
+          acoesLote={
+            selectedIds.length > 0 ? (
+              <AcoesLoteBar
+                selectedIds={selectedIds}
+                onDone={() => setSelectedIds([])}
+                onExcluindoChange={setExcluindo}
+                onExcluida={(quantidade) =>
+                  mostrarMensagemSucesso(
+                    quantidade === 1
+                      ? "Transação excluída com sucesso"
+                      : `${quantidade} transações excluídas com sucesso`,
+                  )
+                }
+              />
+            ) : undefined
           }
         />
       </div>
+
+      {mensagemSucesso && (
+        <div className="relative flex items-center justify-center rounded-xl border border-income/20 bg-income-soft px-10 py-2.5 text-sm font-bold text-income shadow-soft">
+          <span className="flex items-center gap-2">
+            <svg
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="h-4 w-4 shrink-0"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                clipRule="evenodd"
+              />
+            </svg>
+            {mensagemSucesso}
+          </span>
+          <button
+            type="button"
+            onClick={fecharMensagemSucesso}
+            aria-label="Fechar mensagem"
+            className="absolute right-3 rounded p-1 text-income/60 hover:text-income"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-col gap-6 lg:flex-row">
         <FiltrosLaterais
@@ -205,9 +191,10 @@ export function TransacoesPage() {
         <div className="flex-1 space-y-4">
           {criando && (
             <TransacaoFormInline
+              key={formCriacaoKey}
               contaIdPadrao={contaIds.length === 1 ? contaIds[0] : undefined}
               onSaved={() => {
-                setCriando(false);
+                setFormCriacaoKey((k) => k + 1);
                 mostrarMensagemSucesso("Transação criada com sucesso");
               }}
               onCancel={() => setCriando(false)}
@@ -219,6 +206,8 @@ export function TransacoesPage() {
           ) : (
             <TransacoesLista
               dias={data?.dias ?? []}
+              saldoAnterior={data?.saldoAnterior}
+              headerOffset={topBarHeight}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelect}
               editandoId={editandoId}
@@ -228,7 +217,6 @@ export function TransacoesPage() {
                 mostrarMensagemSucesso("Transação atualizada com sucesso");
               }}
               desabilitada={excluindo}
-              headerOffset={alturaTopo}
             />
           )}
         </div>

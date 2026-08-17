@@ -7,6 +7,7 @@ import { ApiError } from '@/api/client';
 import { listarContas } from '@/api/contas';
 import { sugerirTransacao } from '@/api/regras';
 import {
+  buscarTransferencia,
   criarTransacao,
   criarTransferencia,
   editarTransacao,
@@ -56,6 +57,11 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
     queryKey: ['contas'],
     queryFn: () => listarContas(false),
   });
+  const { data: transferencia } = useQuery({
+    queryKey: ['transferencia', transacao?.transferenciaGrupoId],
+    queryFn: () => buscarTransferencia(transacao!.transferenciaGrupoId!),
+    enabled: isEdicaoTransferencia,
+  });
   const [tipo, setTipo] = useState<Tipo>('DESPESA');
   const [data, setData] = useState(hojeISO());
   const [descricao, setDescricao] = useState('');
@@ -92,6 +98,13 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
       resetarFormulario();
     }
   }, [visible, transacao]);
+
+  useEffect(() => {
+    if (!transferencia || contaOrigemId || contaDestinoId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- preenche os campos editáveis assim que a transferência carrega
+    setContaOrigemId(transferencia.contaOrigem?.id ?? null);
+    setContaDestinoId(transferencia.contaDestino?.id ?? null);
+  }, [transferencia, contaOrigemId, contaDestinoId]);
 
   function resetarFormulario() {
     setTipo('DESPESA');
@@ -135,7 +148,6 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [descricao, visible, editando, tipo]);
 
-  const contaSelecionada = contaId ?? contas[0]?.id ?? null;
   const valorNumerico = (valorCentavos ?? 0) / 100;
   const valorExibicao =
     valorCentavos == null
@@ -152,9 +164,6 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
 
   const salvarMutation = useMutation({
     mutationFn: async (opcao: 'fechar' | 'novo') => {
-      if (isEdicaoTransferencia) {
-        return editarTransacao(transacao!.id, { data, descricao, nota, consolidado });
-      }
       if (tipo === 'TRANSFERENCIA') {
         if (editando) await excluirTransacao(transacao!.id);
         return criarTransferencia({
@@ -171,7 +180,7 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
         tipo,
         data,
         descricao: descricao.trim(),
-        contaId: contaSelecionada!,
+        contaId: contaId!,
         categoriaId: categoriaId || null,
         valor: valorNumerico,
         consolidado,
@@ -210,9 +219,8 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
     ]);
   }
 
-  const podeSalvar = isEdicaoTransferencia
-    ? descricao.trim().length > 0 && data.length > 0 && !salvarMutation.isPending
-    : tipo === 'TRANSFERENCIA'
+  const podeSalvar =
+    tipo === 'TRANSFERENCIA'
       ? !!contaOrigemId &&
         !!contaDestinoId &&
         contaOrigemId !== contaDestinoId &&
@@ -221,37 +229,34 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
         !salvarMutation.isPending
       : descricao.trim().length > 0 &&
         valorNumerico > 0 &&
-        !!contaSelecionada &&
+        !!contaId &&
         data.length > 0 &&
         !salvarMutation.isPending;
 
-  const descricaoObrigatoria = isEdicaoTransferencia || tipo !== 'TRANSFERENCIA';
-  const contaObrigatoria = !isEdicaoTransferencia && tipo !== 'TRANSFERENCIA';
-  const contasTransferenciaObrigatorias = !isEdicaoTransferencia && tipo === 'TRANSFERENCIA';
+  const descricaoObrigatoria = tipo !== 'TRANSFERENCIA';
+  const contaObrigatoria = tipo !== 'TRANSFERENCIA';
+  const contasTransferenciaObrigatorias = tipo === 'TRANSFERENCIA';
+
+  const bloqueado = salvarMutation.isPending || excluirMutation.isPending;
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={() => !bloqueado && onClose()}>
       <ThemedView type="background" style={styles.container}>
         <SafeAreaView edges={['bottom']} style={styles.safeArea}>
           <ThemedView style={styles.header}>
             <ThemedText type="subtitle">{editando ? 'Editar transação' : 'Nova transação'}</ThemedText>
-            <Pressable onPress={onClose}>
-              <ThemedText type="small" themeColor="textSecondary">
+            <Pressable onPress={onClose} disabled={bloqueado}>
+              <ThemedText type="small" themeColor={bloqueado ? 'textTertiary' : 'textSecondary'}>
                 Fechar
               </ThemedText>
             </Pressable>
           </ThemedView>
 
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-            {isEdicaoTransferencia && (
-              <ThemedView type="surface" style={styles.avisoBox}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Esta transação faz parte de uma transferência. Só é possível alterar data,
-                  descrição, nota e consolidação.
-                </ThemedText>
-              </ThemedView>
-            )}
-
             {!isEdicaoTransferencia && (
               <ThemedView style={styles.field}>
                 <ThemedText type="smallBold">Tipo</ThemedText>
@@ -264,6 +269,7 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
                       }
                       selected={tipo === opcao}
                       onPress={() => setTipo(opcao)}
+                      disabled={bloqueado}
                     />
                   ))}
                 </ThemedView>
@@ -279,31 +285,30 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
               </ThemedView>
             )}
 
-            {!isEdicaoTransferencia && (
-              <ThemedView style={styles.field}>
-                <CampoLabel obrigatorio cor={theme.expense}>Valor</CampoLabel>
-                <TextInput
-                  value={valorExibicao}
-                  onChangeText={handleValorChange}
-                  placeholder="0,00"
-                  placeholderTextColor={theme.textTertiary}
-                  keyboardType="number-pad"
-                  selection={{ start: valorExibicao.length, end: valorExibicao.length }}
-                  style={[styles.input, { borderColor: theme.border, color: theme.text }]}
-                />
-              </ThemedView>
-            )}
+            <ThemedView style={styles.field}>
+              <CampoLabel obrigatorio cor={theme.expense}>Valor</CampoLabel>
+              <TextInput
+                value={valorExibicao}
+                onChangeText={handleValorChange}
+                placeholder="0,00"
+                placeholderTextColor={theme.textTertiary}
+                keyboardType="number-pad"
+                selection={{ start: valorExibicao.length, end: valorExibicao.length }}
+                editable={!bloqueado}
+                style={[styles.input, { borderColor: theme.border, color: theme.text }]}
+              />
+            </ThemedView>
 
             <ThemedView style={styles.field}>
               <ThemedView style={styles.rowSpaced}>
                 <CampoLabel obrigatorio cor={theme.expense}>Data</CampoLabel>
-                <Pressable onPress={() => setData(hojeISO())}>
-                  <ThemedText type="small" themeColor="textSecondary">
+                <Pressable onPress={() => setData(hojeISO())} disabled={bloqueado}>
+                  <ThemedText type="small" themeColor={bloqueado ? 'textTertiary' : 'textSecondary'}>
                     Hoje
                   </ThemedText>
                 </Pressable>
               </ThemedView>
-              <DateField value={data} onChange={setData} />
+              <DateField value={data} onChange={setData} disabled={bloqueado} />
             </ThemedView>
 
             <ThemedView style={styles.field}>
@@ -315,11 +320,12 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
                 onChangeText={setDescricao}
                 placeholder="Ex.: Mercado"
                 placeholderTextColor={theme.textTertiary}
+                editable={!bloqueado}
                 style={[styles.input, { borderColor: theme.border, color: theme.text }]}
               />
             </ThemedView>
 
-            {!isEdicaoTransferencia && tipo !== 'TRANSFERENCIA' && (
+            {tipo !== 'TRANSFERENCIA' && (
               <ThemedView style={styles.field}>
                 <ThemedText type="smallBold">Categoria</ThemedText>
                 <CategoriaSelect
@@ -331,17 +337,18 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
                   title="Selecionar categoria"
                   placeholder="Sem categoria"
                   clearLabel="Sem categoria"
+                  disabled={bloqueado}
                 />
               </ThemedView>
             )}
 
-            {!isEdicaoTransferencia && tipo !== 'TRANSFERENCIA' && (
+            {tipo !== 'TRANSFERENCIA' && (
               <ThemedView style={styles.field}>
                 <CampoLabel obrigatorio={contaObrigatoria} cor={theme.expense}>
                   Conta
                 </CampoLabel>
                 <Select
-                  value={contaSelecionada}
+                  value={contaId}
                   onChange={(v) => {
                     setContaId(v);
                     setContaTocada(true);
@@ -350,11 +357,12 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
                   placeholder="Selecionar conta"
                   clearLabel="Nenhuma"
                   options={contas.map((conta) => ({ value: conta.id, label: conta.nome }))}
+                  disabled={bloqueado}
                 />
               </ThemedView>
             )}
 
-            {!isEdicaoTransferencia && tipo === 'TRANSFERENCIA' && (
+            {tipo === 'TRANSFERENCIA' && (
               <>
                 <ThemedView style={styles.field}>
                   <CampoLabel obrigatorio={contasTransferenciaObrigatorias} cor={theme.expense}>
@@ -367,6 +375,7 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
                     placeholder="Selecionar conta"
                     clearLabel="Nenhuma"
                     options={contas.map((conta) => ({ value: conta.id, label: conta.nome }))}
+                    disabled={bloqueado}
                   />
                 </ThemedView>
                 <ThemedView style={styles.field}>
@@ -380,6 +389,7 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
                     placeholder="Selecionar conta"
                     clearLabel="Nenhuma"
                     options={contas.map((conta) => ({ value: conta.id, label: conta.nome }))}
+                    disabled={bloqueado}
                   />
                 </ThemedView>
               </>
@@ -391,6 +401,7 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
                 value={consolidado}
                 onValueChange={setConsolidado}
                 trackColor={{ true: theme.primary }}
+                disabled={bloqueado}
               />
             </ThemedView>
 
@@ -401,6 +412,7 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
                 onChangeText={setNota}
                 placeholder="Nota"
                 placeholderTextColor={theme.textTertiary}
+                editable={!bloqueado}
                 style={[styles.input, { borderColor: theme.border, color: theme.text }]}
               />
             </ThemedView>
@@ -450,7 +462,7 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
                 title={excluirMutation.isPending ? 'Excluindo...' : 'Excluir'}
                 variant="destructive"
                 onPress={confirmarExclusao}
-                disabled={excluirMutation.isPending}
+                disabled={bloqueado}
                 loading={excluirMutation.isPending}
               />
             )}
@@ -481,7 +493,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     fontSize: 16,
   },
-  avisoBox: { borderRadius: Radius.md, padding: Spacing.three },
   button: { marginTop: Spacing.one },
   flexButton: { flex: 1 },
 });

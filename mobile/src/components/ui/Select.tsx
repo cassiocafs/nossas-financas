@@ -20,9 +20,10 @@ interface SelectProps {
   title?: string;
   onChange: (value: string | null) => void;
   clearLabel?: string;
+  disabled?: boolean;
 }
 
-export function Select({ value, options, placeholder = 'Selecionar', title = 'Selecionar', onChange, clearLabel = 'Sem categoria' }: SelectProps) {
+export function Select({ value, options, placeholder = 'Selecionar', title = 'Selecionar', onChange, clearLabel = 'Sem categoria', disabled }: SelectProps) {
   const theme = useTheme();
   const [aberto, setAberto] = useState(false);
   const selecionada = options.find((opcao) => opcao.value === value);
@@ -32,8 +33,9 @@ export function Select({ value, options, placeholder = 'Selecionar', title = 'Se
   return (
     <>
       <Pressable
-        onPress={() => setAberto(true)}
-        style={[styles.input, { borderColor: theme.border }]}
+        onPress={() => !disabled && setAberto(true)}
+        disabled={disabled}
+        style={[styles.input, { borderColor: theme.border }, disabled && styles.desabilitado]}
         accessibilityRole="button">
         <ThemedText
           type="default"
@@ -96,6 +98,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   inputText: { flex: 1 },
+  desabilitado: { opacity: 0.5 },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15, 23, 42, 0.4)' },
   sheet: {
     maxHeight: '70%',
