@@ -32,7 +32,7 @@ export function RealizadoPrevistoChart({ serie }: RealizadoPrevistoChartProps) {
           width={80}
         />
         <Tooltip
-          formatter={(valor: number) => formatarMoeda(valor)}
+          formatter={(valor) => (typeof valor === "number" ? formatarMoeda(valor) : String(valor ?? ""))}
           labelFormatter={(dia) => `Dia ${dia}`}
           contentStyle={{ fontSize: 12 }}
         />

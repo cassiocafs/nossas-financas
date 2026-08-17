@@ -70,7 +70,7 @@ export function EvolucaoSaldoChart({
             width={80}
           />
           <Tooltip
-            formatter={(valor: number) => formatarMoeda(valor)}
+            formatter={(valor) => (typeof valor === "number" ? formatarMoeda(valor) : String(valor ?? ""))}
             contentStyle={{ fontSize: 12 }}
           />
           <Area

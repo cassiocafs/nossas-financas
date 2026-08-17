@@ -229,7 +229,7 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes }: CategoriaDril
                 innerRadius={55}
                 outerRadius={85}
                 paddingAngle={2}
-                onClick={aoClicarItem}
+                onClick={(data) => aoClicarItem(data as unknown as ItemGrafico)}
                 cursor="pointer"
               >
                 {fatias.map((f) => (
@@ -237,7 +237,7 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes }: CategoriaDril
                 ))}
               </Pie>
               <Tooltip
-                formatter={(valor: number) => formatarMoeda(valor)}
+                formatter={(valor) => (typeof valor === "number" ? formatarMoeda(valor) : String(valor ?? ""))}
                 contentStyle={{ fontSize: 12 }}
               />
             </PieChart>
