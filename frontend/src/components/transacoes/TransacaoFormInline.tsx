@@ -195,14 +195,6 @@ export function TransacaoFormInline({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [descricao]);
 
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && !mutation.isPending) onCancel();
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onCancel, mutation.isPending]);
-
   const mutation = useMutation({
     mutationFn: async () => {
       if (tipo === "TRANSFERENCIA") {
@@ -239,6 +231,14 @@ export function TransacaoFormInline({
     },
   });
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && !mutation.isPending) onCancel();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onCancel, mutation.isPending]);
+
   const campoClasse =
     "rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground";
 
@@ -249,7 +249,18 @@ export function TransacaoFormInline({
   ] as const;
 
   return (
-    <div className="card-surface">
+    <div
+      className="card-surface"
+      onBlur={(e) => {
+        if (
+          editando &&
+          !mutation.isPending &&
+          !e.currentTarget.contains(e.relatedTarget as Node | null)
+        ) {
+          onCancel();
+        }
+      }}
+    >
       <div className="flex items-center justify-between gap-3 rounded-t-2xl border-b border-border bg-muted px-3 py-2">
         <div className="flex items-center gap-1 rounded-xl bg-background p-1">
           {TIPOS.map(({ valor: t, label, tone }) => (
