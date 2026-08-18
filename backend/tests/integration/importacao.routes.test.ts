@@ -62,7 +62,7 @@ describe("rotas de importação", () => {
     mockPrisma.transacao.findMany.mockResolvedValue([]);
     mockPrisma.conta.create.mockResolvedValue({ id: "conta-1", nome: "Cartão C6" });
     mockPrisma.categoria.create.mockResolvedValue({ id: "categoria-1", nome: "Feira" });
-    mockPrisma.transacao.create.mockResolvedValue({ id: "t-1" });
+    mockPrisma.transacao.createMany.mockResolvedValue({ count: 1 });
 
     const buffer = gerarPlanilha([
       {
@@ -87,15 +87,15 @@ describe("rotas de importação", () => {
       categoriasCriadas: ["Feira"],
       erros: [],
     });
-    expect(mockPrisma.transacao.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
+    expect(mockPrisma.transacao.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
           tipo: "DESPESA",
           valor: -6.2,
           consolidado: true,
         }),
-      }),
-    );
+      ],
+    });
   });
 
   it("POST /api/importacoes/transacoes importa a transação mesmo se já existir uma igual", async () => {
@@ -110,7 +110,7 @@ describe("rotas de importação", () => {
         categoriaId: "categoria-1",
       },
     ]);
-    mockPrisma.transacao.create.mockResolvedValue({ id: "t-2" });
+    mockPrisma.transacao.createMany.mockResolvedValue({ count: 1 });
 
     const buffer = gerarPlanilha([
       {
@@ -131,7 +131,7 @@ describe("rotas de importação", () => {
     const resultado = extrairResultado(res.text);
     expect(resultado.importadas).toBe(1);
     expect(mockPrisma.conta.create).not.toHaveBeenCalled();
-    expect(mockPrisma.transacao.create).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.transacao.createMany).toHaveBeenCalledTimes(1);
   });
 
   it("POST /api/importacoes/transacoes aceita múltiplos arquivos e importa linhas repetidas entre eles", async () => {
@@ -140,7 +140,7 @@ describe("rotas de importação", () => {
     mockPrisma.transacao.findMany.mockResolvedValue([]);
     mockPrisma.conta.create.mockResolvedValue({ id: "conta-1", nome: "Cartão C6" });
     mockPrisma.categoria.create.mockResolvedValue({ id: "categoria-1", nome: "Feira" });
-    mockPrisma.transacao.create.mockResolvedValue({ id: "t-1" });
+    mockPrisma.transacao.createMany.mockResolvedValue({ count: 3 });
 
     const linhaBase = {
       "Data Ocorrência": "01/01/2026",

@@ -56,13 +56,13 @@ export async function criarRegra(
   espacoId: string,
   input: CriarRegraTransacaoInput,
 ): Promise<RegraTransacaoDTO> {
-  await buscarContaOuFalhar(espacoId, input.contaId);
-  if (input.categoriaId) await buscarCategoriaOuFalhar(espacoId, input.categoriaId);
-
   const descricaoNormalizada = normalizarDescricao(input.descricao);
-  const existente = await prisma.regraTransacao.findFirst({
-    where: { espacoId, descricaoNormalizada },
-  });
+
+  const [, , existente] = await Promise.all([
+    buscarContaOuFalhar(espacoId, input.contaId),
+    input.categoriaId ? buscarCategoriaOuFalhar(espacoId, input.categoriaId) : Promise.resolve(),
+    prisma.regraTransacao.findFirst({ where: { espacoId, descricaoNormalizada } }),
+  ]);
   if (existente) {
     throw new HttpError(409, "Já existe uma regra cadastrada para esta descrição");
   }
@@ -93,8 +93,10 @@ export async function editarRegra(
 ): Promise<RegraTransacaoDTO> {
   await buscarRegraOuFalhar(espacoId, id);
 
-  if (input.contaId) await buscarContaOuFalhar(espacoId, input.contaId);
-  if (input.categoriaId) await buscarCategoriaOuFalhar(espacoId, input.categoriaId);
+  await Promise.all([
+    input.contaId ? buscarContaOuFalhar(espacoId, input.contaId) : Promise.resolve(),
+    input.categoriaId ? buscarCategoriaOuFalhar(espacoId, input.categoriaId) : Promise.resolve(),
+  ]);
 
   let descricaoNormalizada: string | undefined;
   if (input.descricao !== undefined) {

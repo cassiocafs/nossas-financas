@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { HttpError } from "../../middlewares/errorHandler.js";
 
@@ -135,6 +136,8 @@ function lerLinhasPlanilha(buffer: Buffer, nomeArquivo: string): LinhaPlanilha[]
 
   return linhas;
 }
+
+const TAMANHO_LOTE_INSERCAO = 500;
 
 interface LinhaExtraida {
   nomeConta: string;
@@ -287,7 +290,7 @@ export async function importarTransacoesXls(
   const contasCriadas: string[] = [];
   const categoriasCriadas: string[] = [];
   const erros: ErroImportacao[] = [];
-  let importadas = 0;
+  const dadosParaInserir: Prisma.TransacaoCreateManyInput[] = [];
   let processadas = 0;
 
   function reportarProgresso() {
@@ -344,26 +347,28 @@ export async function importarTransacoesXls(
         categoriaId = categoria.id;
       }
 
-      await prisma.transacao.create({
-        data: {
-          espacoId,
-          contaId: conta.id,
-          categoriaId,
-          tipo: valor >= 0 ? "RECEITA" : "DESPESA",
-          data,
-          descricao,
-          valor,
-          consolidado: true,
-        },
+      dadosParaInserir.push({
+        espacoId,
+        contaId: conta.id,
+        categoriaId,
+        tipo: valor >= 0 ? "RECEITA" : "DESPESA",
+        data,
+        descricao,
+        valor,
+        consolidado: true,
       });
-      importadas++;
       reportarProgresso();
     }
   }
 
+  for (let i = 0; i < dadosParaInserir.length; i += TAMANHO_LOTE_INSERCAO) {
+    const lote = dadosParaInserir.slice(i, i + TAMANHO_LOTE_INSERCAO);
+    await prisma.transacao.createMany({ data: lote });
+  }
+
   return {
     totalLinhas: total,
-    importadas,
+    importadas: dadosParaInserir.length,
     contasCriadas,
     categoriasCriadas,
     erros,

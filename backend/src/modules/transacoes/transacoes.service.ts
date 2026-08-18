@@ -171,10 +171,10 @@ export async function criarTransacao(
   espacoId: string,
   input: CriarTransacaoInput,
 ): Promise<TransacaoDTO> {
-  await buscarContaOuFalhar(espacoId, input.contaId);
-  if (input.categoriaId) {
-    await buscarCategoriaOuFalhar(espacoId, input.categoriaId);
-  }
+  await Promise.all([
+    buscarContaOuFalhar(espacoId, input.contaId),
+    input.categoriaId ? buscarCategoriaOuFalhar(espacoId, input.categoriaId) : Promise.resolve(),
+  ]);
 
   const transacao = await prisma.transacao.create({
     data: {
@@ -238,8 +238,10 @@ export async function editarTransacao(
     return serializarTransacao(atualizada);
   }
 
-  if (input.contaId) await buscarContaOuFalhar(espacoId, input.contaId);
-  if (input.categoriaId) await buscarCategoriaOuFalhar(espacoId, input.categoriaId);
+  await Promise.all([
+    input.contaId ? buscarContaOuFalhar(espacoId, input.contaId) : Promise.resolve(),
+    input.categoriaId ? buscarCategoriaOuFalhar(espacoId, input.categoriaId) : Promise.resolve(),
+  ]);
 
   const tipoFinal = (input.tipo ?? transacao.tipo) as "DESPESA" | "RECEITA";
   const valorPositivo = input.valor ?? Math.abs(toNumber(transacao.valor));
@@ -334,8 +336,10 @@ export async function criarTransferencia(
   espacoId: string,
   input: CriarTransferenciaInput,
 ) {
-  await buscarContaOuFalhar(espacoId, input.contaOrigemId);
-  await buscarContaOuFalhar(espacoId, input.contaDestinoId);
+  await Promise.all([
+    buscarContaOuFalhar(espacoId, input.contaOrigemId),
+    buscarContaOuFalhar(espacoId, input.contaDestinoId),
+  ]);
 
   const grupoId = crypto.randomUUID();
   const descricao = input.descricao?.trim() || "Transferência entre contas";

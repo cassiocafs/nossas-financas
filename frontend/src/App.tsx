@@ -1,35 +1,67 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router";
 import { AppShell } from "@/components/layout/AppShell";
-import { LoginPage } from "@/pages/LoginPage";
-import { SignupPage } from "@/pages/SignupPage";
-import { HomePage } from "@/pages/HomePage";
-import { TransacoesPage } from "@/pages/TransacoesPage";
-import { OrcamentoPage } from "@/pages/OrcamentoPage";
-import { ConfiguracoesPage } from "@/pages/ConfiguracoesPage";
-import { ContasSection } from "@/components/contas/ContasSection";
-import { CategoriasSection } from "@/components/categorias/CategoriasSection";
-import { RegrasSection } from "@/components/regras/RegrasSection";
-import { ImportarExtratoSection } from "@/components/importacao/ImportarExtratoSection";
+
+const LoginPage = lazy(() => import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage })));
+const SignupPage = lazy(() =>
+  import("@/pages/SignupPage").then((m) => ({ default: m.SignupPage })),
+);
+const HomePage = lazy(() => import("@/pages/HomePage").then((m) => ({ default: m.HomePage })));
+const TransacoesPage = lazy(() =>
+  import("@/pages/TransacoesPage").then((m) => ({ default: m.TransacoesPage })),
+);
+const OrcamentoPage = lazy(() =>
+  import("@/pages/OrcamentoPage").then((m) => ({ default: m.OrcamentoPage })),
+);
+const ConfiguracoesPage = lazy(() =>
+  import("@/pages/ConfiguracoesPage").then((m) => ({ default: m.ConfiguracoesPage })),
+);
+const ContasSection = lazy(() =>
+  import("@/components/contas/ContasSection").then((m) => ({ default: m.ContasSection })),
+);
+const CategoriasSection = lazy(() =>
+  import("@/components/categorias/CategoriasSection").then((m) => ({
+    default: m.CategoriasSection,
+  })),
+);
+const RegrasSection = lazy(() =>
+  import("@/components/regras/RegrasSection").then((m) => ({ default: m.RegrasSection })),
+);
+const ImportarExtratoSection = lazy(() =>
+  import("@/components/importacao/ImportarExtratoSection").then((m) => ({
+    default: m.ImportarExtratoSection,
+  })),
+);
+
+function CarregandoRota() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center text-sm text-foreground/60">
+      Carregando...
+    </div>
+  );
+}
 
 function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
+    <Suspense fallback={<CarregandoRota />}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
 
-      <Route element={<AppShell />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/transacoes" element={<TransacoesPage />} />
-        <Route path="/orcamento" element={<OrcamentoPage />} />
-        <Route path="/configuracoes" element={<ConfiguracoesPage />}>
-          <Route index element={<Navigate to="contas" replace />} />
-          <Route path="contas" element={<ContasSection />} />
-          <Route path="categorias" element={<CategoriasSection />} />
-          <Route path="regras" element={<RegrasSection />} />
-          <Route path="importacao" element={<ImportarExtratoSection />} />
+        <Route element={<AppShell />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/transacoes" element={<TransacoesPage />} />
+          <Route path="/orcamento" element={<OrcamentoPage />} />
+          <Route path="/configuracoes" element={<ConfiguracoesPage />}>
+            <Route index element={<Navigate to="contas" replace />} />
+            <Route path="contas" element={<ContasSection />} />
+            <Route path="categorias" element={<CategoriasSection />} />
+            <Route path="regras" element={<RegrasSection />} />
+            <Route path="importacao" element={<ImportarExtratoSection />} />
+          </Route>
         </Route>
-      </Route>
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 

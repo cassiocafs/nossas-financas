@@ -49,6 +49,7 @@ model MembroEspaco {
   espaco    EspacoFinanceiro @relation(fields: [espacoId], references: [id])
 
   @@unique([usuarioId, espacoId])
+  @@index([usuarioId, criadoEm])
 }
 
 enum StatusConvite {
@@ -235,6 +236,7 @@ model Transacao {
 
   @@index([espacoId, data])
   @@index([contaId])
+  @@index([categoriaId])
   @@index([serieId])
   @@index([transferenciaGrupoId])
 }
