@@ -5,6 +5,7 @@ import { buscarGradeOrcamento, listarAnosOrcamento } from "@/api/orcamento";
 import { MesNavigator } from "@/components/shared/MesNavigator";
 import { AnoSelector } from "@/components/orcamento/AnoSelector";
 import { RealizadoPrevistoChart } from "@/components/orcamento/RealizadoPrevistoChart";
+import { PrevistoRealizadoBarras } from "@/components/orcamento/PrevistoRealizadoBarras";
 import { OrcamentoTabela } from "@/components/orcamento/OrcamentoTabela";
 import { DefinirPrevistoModal } from "@/components/orcamento/DefinirPrevistoModal";
 import { formatarMoeda } from "@/lib/format";
@@ -19,9 +20,11 @@ function StatTile({ label, valor, tom = "neutro" }: { label: string; valor: stri
     tom === "positivo" ? "text-income" : tom === "negativo" ? "text-expense" : "text-foreground";
 
   return (
-    <Card className="p-3">
-      <p className="text-[10px] tracking-widest text-muted-foreground uppercase">{label}</p>
-      <p className={`num mt-1 truncate text-lg font-medium ${cor}`}>{valor}</p>
+    <Card className="p-4">
+      <p className="text-[10.5px] font-bold tracking-widest text-muted-foreground uppercase">
+        {label}
+      </p>
+      <p className={`num mt-2 truncate text-xl font-bold tracking-tight ${cor}`}>{valor}</p>
     </Card>
   );
 }
@@ -114,6 +117,8 @@ export function OrcamentoPage() {
                   tom={percentualUsado > 100 ? "negativo" : "neutro"}
                 />
               </div>
+
+              <PrevistoRealizadoBarras grupos={grade.grupos} />
 
               <Card className="p-3 sm:p-4">
                 <p className="mb-1.5 text-[10px] tracking-widest text-muted-foreground uppercase">

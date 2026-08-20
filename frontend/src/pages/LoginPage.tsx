@@ -55,7 +55,7 @@ export function LoginPage() {
           <input
             type="email"
             {...register("email")}
-            className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
+            className="w-full rounded-[11px] border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
           />
           {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
         </div>
@@ -66,7 +66,7 @@ export function LoginPage() {
             <input
               type={mostrarSenha ? "text" : "password"}
               {...register("password")}
-              className="w-full rounded-xl border border-input bg-background px-3 py-2 pr-10 text-sm text-foreground"
+              className="w-full rounded-[11px] border border-border bg-muted px-3 py-2 pr-10 text-[13px] text-foreground"
             />
             <button
               type="button"

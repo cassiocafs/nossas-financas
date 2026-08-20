@@ -26,11 +26,11 @@ export function ResumoMesCard({
           positivo ? "border-t-foreground" : "border-t-expense"
         }`}
       >
-        <p className="text-xs tracking-widest text-muted-foreground uppercase">
+        <p className="text-[10.5px] font-bold tracking-widest text-muted-foreground uppercase">
           Saldo do mês
         </p>
         <p
-          className={`num text-5xl leading-none font-semibold ${
+          className={`num text-5xl leading-none font-bold tracking-tight ${
             positivo ? "text-foreground" : "text-expense"
           }`}
         >

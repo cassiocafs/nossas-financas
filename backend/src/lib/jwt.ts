@@ -10,6 +10,7 @@ const remoteJwks = env.SUPABASE_JWT_SECRET
 export interface SupabaseJwtPayload {
   sub: string;
   email?: string;
+  nome?: string;
 }
 
 export async function verifySupabaseToken(
@@ -23,5 +24,8 @@ export async function verifySupabaseToken(
     throw new Error("Token sem claim 'sub' válida");
   }
 
-  return { sub: payload.sub, email: payload.email as string | undefined };
+  const userMetadata = payload.user_metadata as Record<string, unknown> | undefined;
+  const nome = typeof userMetadata?.nome === "string" ? userMetadata.nome : undefined;
+
+  return { sub: payload.sub, email: payload.email as string | undefined, nome };
 }

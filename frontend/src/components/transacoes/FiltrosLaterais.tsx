@@ -173,7 +173,7 @@ export function FiltrosLaterais({
   return (
     <aside className="space-y-6 text-sm lg:w-64 lg:shrink-0">
       {mensagemSucesso && (
-        <div className="relative flex items-center justify-center gap-2 rounded-xl border border-income/20 bg-income-soft px-8 py-2 text-xs font-bold text-income shadow-soft">
+        <div className="relative flex items-center justify-center gap-2 rounded-[11px] border border-income/20 bg-income-soft px-8 py-2 text-xs font-bold text-income shadow-soft">
           <svg
             viewBox="0 0 20 20"
             fill="currentColor"
@@ -202,7 +202,7 @@ export function FiltrosLaterais({
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-xs tracking-widest text-muted-foreground uppercase">Contas</h3>
+          <h3 className="text-[10.5px] font-bold tracking-widest text-muted-foreground uppercase">Contas</h3>
           <button
             type="button"
             onClick={alternarTodasContas}
@@ -252,7 +252,7 @@ export function FiltrosLaterais({
       <div>
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h3 className="text-xs tracking-widest text-muted-foreground uppercase">Categorias</h3>
+            <h3 className="text-[10.5px] font-bold tracking-widest text-muted-foreground uppercase">Categorias</h3>
             <button
               type="button"
               onClick={() => setCriandoCategoria(true)}

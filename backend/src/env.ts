@@ -3,7 +3,10 @@ import { z } from "zod";
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(3001),
-  CORS_ORIGIN: z.string().default("http://localhost:5173"),
+  CORS_ORIGIN: z
+    .string()
+    .default("http://localhost:5173")
+    .transform((value) => value.split(",").map((origin) => origin.trim())),
   DATABASE_URL: z.string().min(1, "DATABASE_URL é obrigatório"),
   DIRECT_URL: z.string().min(1, "DIRECT_URL é obrigatório"),
   SUPABASE_URL: z.string().min(1, "SUPABASE_URL é obrigatório"),

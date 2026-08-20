@@ -7,12 +7,12 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const base =
-  "rounded-xl px-3 py-2 text-sm font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-50";
+  "rounded-[11px] px-[18px] py-[11px] text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-50";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-primary text-primary-foreground hover:opacity-90",
-  ghost: "text-foreground/80 hover:bg-muted",
-  danger: "bg-destructive text-destructive-foreground hover:opacity-90",
+  primary: "border-0 bg-primary text-primary-foreground font-bold hover:opacity-90",
+  ghost: "border border-border bg-transparent text-foreground font-semibold hover:bg-muted",
+  danger: "border-0 bg-destructive text-destructive-foreground font-bold hover:opacity-90",
 };
 
 export function Button({

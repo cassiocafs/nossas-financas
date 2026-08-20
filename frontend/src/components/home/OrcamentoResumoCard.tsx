@@ -43,18 +43,18 @@ export function OrcamentoResumoCard({ ano, mes }: OrcamentoResumoCardProps) {
           <div className="flex gap-6 text-sm">
             <span>
               Previsto:{" "}
-              <strong className="text-foreground">
+              <strong className="num text-foreground">
                 {formatarMoeda(grade.totalPrevisto)}
               </strong>
             </span>
             <span>
               Realizado:{" "}
               <strong
-                className={
+                className={`num ${
                   grade.totalRealizado > grade.totalPrevisto
                     ? "text-expense"
                     : "text-foreground"
-                }
+                }`}
               >
                 {formatarMoeda(grade.totalRealizado)}
               </strong>

@@ -15,7 +15,7 @@ const TIPO_TONE: Record<TipoTransacao, string> = {
 
 export function TypeIcon({ tipo }: { tipo: TipoTransacao }) {
   return (
-    <span className={`grid size-7 shrink-0 place-items-center rounded-lg ${TIPO_TONE[tipo]}`}>
+    <span className={`grid size-7 shrink-0 place-items-center rounded-[11px] ${TIPO_TONE[tipo]}`}>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="size-3.5" aria-hidden="true">
         {tipo === "RECEITA" ? (
           <>
@@ -92,7 +92,7 @@ export function TransacoesLista({
 
       <div
         style={{ top: headerOffset }}
-        className={`sticky z-10 hidden ${COLUNAS} items-center gap-3 border-b border-border bg-background px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:grid`}
+        className={`sticky z-10 hidden ${COLUNAS} items-center gap-3 border-b border-border bg-background px-4 py-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground sm:grid`}
       >
         <span />
         <span />

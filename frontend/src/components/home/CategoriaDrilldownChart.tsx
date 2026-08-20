@@ -199,14 +199,14 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes }: CategoriaDril
             <button
               type="button"
               onClick={voltar}
-              className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
+              className="rounded-[10px] border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
             >
               ← Voltar
             </button>
             <button
               type="button"
               onClick={resetar}
-              className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
+              className="rounded-[10px] border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
             >
               Resetar
             </button>
@@ -312,7 +312,7 @@ function TransacoesDaCategoria({
 
   return (
     <div className="mt-4 border-t border-border pt-3">
-      <h4 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+      <h4 className="mb-2 text-[10.5px] font-bold tracking-widest text-muted-foreground uppercase">
         Transações · {categoriaNome}
       </h4>
       {isLoading ? (

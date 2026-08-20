@@ -31,3 +31,9 @@ venv/
 
 # Dados financeiros pessoais (nao publicar)
 /xls-transacoes/
+
+# Scripts/arquivos temporários de checagem
+.tmp-check/
+
+# Builds do app mobile (APK)
+*.apk

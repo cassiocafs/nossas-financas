@@ -91,7 +91,7 @@ export function DiagnosticoModal({ visible, onClose }: { visible: boolean; onClo
           renderItem={({ item }) => {
             const color = item.level === 'error' ? theme.destructive : item.level === 'warn' ? theme.transfer : theme.textSecondary;
             return (
-              <View style={styles.logRow}>
+              <View style={[styles.logRow, { borderBottomColor: theme.border }]}>
                 <View style={styles.logHeader}>
                   <ThemedText type="small" themeColor="textSecondary">
                     {formatTime(item.timestamp)}
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   metaValue: { flexShrink: 1, textAlign: 'right' },
   list: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.four, gap: Spacing.two },
   empty: { paddingVertical: Spacing.five, textAlign: 'center' },
-  logRow: { paddingVertical: Spacing.two, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#0000001A', gap: Spacing.half },
+  logRow: { paddingVertical: Spacing.two, borderBottomWidth: StyleSheet.hairlineWidth, gap: Spacing.half },
   logHeader: { flexDirection: 'row', justifyContent: 'space-between' },
   detail: { fontFamily: Fonts.mono },
   actions: { flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingTop: Spacing.two },

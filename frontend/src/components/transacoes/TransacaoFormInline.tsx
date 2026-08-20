@@ -240,12 +240,17 @@ export function TransacaoFormInline({
   }, [onCancel, mutation.isPending]);
 
   const campoClasse =
-    "rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground";
+    "rounded-[11px] border border-border bg-muted px-3 py-2 text-[13px] text-foreground";
 
   const TIPOS = [
-    { valor: "DESPESA", label: "Despesa", tone: "text-expense" },
-    { valor: "RECEITA", label: "Receita", tone: "text-income" },
-    { valor: "TRANSFERENCIA", label: "Transferência", tone: "text-transfer" },
+    { valor: "DESPESA", label: "Despesa", tone: "text-expense", soft: "bg-expense-soft" },
+    { valor: "RECEITA", label: "Receita", tone: "text-income", soft: "bg-income-soft" },
+    {
+      valor: "TRANSFERENCIA",
+      label: "Transferência",
+      tone: "text-transfer",
+      soft: "bg-transfer-soft",
+    },
   ] as const;
 
   return (
@@ -262,15 +267,15 @@ export function TransacaoFormInline({
       }}
     >
       <div className="flex items-center justify-between gap-3 rounded-t-2xl border-b border-border bg-muted px-3 py-2">
-        <div className="flex items-center gap-1 rounded-xl bg-background p-1">
-          {TIPOS.map(({ valor: t, label, tone }) => (
+        <div className="flex items-center gap-[3px] rounded-[10px] bg-muted p-[3px]">
+          {TIPOS.map(({ valor: t, label, tone, soft }) => (
             <button
               key={t}
               type="button"
               onClick={() => setTipo(t)}
               disabled={mutation.isPending}
-              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                tipo === t ? `card-surface ${tone}` : "text-muted-foreground hover:text-foreground"
+              className={`rounded-[8px] px-3 py-1.5 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                tipo === t ? `${soft} ${tone}` : "font-semibold text-muted-foreground hover:text-foreground"
               }`}
             >
               {label}
@@ -282,7 +287,7 @@ export function TransacaoFormInline({
             type="button"
             onClick={onCancel}
             aria-label="Fechar"
-            className="text-foreground/40 hover:text-foreground"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-[9px] bg-muted text-muted-foreground hover:text-foreground"
           >
             ✕
           </button>

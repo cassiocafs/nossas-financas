@@ -89,7 +89,7 @@ export function CurrencyInput({
       onChange={handleChange}
       onFocus={handleFocus}
       onBlur={onBlur}
-      className={`num w-full rounded-xl border border-input bg-background px-3 py-2 text-right text-sm text-foreground ${className}`}
+      className={`num w-full rounded-[11px] border border-border bg-muted px-3 py-2 text-right text-[13px] text-foreground ${className}`}
     />
   );
 }

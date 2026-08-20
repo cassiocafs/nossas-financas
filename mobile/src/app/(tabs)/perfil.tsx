@@ -15,6 +15,7 @@ export default function PerfilScreen() {
   const { session, signOut } = useAuth();
   const [diagnosticoAberto, setDiagnosticoAberto] = useState(false);
   const [regrasAberto, setRegrasAberto] = useState(false);
+  const podeVerDiagnostico = session?.user?.email === 'esteyceecassio@gmail.com';
 
   return (
     <ThemedView type="background" style={styles.container}>
@@ -36,19 +37,23 @@ export default function PerfilScreen() {
           style={styles.button}
         />
 
-        <Button
-          title="Logs de diagnóstico"
-          icon="terminal"
-          variant="secondary"
-          onPress={() => setDiagnosticoAberto(true)}
-          style={styles.button}
-        />
+        {podeVerDiagnostico ? (
+          <Button
+            title="Logs de diagnóstico"
+            icon="terminal"
+            variant="secondary"
+            onPress={() => setDiagnosticoAberto(true)}
+            style={styles.button}
+          />
+        ) : null}
 
         <Button title="Sair" icon="log-out" variant="secondary" onPress={() => signOut()} style={styles.button} />
       </SafeAreaView>
 
       <RegrasModal visible={regrasAberto} onClose={() => setRegrasAberto(false)} />
-      <DiagnosticoModal visible={diagnosticoAberto} onClose={() => setDiagnosticoAberto(false)} />
+      {podeVerDiagnostico ? (
+        <DiagnosticoModal visible={diagnosticoAberto} onClose={() => setDiagnosticoAberto(false)} />
+      ) : null}
     </ThemedView>
   );
 }

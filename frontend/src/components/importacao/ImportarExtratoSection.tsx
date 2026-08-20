@@ -190,10 +190,10 @@ export function ImportarExtratoSection() {
               </p>
             )}
 
-            <div className="max-h-80 overflow-y-auto rounded-md border border-input">
+            <div className="max-h-80 overflow-y-auto rounded-md border border-border">
               <table className="w-full text-left text-sm">
                 <thead className="sticky top-0 bg-card">
-                  <tr className="border-b border-input text-muted-foreground">
+                  <tr className="border-b border-border text-muted-foreground">
                     {multiplosArquivos && (
                       <th className="px-3 py-2 font-medium">Arquivo</th>
                     )}
@@ -209,7 +209,7 @@ export function ImportarExtratoSection() {
                   {preview.linhas.slice(0, LIMITE_LINHAS_EXIBIDAS).map((linha) => (
                     <tr
                       key={`${linha.arquivo}-${linha.linha}`}
-                      className="border-b border-input/60 last:border-0/60"
+                      className="border-b border-border/60 last:border-0/60"
                     >
                       {multiplosArquivos && (
                         <td className="whitespace-nowrap px-3 py-2 text-foreground/80">

@@ -11,22 +11,35 @@ import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/hooks/use-theme';
 
-export default function LoginScreen() {
-  const { signIn } = useAuth();
+export default function CadastroScreen() {
+  const { signUp } = useAuth();
   const theme = useTheme();
 
+  const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [senha, setSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit() {
     setErro(null);
+
+    if (senha.length < 6) {
+      setErro('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+
+    if (senha !== confirmarSenha) {
+      setErro('As senhas não coincidem');
+      return;
+    }
+
     setLoading(true);
     try {
-      await signIn(email.trim(), password);
+      await signUp(nome.trim(), email.trim(), senha);
     } catch (err) {
-      setErro(err instanceof Error ? err.message : 'Falha ao entrar');
+      setErro(err instanceof Error ? err.message : 'Falha ao criar conta');
     } finally {
       setLoading(false);
     }
@@ -46,11 +59,21 @@ export default function LoginScreen() {
             <ThemedView style={styles.header}>
               <ThemedText type="display">Nossas Finanças</ThemedText>
               <ThemedText type="default" themeColor="textSecondary">
-                Entrar na conta
+                Criar conta
               </ThemedText>
             </ThemedView>
 
             <Card style={styles.card}>
+              <ThemedView style={styles.field}>
+                <ThemedText type="smallBold">Nome</ThemedText>
+                <TextInput
+                  value={nome}
+                  onChangeText={setNome}
+                  style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface }]}
+                  placeholderTextColor={theme.textTertiary}
+                />
+              </ThemedView>
+
               <ThemedView style={styles.field}>
                 <ThemedText type="smallBold">E-mail</ThemedText>
                 <TextInput
@@ -67,8 +90,19 @@ export default function LoginScreen() {
               <ThemedView style={styles.field}>
                 <ThemedText type="smallBold">Senha</ThemedText>
                 <TextInput
-                  value={password}
-                  onChangeText={setPassword}
+                  value={senha}
+                  onChangeText={setSenha}
+                  secureTextEntry
+                  style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface }]}
+                  placeholderTextColor={theme.textTertiary}
+                />
+              </ThemedView>
+
+              <ThemedView style={styles.field}>
+                <ThemedText type="smallBold">Confirmar senha</ThemedText>
+                <TextInput
+                  value={confirmarSenha}
+                  onChangeText={setConfirmarSenha}
                   secureTextEntry
                   style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface }]}
                   placeholderTextColor={theme.textTertiary}
@@ -82,17 +116,17 @@ export default function LoginScreen() {
               )}
 
               <Button
-                title={loading ? 'Entrando...' : 'Entrar'}
+                title={loading ? 'Criando...' : 'Criar conta'}
                 onPress={handleSubmit}
-                disabled={!email || !password}
+                disabled={!nome || !email || !senha || !confirmarSenha}
                 loading={loading}
                 style={styles.button}
               />
             </Card>
 
-            <Link href="/cadastro" style={styles.link}>
+            <Link href="/login" style={styles.link}>
               <ThemedText type="link" themeColor="textSecondary">
-                Não tem conta? <ThemedText type="linkPrimary">Criar conta</ThemedText>
+                Já tem conta? <ThemedText type="linkPrimary">Entrar</ThemedText>
               </ThemedText>
             </Link>
           </ScrollView>

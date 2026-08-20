@@ -85,7 +85,7 @@ export function CategoriasSection() {
           {data?.grupos.map((grupo) => (
             <div key={grupo.id}>
               <div className="flex items-center justify-between">
-                <h3 className="text-xs tracking-widest text-muted-foreground uppercase">
+                <h3 className="text-[10.5px] font-bold tracking-widest text-muted-foreground uppercase">
                   {grupo.nome}
                 </h3>
                 {grupo.categorias.length === 0 && grupo.subgrupos.length === 0 && (
@@ -129,7 +129,7 @@ export function CategoriasSection() {
 
           {data && data.semGrupo.length > 0 && (
             <div>
-              <h3 className="text-xs tracking-widest text-muted-foreground uppercase">
+              <h3 className="text-[10.5px] font-bold tracking-widest text-muted-foreground uppercase">
                 Sem grupo
               </h3>
               <ul className="divide-y divide-border">

@@ -33,7 +33,7 @@ export function BuscaEStatusBar({
               onChange={(e) => setRascunhoBusca(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onTextoChange(rascunhoBusca)}
               placeholder="Buscar transações..."
-              className="w-full rounded-xl border border-input bg-background px-3 py-2 pr-16 text-sm text-foreground"
+              className="w-full rounded-[11px] border border-border bg-muted px-3 py-2 pr-16 text-[13px] text-foreground"
             />
             {rascunhoBusca && (
               <button
@@ -51,18 +51,18 @@ export function BuscaEStatusBar({
           <button
             type="button"
             onClick={() => onTextoChange(rascunhoBusca)}
-            className="shrink-0 rounded-xl border border-input px-3 py-2 text-sm text-foreground/80"
+            className="shrink-0 rounded-[11px] border border-border px-3 py-2 text-[13px] font-semibold text-foreground/80 hover:bg-muted"
           >
             Buscar
           </button>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs tracking-widest text-muted-foreground uppercase">Status</span>
+          <span className="text-[10.5px] font-bold tracking-widest text-muted-foreground uppercase">Status</span>
           <select
             value={status}
             onChange={(e) => onStatusChange(e.target.value as StatusFiltro)}
-            className="rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
+            className="rounded-[11px] border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
           >
             <option value="todas">Todas</option>
             <option value="consolidadas">Consolidadas</option>

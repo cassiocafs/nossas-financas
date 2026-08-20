@@ -2,8 +2,8 @@ import { Feather } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import { type ColorValue } from 'react-native';
 
-import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/hooks/use-theme';
 
 function TabIcon({ name, color }: { name: keyof typeof Feather.glyphMap; color: ColorValue }) {
   return <Feather name={name} size={22} color={color} />;
@@ -11,7 +11,7 @@ function TabIcon({ name, color }: { name: keyof typeof Feather.glyphMap; color: 
 
 export default function TabsLayout() {
   const { session } = useAuth();
-  const colors = Colors.light;
+  const colors = useTheme();
 
   if (!session) {
     return <Redirect href="/login" />;

@@ -93,7 +93,7 @@ export function AcoesLoteBar({
         type="button"
         disabled={excluindo}
         onClick={() => consolidarMutation.mutate(true)}
-        className="rounded-xl border border-input px-3 py-1 text-foreground/80 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-[11px] border border-border px-3 py-1 text-foreground/80 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
       >
         Consolidar
       </button>
@@ -101,7 +101,7 @@ export function AcoesLoteBar({
         type="button"
         disabled={excluindo}
         onClick={() => consolidarMutation.mutate(false)}
-        className="rounded-xl border border-input px-3 py-1 text-foreground/80 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-[11px] border border-border px-3 py-1 text-foreground/80 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
       >
         Desmarcar consolidação
       </button>
@@ -117,7 +117,7 @@ export function AcoesLoteBar({
           type="button"
           disabled={categorizarMutation.isPending || excluindo}
           onClick={() => categorizarMutation.mutate()}
-          className="rounded-xl border border-input px-3 py-1 text-foreground/80 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-[11px] border border-border px-3 py-1 text-foreground/80 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
         >
           Alterar categoria
         </button>
@@ -126,7 +126,7 @@ export function AcoesLoteBar({
         type="button"
         disabled={excluindo}
         onClick={() => setConfirmandoExclusao(true)}
-        className="rounded-xl border border-destructive/40 px-3 py-1 text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-[11px] border border-destructive/40 px-3 py-1 text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
       >
         Excluir
       </button>

@@ -122,7 +122,7 @@ export function TransacoesPage() {
               <button
                 type="button"
                 onClick={() => mudarMes(padrao.ano, padrao.mes)}
-                className="rounded-xl border border-border px-2 py-1 text-sm text-foreground/70 hover:bg-muted"
+                className="rounded-[11px] border border-border px-2 py-1 text-sm text-foreground/70 hover:bg-muted"
               >
                 Hoje
               </button>
@@ -151,7 +151,7 @@ export function TransacoesPage() {
       </div>
 
       {mensagemSucesso && (
-        <div className="relative flex items-center justify-center rounded-xl border border-income/20 bg-income-soft px-10 py-2.5 text-sm font-bold text-income shadow-soft">
+        <div className="relative flex items-center justify-center rounded-[11px] border border-income/20 bg-income-soft px-10 py-2.5 text-sm font-bold text-income shadow-soft">
           <span className="flex items-center gap-2">
             <svg
               viewBox="0 0 20 20"

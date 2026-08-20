@@ -253,7 +253,7 @@ export function OrcamentoTabela({ orcamentoId, mes, grupos, onEditarCategoria }:
         return (
           <Card key={grupo.grupoId ?? "sem-grupo"} className="p-3 sm:p-4">
             <div className="mb-0.5 flex items-baseline justify-between gap-3 border-b border-border pb-2">
-              <h3 className="text-xs font-semibold tracking-widest text-foreground uppercase">
+              <h3 className="text-[10.5px] font-bold tracking-widest text-foreground uppercase">
                 {grupo.grupoNome}
               </h3>
               <div className="num shrink-0 text-xs">

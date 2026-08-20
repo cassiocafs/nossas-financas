@@ -53,65 +53,77 @@
 :root {
   color-scheme: light dark;
   --radius: 1rem;
-  --background: oklch(0.985 0.004 250);
-  --foreground: oklch(0.21 0.03 254);
-  --surface: oklch(0.965 0.006 250);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.03 254);
-  --primary: oklch(0.24 0.045 258);
-  --primary-foreground: oklch(0.98 0.005 250);
-  --secondary: oklch(0.955 0.008 250);
-  --secondary-foreground: oklch(0.28 0.035 256);
-  --muted: oklch(0.955 0.008 250);
-  --muted-foreground: oklch(0.55 0.025 254);
-  --accent: oklch(0.94 0.045 165);
-  --accent-foreground: oklch(0.3 0.07 165);
-  --destructive: oklch(0.58 0.2 20);
-  --destructive-foreground: oklch(0.99 0.004 250);
-  --border: oklch(0.915 0.01 250);
-  --input: oklch(0.915 0.01 250);
-  --ring: oklch(0.62 0.13 168);
+  --background: #f3f5f9;
+  --foreground: #0b0f17;
+  --surface: #ffffff;
+  --card: rgb(255 255 255 / 78%);
+  --card-foreground: #0b0f17;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --secondary: rgb(11 15 23 / 7%);
+  --secondary-foreground: #0b0f17;
+  --muted: rgb(11 15 23 / 7%);
+  --muted-foreground: #64748b;
+  --accent: rgb(79 70 229 / 10%);
+  --accent-foreground: #4f46e5;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: rgb(11 15 23 / 8%);
+  --input: rgb(11 15 23 / 14%);
+  --ring: #4f46e5;
 
-  --income: oklch(0.6 0.13 165);
-  --income-soft: oklch(0.94 0.05 165);
-  --expense: oklch(0.6 0.17 22);
-  --expense-soft: oklch(0.95 0.04 22);
-  --transfer: oklch(0.58 0.11 250);
-  --transfer-soft: oklch(0.94 0.03 250);
+  --income: #059669;
+  --income-soft: rgb(5 150 105 / 10%);
+  --expense: #dc2626;
+  --expense-soft: rgb(220 38 38 / 9%);
+  --transfer: #0284c7;
+  --transfer-soft: rgb(2 132 199 / 10%);
 
-  --chart-1: oklch(0.6 0.13 165);
-  --chart-2: oklch(0.6 0.17 22);
-  --chart-3: oklch(0.58 0.11 250);
-  --chart-4: oklch(0.72 0.14 75);
-  --chart-5: oklch(0.55 0.13 300);
+  --chart-1: #4f46e5;
+  --chart-2: #059669;
+  --chart-3: #d97706;
+  --chart-4: #0284c7;
+  --chart-5: #7c3aed;
+
+  --shadow-soft: 0 1px 0 rgb(255 255 255 / 90%) inset, 0 10px 24px -16px rgb(15 23 42 / 18%);
+  --shadow-lift: 0 1px 0 rgb(255 255 255 / 90%) inset, 0 18px 40px -26px rgb(15 23 42 / 35%);
 }
 
 .dark {
-  --background: oklch(0.17 0.02 256);
-  --foreground: oklch(0.97 0.005 250);
-  --surface: oklch(0.21 0.025 256);
-  --card: oklch(0.22 0.025 256);
-  --card-foreground: oklch(0.97 0.005 250);
-  --primary: oklch(0.96 0.006 250);
-  --primary-foreground: oklch(0.2 0.03 256);
-  --secondary: oklch(0.27 0.025 256);
-  --secondary-foreground: oklch(0.97 0.005 250);
-  --muted: oklch(0.27 0.025 256);
-  --muted-foreground: oklch(0.72 0.02 254);
-  --accent: oklch(0.3 0.06 165);
-  --accent-foreground: oklch(0.94 0.05 165);
-  --destructive: oklch(0.65 0.19 22);
-  --destructive-foreground: oklch(0.98 0.004 250);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.7 0.12 168);
+  --background: #0b0f17;
+  --foreground: #f9fafb;
+  --surface: #151d2a;
+  --card: rgb(21 29 42 / 62%);
+  --card-foreground: #f9fafb;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --secondary: rgb(255 255 255 / 7%);
+  --secondary-foreground: #f9fafb;
+  --muted: rgb(255 255 255 / 7%);
+  --muted-foreground: #9ca3af;
+  --accent: rgb(99 102 241 / 16%);
+  --accent-foreground: #818cf8;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: rgb(255 255 255 / 8%);
+  --input: rgb(255 255 255 / 16%);
+  --ring: #6366f1;
 
-  --income: oklch(0.72 0.14 165);
-  --income-soft: oklch(0.3 0.06 165);
-  --expense: oklch(0.7 0.16 22);
-  --expense-soft: oklch(0.31 0.06 22);
-  --transfer: oklch(0.7 0.1 250);
-  --transfer-soft: oklch(0.3 0.05 250);
+  --income: #10b981;
+  --income-soft: rgb(16 185 129 / 14%);
+  --expense: #ef4444;
+  --expense-soft: rgb(239 68 68 / 13%);
+  --transfer: #38bdf8;
+  --transfer-soft: rgb(56 189 248 / 15%);
+
+  --chart-1: #6366f1;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #38bdf8;
+  --chart-5: #a78bfa;
+
+  --shadow-soft: 0 1px 0 rgb(255 255 255 / 5%) inset, 0 14px 28px -18px rgb(0 0 0 / 70%);
+  --shadow-lift: 0 1px 0 rgb(255 255 255 / 5%) inset, 0 24px 48px -28px rgb(0 0 0 / 85%);
 }
 
 @keyframes progress-indeterminate {
@@ -135,6 +147,8 @@
   body {
     margin: 0;
     background-color: var(--color-background);
+    background-image: radial-gradient(1200px 600px at 12% -8%, var(--color-accent), transparent 60%);
+    background-repeat: no-repeat;
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -165,6 +179,8 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 /* numeros alinhados (valores monetarios) */

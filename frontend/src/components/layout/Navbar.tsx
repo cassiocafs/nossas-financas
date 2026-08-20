@@ -62,12 +62,12 @@ export function Navbar() {
   const email = session?.user.email ?? "";
 
   return (
-    <header className="sticky top-0 z-20 flex shrink-0 flex-col gap-3 bg-primary px-4 py-3 text-primary-foreground sm:flex-row sm:items-center sm:gap-5 sm:px-6">
+    <header className="sticky top-0 z-40 flex shrink-0 flex-col gap-3 border-b border-border bg-card/70 px-4 py-3 backdrop-blur-xl sm:flex-row sm:items-center sm:gap-5 sm:px-6">
       <div className="flex shrink-0 items-center gap-2.5">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-foreground/15 text-sm font-semibold text-primary-foreground">
+        <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-primary to-income text-sm font-bold text-white">
           N
         </span>
-        <p className="font-display text-base leading-tight font-semibold text-primary-foreground">
+        <p className="font-display text-base leading-tight font-bold text-foreground">
           Nossas Finanças
         </p>
       </div>
@@ -79,24 +79,24 @@ export function Navbar() {
             to={to}
             end={to === "/"}
             className={({ isActive }) =>
-              `flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              `flex shrink-0 items-center gap-2.5 rounded-[11px] px-3 py-2 text-sm font-semibold transition-colors ${
                 isActive
-                  ? "bg-primary-foreground/15 text-primary-foreground"
-                  : "text-primary-foreground/55 hover:bg-primary-foreground/10 hover:text-primary-foreground/90"
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`
             }
           >
-            <Icon className="h-4 w-4 shrink-0" />
+            <Icon className="size-[17px] shrink-0" />
             <span>{label}</span>
           </NavLink>
         ))}
       </nav>
 
-      <div className="flex shrink-0 items-center gap-2.5 border-t border-primary-foreground/10 pt-3 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15 text-xs font-semibold text-primary-foreground/80">
+      <div className="flex shrink-0 items-center gap-2.5 border-t border-border pt-3 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5">
+        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-accent text-xs font-bold text-accent-foreground">
           {email ? email.charAt(0).toUpperCase() : "?"}
         </span>
-        <span className="min-w-0 max-w-[10rem] truncate text-xs text-primary-foreground/55">
+        <span className="min-w-0 max-w-[10rem] truncate text-xs text-muted-foreground">
           {email}
         </span>
         <button
@@ -104,9 +104,9 @@ export function Navbar() {
           onClick={() => signOut()}
           aria-label="Sair"
           title="Sair"
-          className="shrink-0 rounded-lg p-1.5 text-primary-foreground/50 transition-colors hover:bg-primary-foreground/15 hover:text-primary-foreground"
+          className="shrink-0 rounded-[9px] p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <IconLogout className="h-4 w-4" />
+          <IconLogout className="size-4" />
         </button>
       </div>
     </header>

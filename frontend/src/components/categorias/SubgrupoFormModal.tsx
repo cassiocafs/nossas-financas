@@ -58,7 +58,7 @@ export function SubgrupoFormModal({ open, onClose, subgrupo, onSaved }: Subgrupo
           <label className="block text-sm font-medium text-foreground/80">Nome</label>
           <input
             {...register("nome")}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+            className="w-full rounded-[11px] border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
           />
           {errors.nome && <p className="text-sm text-destructive">{errors.nome.message}</p>}
         </div>

@@ -66,7 +66,7 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
         type="button"
         onClick={() => irPara(-1)}
         aria-label="Mês anterior"
-        className="rounded-xl border border-border px-2 py-1 text-sm text-foreground/70 hover:bg-muted"
+        className="rounded-[11px] border border-border px-2 py-1 text-[13px] text-foreground/70 hover:bg-muted"
       >
         ←
       </button>
@@ -74,7 +74,7 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
         type="button"
         onClick={() => setAberto((v) => !v)}
         aria-expanded={aberto}
-        className="flex min-w-36 items-center justify-center gap-1 rounded-xl px-2 py-1 text-center font-display text-sm font-medium text-foreground hover:bg-muted"
+        className="flex min-w-36 items-center justify-center gap-1 rounded-[11px] px-2 py-1 text-center font-display text-sm font-medium text-foreground hover:bg-muted"
       >
         {MESES[mes - 1]} {ano}
         <IconeSeta aberta={aberto} />
@@ -83,7 +83,7 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
         type="button"
         onClick={() => irPara(1)}
         aria-label="Próximo mês"
-        className="rounded-xl border border-border px-2 py-1 text-sm text-foreground/70 hover:bg-muted"
+        className="rounded-[11px] border border-border px-2 py-1 text-[13px] text-foreground/70 hover:bg-muted"
       >
         →
       </button>
@@ -95,7 +95,7 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
               value={mes}
               onChange={(e) => onChange(ano, Number(e.target.value))}
               aria-label="Selecionar mês"
-              className="flex-1 rounded-xl border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+              className="flex-1 rounded-[11px] border border-border bg-muted px-2 py-1.5 text-[13px] text-foreground"
             >
               {MESES.map((nome, indice) => (
                 <option key={nome} value={indice + 1}>
@@ -107,7 +107,7 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
               value={ano}
               onChange={(e) => onChange(Number(e.target.value), mes)}
               aria-label="Selecionar ano"
-              className="w-24 rounded-xl border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+              className="w-24 rounded-[11px] border border-border bg-muted px-2 py-1.5 text-[13px] text-foreground"
             >
               {anos.map((a) => (
                 <option key={a} value={a}>

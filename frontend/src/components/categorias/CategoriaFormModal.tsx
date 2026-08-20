@@ -168,7 +168,7 @@ export function CategoriaFormModal({
           </label>
           <input
             {...register("nome")}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+            className="w-full rounded-[11px] border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
           />
           {errors.nome && (
             <p className="text-sm text-destructive">{errors.nome.message}</p>
@@ -183,7 +183,7 @@ export function CategoriaFormModal({
             {...register("grupoSelecionado", {
               onChange: () => setValue("subgrupoSelecionado", ""),
             })}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+            className="w-full rounded-[11px] border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
           >
             <option value="">Sem grupo</option>
             {gruposQuery.data?.grupos.map((g) => (
@@ -197,7 +197,7 @@ export function CategoriaFormModal({
             <input
               {...register("novoGrupoNome")}
               placeholder="Nome do novo grupo"
-              className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              className="mt-2 w-full rounded-[11px] border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
             />
           )}
         </div>
@@ -209,7 +209,7 @@ export function CategoriaFormModal({
             </label>
             <select
               {...register("subgrupoSelecionado")}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              className="w-full rounded-[11px] border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
             >
               <option value="">Sem subgrupo</option>
               {subgruposDoGrupo.map((s) => (
@@ -223,7 +223,7 @@ export function CategoriaFormModal({
               <input
                 {...register("novoSubgrupoNome")}
                 placeholder="Nome do novo subgrupo"
-                className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                className="mt-2 w-full rounded-[11px] border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
               />
             )}
           </div>
@@ -235,7 +235,7 @@ export function CategoriaFormModal({
           </label>
           <select
             {...register("tipo")}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+            className="w-full rounded-[11px] border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
           >
             <option value="AMBOS">Ambos</option>
             <option value="DESPESA">Despesa</option>
@@ -252,7 +252,7 @@ export function CategoriaFormModal({
               {categoria!.regras.map((regra) => (
                 <span
                   key={regra.id}
-                  className="flex items-center gap-1 border border-input px-3 py-1 text-xs text-foreground"
+                  className="flex items-center gap-1 rounded-[8px] border border-border bg-muted px-3 py-1 text-xs text-foreground"
                 >
                   {regra.palavraChave}
                   <button
@@ -276,7 +276,7 @@ export function CategoriaFormModal({
                   }
                 }}
                 placeholder="Adicionar palavra-chave e pressionar Enter"
-                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                className="flex-1 rounded-[11px] border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
               />
             </div>
           </div>

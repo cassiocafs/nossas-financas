@@ -11,13 +11,14 @@ import { OfflineBanner } from '@/components/OfflineBanner';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { addLog } from '@/lib/logStore';
 
 SplashScreen.preventAutoHideAsync();
 
 addLog('info', 'App iniciado', { baseUrl });
 
-/** O app sempre roda no tema light, independentemente do tema do aparelho. */
+/** Tema de navegação (expo-router/react-navigation) derivado dos tokens de cada esquema. */
 const LightNavigationTheme = {
   ...DefaultTheme,
   colors: {
@@ -27,6 +28,19 @@ const LightNavigationTheme = {
     text: Colors.light.text,
     border: Colors.light.border,
     primary: Colors.light.primary,
+  },
+};
+
+const DarkNavigationTheme = {
+  ...DefaultTheme,
+  dark: true,
+  colors: {
+    ...DefaultTheme.colors,
+    background: Colors.dark.background,
+    card: Colors.dark.card,
+    text: Colors.dark.text,
+    border: Colors.dark.border,
+    primary: Colors.dark.primary,
   },
 };
 
@@ -100,8 +114,11 @@ export default function RootLayout() {
   });
   const fontsReady = fontsLoaded || !!fontsError;
 
+  const scheme = useColorScheme();
+  const navigationTheme = scheme === 'dark' ? DarkNavigationTheme : LightNavigationTheme;
+
   return (
-    <ThemeProvider value={LightNavigationTheme}>
+    <ThemeProvider value={navigationTheme}>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>

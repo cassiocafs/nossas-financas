@@ -9,6 +9,8 @@ import { OrcamentoResumoCard } from "@/components/home/OrcamentoResumoCard";
 import { EvolucaoSaldoChart } from "@/components/home/EvolucaoSaldoChart";
 import { PendenciasList } from "@/components/home/PendenciasList";
 import { CategoriaDrilldownChart } from "@/components/home/CategoriaDrilldownChart";
+import { FluxoCaixaChart } from "@/components/home/FluxoCaixaChart";
+import { TransacoesRecentesCard } from "@/components/home/TransacoesRecentesCard";
 import { MesNavigator } from "@/components/shared/MesNavigator";
 import { Card } from "@/components/ui/Card";
 import { formatarMoeda } from "@/lib/format";
@@ -73,15 +75,17 @@ function StatCard({
     <Card className="p-5">
       <div className="flex items-center gap-2.5">
         <span
-          className={`grid size-8 place-items-center rounded-lg ${
+          className={`grid size-8 place-items-center rounded-[10px] ${
             tone === "income" ? "bg-income-soft text-income" : "bg-expense-soft text-expense"
           }`}
         >
           {icon}
         </span>
-        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className="text-sm font-medium text-muted-foreground">{label}</span>
       </div>
-      <p className="num mt-3 text-2xl font-semibold text-foreground">{formatarMoeda(value)}</p>
+      <p className="num mt-3.5 text-[26px] font-bold tracking-tight text-foreground">
+        {formatarMoeda(value)}
+      </p>
     </Card>
   );
 }
@@ -136,8 +140,10 @@ export function HomePage() {
     <div className="space-y-6 pt-4 sm:pt-6 lg:pt-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">Patrimônio nas contas</p>
-          <h1 className="num mt-1 text-4xl font-semibold text-foreground">
+          <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+            Patrimônio nas contas
+          </p>
+          <h1 className="num mt-2 text-[40px] font-extrabold tracking-tight text-foreground">
             {formatarMoeda(patrimonio)}
           </h1>
         </div>
@@ -145,7 +151,7 @@ export function HomePage() {
           <MesNavigator ano={ano} mes={mes} onChange={mudarMes} />
           <Link
             to={`/transacoes?ano=${ano}&mes=${mes}&novo=1`}
-            className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground shadow-soft transition-opacity hover:opacity-90"
+            className="inline-flex h-10 items-center gap-2 rounded-[11px] bg-primary px-4 text-sm font-bold text-primary-foreground shadow-soft transition-opacity hover:opacity-90"
           >
             <IconPlus className="size-4" />
             Novo lançamento
@@ -182,6 +188,8 @@ export function HomePage() {
                 />
               </div>
 
+              <FluxoCaixaChart ano={ano} mes={mes} />
+
               <div className="grid gap-6 sm:grid-cols-2">
                 <Card className="p-6">
                   <CategoriaDrilldownChart
@@ -200,6 +208,8 @@ export function HomePage() {
                   />
                 </Card>
               </div>
+
+              <TransacoesRecentesCard ano={ano} mes={mes} />
             </>
           )}
 

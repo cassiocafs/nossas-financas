@@ -35,7 +35,7 @@ export function AnoSelector({ orcamentoId, onSelecionar }: AnoSelectorProps) {
       <select
         value={orcamentoId ?? ""}
         onChange={(e) => onSelecionar(e.target.value)}
-        className="rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+        className="rounded-[11px] border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
       >
         <option value="" disabled>
           Selecione um ano
@@ -53,7 +53,7 @@ export function AnoSelector({ orcamentoId, onSelecionar }: AnoSelectorProps) {
             type="number"
             value={novoAno}
             onChange={(e) => setNovoAno(Number(e.target.value))}
-            className="w-24 rounded-md border border-input bg-background px-2 py-2 text-sm text-foreground"
+            className="w-24 rounded-[11px] border border-border bg-muted px-2 py-2 text-[13px] text-foreground"
           />
           <Button onClick={() => setModalNovoOrcamentoAberto(true)}>Continuar</Button>
           <button
@@ -68,7 +68,7 @@ export function AnoSelector({ orcamentoId, onSelecionar }: AnoSelectorProps) {
         <button
           type="button"
           onClick={() => setCriandoAno(true)}
-          className="rounded-md border border-input px-3 py-2 text-sm text-foreground/80"
+          className="rounded-[11px] border border-border px-3 py-2 text-[13px] font-semibold text-foreground/80 hover:bg-muted"
         >
           Novo orçamento
         </button>

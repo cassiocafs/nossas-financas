@@ -78,7 +78,7 @@ export function RegraFormModal({ open, onClose, regra }: RegraFormModalProps) {
           <input
             {...register("descricao")}
             placeholder="Ex.: Uber"
-            className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
+            className="w-full rounded-[11px] border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
           />
           <p className="text-xs text-muted-foreground">
             Quando a descrição de uma transação for igual a esta, a conta e a categoria serão

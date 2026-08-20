@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { listarGrupos } from "@/api/categorias";
+import { usePosicaoFlutuante } from "@/hooks/usePosicaoFlutuante";
 
 function IconeSeta({ aberta }: { aberta: boolean }) {
   return (
@@ -83,6 +85,7 @@ export function CategoriaAutocomplete({ value, onChange, disabled }: CategoriaAu
   }, [itens, busca]);
 
   const mostrarLista = focado && (busca.trim().length > 0 || mostrarTudo);
+  const posicao = usePosicaoFlutuante(containerRef, mostrarLista && !disabled);
 
   const opcoes = useMemo(
     () => [{ id: "", nome: "Sem Categoria" }, ...itensFiltrados],
@@ -184,7 +187,7 @@ export function CategoriaAutocomplete({ value, onChange, disabled }: CategoriaAu
         }}
         onKeyDown={onKeyDown}
         placeholder="Buscar categoria..."
-        className="w-full rounded-xl border border-input bg-background px-3 py-2 pr-8 text-sm text-foreground"
+        className="w-full rounded-[11px] border border-border bg-muted px-3 py-2 pr-8 text-[13px] text-foreground"
       />
       {focado && !disabled && (
         <button
@@ -201,63 +204,68 @@ export function CategoriaAutocomplete({ value, onChange, disabled }: CategoriaAu
           <IconeSeta aberta={mostrarLista} />
         </button>
       )}
-      {mostrarLista && !disabled && (
-        <ul className="card-surface absolute z-20 mt-1 max-h-64 w-full overflow-auto py-1">
-          <li>
-            <button
-              type="button"
-              ref={(el) => {
-                itemRefs.current[0] = el;
-              }}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => selecionar("")}
-              className={`block w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted ${
-                indiceAtivo === 0 ? "bg-muted" : ""
-              }`}
-            >
-              Sem Categoria
-            </button>
-          </li>
-          {linhasArvore.map((linha) => {
-            if (linha.tipo === "cabecalho") {
+      {mostrarLista && !disabled && posicao &&
+        createPortal(
+          <ul
+            style={{ top: posicao.top + 4, left: posicao.left, width: posicao.width }}
+            className="card-surface fixed z-50 max-h-64 overflow-auto py-1"
+          >
+            <li>
+              <button
+                type="button"
+                ref={(el) => {
+                  itemRefs.current[0] = el;
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => selecionar("")}
+                className={`block w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted ${
+                  indiceAtivo === 0 ? "bg-muted" : ""
+                }`}
+              >
+                Sem Categoria
+              </button>
+            </li>
+            {linhasArvore.map((linha) => {
+              if (linha.tipo === "cabecalho") {
+                return (
+                  <li
+                    key={linha.key}
+                    className={`px-3 pt-2 pb-1 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground ${
+                      linha.nivel === 2 ? "pl-6" : "pl-3"
+                    }`}
+                  >
+                    {linha.texto}
+                  </li>
+                );
+              }
+              const { item, indiceOpcao } = linha;
+              const indentacao = item.subgrupoNome ? "pl-7" : item.grupoNome ? "pl-5" : "pl-3";
               return (
-                <li
-                  key={linha.key}
-                  className={`px-3 pt-2 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground ${
-                    linha.nivel === 2 ? "pl-6" : "pl-3"
-                  }`}
-                >
-                  {linha.texto}
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    ref={(el) => {
+                      itemRefs.current[indiceOpcao] = el;
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => selecionar(item.id)}
+                    className={`block w-full py-1.5 pr-3 text-left text-sm text-foreground hover:bg-muted ${indentacao} ${
+                      indiceAtivo === indiceOpcao ? "bg-muted" : ""
+                    }`}
+                  >
+                    {item.nome}
+                  </button>
                 </li>
               );
-            }
-            const { item, indiceOpcao } = linha;
-            const indentacao = item.subgrupoNome ? "pl-7" : item.grupoNome ? "pl-5" : "pl-3";
-            return (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  ref={(el) => {
-                    itemRefs.current[indiceOpcao] = el;
-                  }}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => selecionar(item.id)}
-                  className={`block w-full py-1.5 pr-3 text-left text-sm text-foreground hover:bg-muted ${indentacao} ${
-                    indiceAtivo === indiceOpcao ? "bg-muted" : ""
-                  }`}
-                >
-                  {item.nome}
-                </button>
+            })}
+            {itensFiltrados.length === 0 && (
+              <li className="px-3 py-1.5 text-sm text-muted-foreground">
+                Nenhuma categoria encontrada
               </li>
-            );
-          })}
-          {itensFiltrados.length === 0 && (
-            <li className="px-3 py-1.5 text-sm text-muted-foreground">
-              Nenhuma categoria encontrada
-            </li>
-          )}
-        </ul>
-      )}
+            )}
+          </ul>,
+          document.body,
+        )}
     </div>
   );
 }

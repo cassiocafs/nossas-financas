@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import type { Conta } from "@/api/contas";
+import { usePosicaoFlutuante } from "@/hooks/usePosicaoFlutuante";
 
 function IconeSeta({ aberta }: { aberta: boolean }) {
   return (
@@ -57,6 +59,7 @@ export function ContaAutocomplete({
   }, [contas, busca]);
 
   const mostrarLista = focado && (busca.trim().length > 0 || mostrarTudo);
+  const posicao = usePosicaoFlutuante(containerRef, mostrarLista && !disabled);
 
   useEffect(() => {
     setIndiceAtivo(-1);
@@ -131,7 +134,7 @@ export function ContaAutocomplete({
         }}
         onKeyDown={onKeyDown}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-input bg-background px-3 py-2 pr-8 text-sm text-foreground"
+        className="w-full rounded-[11px] border border-border bg-muted px-3 py-2 pr-8 text-[13px] text-foreground"
       />
       {focado && !disabled && (
         <button
@@ -148,30 +151,36 @@ export function ContaAutocomplete({
           <IconeSeta aberta={mostrarLista} />
         </button>
       )}
-      {mostrarLista && !disabled && (
-        <ul ref={listaRef} className="card-surface absolute z-20 mt-1 max-h-64 w-full overflow-auto py-1">
-          {contasFiltradas.map((c, i) => (
-            <li key={c.id}>
-              <button
-                type="button"
-                title={c.nome}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => selecionar(c.id)}
-                className={`block w-full truncate px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted ${
-                  indiceAtivo === i ? "bg-muted" : ""
-                }`}
-              >
-                {c.nome}
-              </button>
-            </li>
-          ))}
-          {contasFiltradas.length === 0 && (
-            <li className="px-3 py-1.5 text-sm text-muted-foreground">
-              Nenhuma conta encontrada
-            </li>
-          )}
-        </ul>
-      )}
+      {mostrarLista && !disabled && posicao &&
+        createPortal(
+          <ul
+            ref={listaRef}
+            style={{ top: posicao.top + 4, left: posicao.left, width: posicao.width }}
+            className="card-surface fixed z-50 max-h-64 overflow-auto py-1"
+          >
+            {contasFiltradas.map((c, i) => (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  title={c.nome}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => selecionar(c.id)}
+                  className={`block w-full truncate px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted ${
+                    indiceAtivo === i ? "bg-muted" : ""
+                  }`}
+                >
+                  {c.nome}
+                </button>
+              </li>
+            ))}
+            {contasFiltradas.length === 0 && (
+              <li className="px-3 py-1.5 text-sm text-muted-foreground">
+                Nenhuma conta encontrada
+              </li>
+            )}
+          </ul>,
+          document.body,
+        )}
     </div>
   );
 }

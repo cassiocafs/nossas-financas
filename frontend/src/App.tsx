@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router";
+import { Route, Routes } from "react-router";
 import { AppShell } from "@/components/layout/AppShell";
 
 const LoginPage = lazy(() => import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage })));
@@ -32,6 +32,11 @@ const ImportarExtratoSection = lazy(() =>
     default: m.ImportarExtratoSection,
   })),
 );
+const ConfiguracoesOverview = lazy(() =>
+  import("@/components/configuracoes/ConfiguracoesOverview").then((m) => ({
+    default: m.ConfiguracoesOverview,
+  })),
+);
 
 function CarregandoRota() {
   return (
@@ -53,7 +58,7 @@ function App() {
           <Route path="/transacoes" element={<TransacoesPage />} />
           <Route path="/orcamento" element={<OrcamentoPage />} />
           <Route path="/configuracoes" element={<ConfiguracoesPage />}>
-            <Route index element={<Navigate to="contas" replace />} />
+            <Route index element={<ConfiguracoesOverview />} />
             <Route path="contas" element={<ContasSection />} />
             <Route path="categorias" element={<CategoriasSection />} />
             <Route path="regras" element={<RegrasSection />} />
