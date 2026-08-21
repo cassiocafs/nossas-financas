@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { listarGrupos } from '@/api/categorias';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 interface CategoriaSelectProps {
@@ -17,6 +17,9 @@ interface CategoriaSelectProps {
   title?: string;
   clearLabel?: string;
   disabled?: boolean;
+  /** 'row' renderiza como linha com rótulo à esquerda e valor à direita, sem borda. */
+  variant?: 'input' | 'row';
+  label?: string;
 }
 
 interface ItemCategoria {
@@ -44,11 +47,14 @@ export function CategoriaSelect({
   title = 'Selecionar categoria',
   clearLabel = 'Sem categoria',
   disabled,
+  variant = 'input',
+  label,
 }: CategoriaSelectProps) {
   const theme = useTheme();
   const { data } = useQuery({ queryKey: ['categorias', 'grupos'], queryFn: listarGrupos });
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState('');
+  const isRow = variant === 'row';
 
   const itens = useMemo<ItemCategoria[]>(() => {
     if (!data) return [];
@@ -118,16 +124,25 @@ export function CategoriaSelect({
       <Pressable
         onPress={() => !disabled && setAberto(true)}
         disabled={disabled}
-        style={[styles.input, { borderColor: theme.border }, disabled && styles.desabilitado]}
+        style={[
+          isRow ? styles.row : styles.input,
+          isRow ? { backgroundColor: theme.surface } : { borderColor: theme.border },
+          disabled && styles.desabilitado,
+        ]}
         accessibilityRole="button">
+        {isRow && label && (
+          <ThemedText type="default" themeColor="textSecondary">
+            {label}
+          </ThemedText>
+        )}
         <ThemedText
           type="default"
           themeColor={selecionada ? 'text' : 'textTertiary'}
           numberOfLines={1}
-          style={styles.inputText}>
+          style={isRow ? styles.rowValue : styles.inputText}>
           {selecionada?.nome ?? placeholder}
         </ThemedText>
-        <Feather name="chevron-down" size={18} color={theme.textSecondary} />
+        {!isRow && <Feather name="chevron-down" size={18} color={theme.textSecondary} />}
       </Pressable>
 
       <Modal visible={aberto} transparent animationType="slide" onRequestClose={fechar}>
@@ -224,6 +239,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   inputText: { flex: 1 },
+  row: {
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.three,
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  rowValue: { fontFamily: Fonts.bodySemi, textAlign: 'right' },
   desabilitado: { opacity: 0.5 },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15, 23, 42, 0.4)' },
   sheet: {

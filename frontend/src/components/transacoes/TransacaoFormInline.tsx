@@ -330,11 +330,13 @@ export function TransacaoFormInline({
               className={`w-[150px] shrink-0 ${campoClasse}`}
             >
               <option value="">Conta origem</option>
-              {contas.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nome}
-                </option>
-              ))}
+              {contas
+                .filter((c) => c.id !== contaDestinoId)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
             </select>
             <select
               value={contaDestinoId}
@@ -343,11 +345,13 @@ export function TransacaoFormInline({
               className={`w-[150px] shrink-0 ${campoClasse}`}
             >
               <option value="">Conta destino</option>
-              {contas.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nome}
-                </option>
-              ))}
+              {contas
+                .filter((c) => c.id !== contaOrigemId)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
             </select>
           </>
         ) : (

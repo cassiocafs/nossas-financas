@@ -15,6 +15,8 @@ interface TransacaoItemProps {
   modoSelecao: boolean;
   onPress: () => void;
   onLongPress: () => void;
+  /** Preenchido quando a transação tem uma alteração offline ainda não sincronizada. */
+  pendenteSync?: 'criar' | 'editar' | 'excluir';
 }
 
 export function TransacaoItem({
@@ -23,6 +25,7 @@ export function TransacaoItem({
   modoSelecao,
   onPress,
   onLongPress,
+  pendenteSync,
 }: TransacaoItemProps) {
   const theme = useTheme();
 
@@ -33,6 +36,7 @@ export function TransacaoItem({
         style={[
           styles.item,
           { borderColor: selecionado ? theme.primary : theme.border, borderWidth: selecionado ? 1.5 : StyleSheet.hairlineWidth },
+          pendenteSync === 'excluir' && styles.pendenteExclusao,
         ]}>
         {modoSelecao ? (
           <ThemedView
@@ -58,6 +62,13 @@ export function TransacaoItem({
               <ThemedText type={transacao.consolidado ? 'small' : 'smallBold'} style={styles.descricao} numberOfLines={1}>
                 {transacao.descricao}
               </ThemedText>
+              {pendenteSync && (
+                <Feather
+                  name={pendenteSync === 'excluir' ? 'trash-2' : 'refresh-cw'}
+                  size={12}
+                  color={theme.textTertiary}
+                />
+              )}
             </ThemedView>
             <Amount tipo={transacao.tipo} valor={transacao.valor} />
           </ThemedView>
@@ -102,6 +113,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     padding: Spacing.three,
   },
+  pendenteExclusao: { opacity: 0.5 },
   marcador: {
     width: 18,
     height: 18,

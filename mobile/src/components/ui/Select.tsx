@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export interface SelectOption {
@@ -21,12 +21,26 @@ interface SelectProps {
   onChange: (value: string | null) => void;
   clearLabel?: string;
   disabled?: boolean;
+  /** 'row' renderiza como linha com rótulo à esquerda e valor à direita, sem borda. */
+  variant?: 'input' | 'row';
+  label?: string;
 }
 
-export function Select({ value, options, placeholder = 'Selecionar', title = 'Selecionar', onChange, clearLabel = 'Sem categoria', disabled }: SelectProps) {
+export function Select({
+  value,
+  options,
+  placeholder = 'Selecionar',
+  title = 'Selecionar',
+  onChange,
+  clearLabel = 'Sem categoria',
+  disabled,
+  variant = 'input',
+  label,
+}: SelectProps) {
   const theme = useTheme();
   const [aberto, setAberto] = useState(false);
   const selecionada = options.find((opcao) => opcao.value === value);
+  const isRow = variant === 'row';
 
   const lista = [{ value: '', label: clearLabel }, ...options];
 
@@ -35,16 +49,25 @@ export function Select({ value, options, placeholder = 'Selecionar', title = 'Se
       <Pressable
         onPress={() => !disabled && setAberto(true)}
         disabled={disabled}
-        style={[styles.input, { borderColor: theme.border }, disabled && styles.desabilitado]}
+        style={[
+          isRow ? styles.row : styles.input,
+          isRow ? { backgroundColor: theme.surface } : { borderColor: theme.border },
+          disabled && styles.desabilitado,
+        ]}
         accessibilityRole="button">
+        {isRow && label && (
+          <ThemedText type="default" themeColor="textSecondary">
+            {label}
+          </ThemedText>
+        )}
         <ThemedText
           type="default"
           themeColor={selecionada ? 'text' : 'textTertiary'}
           numberOfLines={1}
-          style={styles.inputText}>
+          style={isRow ? styles.rowValue : styles.inputText}>
           {selecionada?.label ?? placeholder}
         </ThemedText>
-        <Feather name="chevron-down" size={18} color={theme.textSecondary} />
+        {!isRow && <Feather name="chevron-down" size={18} color={theme.textSecondary} />}
       </Pressable>
 
       <Modal visible={aberto} transparent animationType="slide" onRequestClose={() => setAberto(false)}>
@@ -98,6 +121,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   inputText: { flex: 1 },
+  row: {
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.three,
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  rowValue: { fontFamily: Fonts.bodySemi, textAlign: 'right' },
   desabilitado: { opacity: 0.5 },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15, 23, 42, 0.4)' },
   sheet: {

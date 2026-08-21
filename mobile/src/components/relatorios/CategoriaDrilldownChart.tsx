@@ -8,8 +8,9 @@ import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui/Card';
 import { DonutChart } from '@/components/ui/DonutChart';
 import { ChartColors, Spacing } from '@/constants/theme';
+import { useFormatarValor } from '@/hooks/use-formatar-valor';
 import { useTheme } from '@/hooks/use-theme';
-import { formatarData, formatarValor } from '@/lib/format';
+import { formatarData } from '@/lib/format';
 
 type Nivel =
   | { tipo: 'raiz' }
@@ -111,6 +112,7 @@ const LIMITE_FATIAS = 8;
 
 export function CategoriaDrilldownChart({ titulo, dados, tipo, ano, mes }: CategoriaDrilldownChartProps) {
   const theme = useTheme();
+  const formatarValor = useFormatarValor();
   const [pilha, setPilha] = useState<Nivel[]>([{ tipo: 'raiz' }]);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<{ id: string | null; nome: string } | null>(
     null,
@@ -229,6 +231,11 @@ export function CategoriaDrilldownChart({ titulo, dados, tipo, ano, mes }: Categ
               fatias={fatias.map((f) => ({ chave: f.chave, valor: f.total, cor: f.cor }))}
               onPressFatia={aoClicarChave}
             />
+            <ThemedView style={styles.centro} pointerEvents="none">
+              <ThemedText type="smallBold" numeric>
+                {formatarValor(totalGeral)}
+              </ThemedText>
+            </ThemedView>
           </ThemedView>
           <ThemedView style={styles.legenda}>
             {fatias.map((f) => (
@@ -272,6 +279,7 @@ interface TransacoesDaCategoriaProps {
 
 function TransacoesDaCategoria({ ano, mes, tipo, categoriaId, categoriaNome }: TransacoesDaCategoriaProps) {
   const theme = useTheme();
+  const formatarValor = useFormatarValor();
   const { data, isLoading } = useQuery({
     queryKey: ['transacoes', 'categoria', ano, mes, categoriaId],
     queryFn: () =>
@@ -326,7 +334,8 @@ const styles = StyleSheet.create({
   headerAcoes: { flexDirection: 'row', gap: Spacing.two, flexShrink: 0 },
   botao: { borderWidth: 1, borderRadius: Spacing.two, paddingHorizontal: Spacing.two, paddingVertical: 4 },
   vazio: { paddingVertical: Spacing.four, textAlign: 'center' },
-  grafico: { alignItems: 'center' },
+  grafico: { alignItems: 'center', justifyContent: 'center' },
+  centro: { position: 'absolute', alignItems: 'center' },
   legenda: { gap: Spacing.one },
   legendaLinha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two, paddingVertical: 2 },
   legendaNome: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },

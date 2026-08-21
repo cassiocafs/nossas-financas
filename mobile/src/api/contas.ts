@@ -8,6 +8,7 @@ export interface Conta {
   saldoAtual: number;
 }
 
-export function listarContas(incluirInativas = true): Promise<Conta[]> {
-  return apiFetch<Conta[]>(`/api/contas?incluirInativas=${incluirInativas}`);
+export async function listarContas(incluirInativas = true): Promise<Conta[]> {
+  const contas = await apiFetch<Conta[]>(`/api/contas?incluirInativas=${incluirInativas}`);
+  return [...contas].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 }

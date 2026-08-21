@@ -4,11 +4,14 @@
  */
 
 import { Colors } from '@/constants/theme';
+import { usePreferences } from '@/contexts/PreferencesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export function useTheme() {
   const scheme = useColorScheme();
-  const theme = scheme === 'unspecified' ? 'light' : scheme;
+  const { colorSchemeOverride } = usePreferences();
+  const resolvido = colorSchemeOverride === 'system' ? scheme : colorSchemeOverride;
+  const theme = resolvido === 'unspecified' ? 'light' : resolvido;
 
   return Colors[theme];
 }

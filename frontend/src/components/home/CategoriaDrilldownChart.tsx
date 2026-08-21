@@ -220,28 +220,37 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes }: CategoriaDril
         </p>
       ) : (
         <>
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie
-                data={fatias}
-                dataKey="total"
-                nameKey="nome"
-                innerRadius={55}
-                outerRadius={85}
-                paddingAngle={2}
-                onClick={(data) => aoClicarItem(data as unknown as ItemGrafico)}
-                cursor="pointer"
-              >
-                {fatias.map((f) => (
-                  <Cell key={f.chave} fill={f.cor} stroke="none" />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(valor) => (typeof valor === "number" ? formatarMoeda(valor) : String(valor ?? ""))}
-                contentStyle={{ fontSize: 12 }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="relative">
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={fatias}
+                  dataKey="total"
+                  nameKey="nome"
+                  innerRadius={55}
+                  outerRadius={85}
+                  paddingAngle={2}
+                  onClick={(data) => aoClicarItem(data as unknown as ItemGrafico)}
+                  cursor="pointer"
+                >
+                  {fatias.map((f) => (
+                    <Cell key={f.chave} fill={f.cor} stroke="none" />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(valor) =>
+                    typeof valor === "number"
+                      ? `${formatarMoeda(valor)} (${totalGeral > 0 ? ((valor / totalGeral) * 100).toFixed(0) : 0}%)`
+                      : String(valor ?? "")
+                  }
+                  contentStyle={{ fontSize: 12 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <span className="num text-sm font-semibold text-foreground">{formatarMoeda(totalGeral)}</span>
+            </div>
+          </div>
           <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
             {fatias.map((f) => (
               <li

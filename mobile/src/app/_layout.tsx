@@ -1,22 +1,39 @@
 import { DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold } from '@expo-google-fonts/dm-sans';
 import { SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
-import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
 import { DefaultTheme, Slot, ThemeProvider } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 
-import { ApiError, baseUrl, NetworkError } from '@/api/client';
-import { OfflineBanner } from '@/components/OfflineBanner';
+import { baseUrl } from '@/api/client';
+import { SyncStatusBar } from '@/components/SyncStatusBar';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { PreferencesProvider, usePreferences } from '@/contexts/PreferencesContext';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useNetworkState } from '@/hooks/use-network-state';
 import { addLog } from '@/lib/logStore';
+import { queryClient } from '@/lib/queryClient';
+import { filaHidratada, processarFila } from '@/lib/syncQueue';
 
 SplashScreen.preventAutoHideAsync();
 
 addLog('info', 'App iniciado', { baseUrl });
+
+const asyncStoragePersister = createAsyncStoragePersister({
+  storage: AsyncStorage,
+  key: '@nossas-financas/cache-query',
+});
+const persistOptions = {
+  persister: asyncStoragePersister,
+  maxAge: 1000 * 60 * 60 * 24 * 7, // 7 dias
+  buster: Constants.expoConfig?.version ?? '1',
+};
 
 /** Tema de navegação (expo-router/react-navigation) derivado dos tokens de cada esquema. */
 const LightNavigationTheme = {
@@ -44,49 +61,42 @@ const DarkNavigationTheme = {
   },
 };
 
-function logQueryError(error: unknown, context: string) {
-  console.error(`[react-query] erro não tratado em ${context}:`, error);
-  // Erros de NetworkError/ApiError já são registrados em apiFetch; isto cobre
-  // o restante (ex.: erro ao serializar variáveis da mutation).
-  if (!(error instanceof ApiError) && !(error instanceof NetworkError)) {
-    addLog('error', `react-query (${context}) não tratado`, error);
-  }
+function useFilaHidratada(): boolean {
+  const [pronta, setPronta] = useState(false);
+  useEffect(() => {
+    let ativo = true;
+    filaHidratada.then(() => {
+      if (ativo) setPronta(true);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
+  return pronta;
 }
 
-// Erros HTTP 4xx (ApiError com status 4xx) não devem ser repetidos — são
-// erros do cliente (validação, autenticação, etc.) e tentar de novo não
-// resolve. Erros de rede (NetworkError e outras falhas de fetch) e 5xx
-// merecem até 2 tentativas antes de desistir.
-function shouldRetry(failureCount: number, error: unknown) {
-  if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
-    return false;
-  }
-  return failureCount < 2;
-}
+/** Dispara a sincronização automaticamente sempre que a conectividade volta (ou já começa online com pendências). */
+function AutoSync() {
+  const { isConnected } = useNetworkState();
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: shouldRetry,
-    },
-    mutations: {
-      retry: false,
-    },
-  },
-  // Na v5 do TanStack Query, `onError` em `defaultOptions` foi descontinuado
-  // em favor do `QueryCache`/`MutationCache`, que centralizam o log de erros
-  // não tratados independentemente de cada tela tratar o próprio erro ou não.
-  queryCache: new QueryCache({
-    onError: (error) => logQueryError(error, 'query'),
-  }),
-  mutationCache: new MutationCache({
-    onError: (error) => logQueryError(error, 'mutation'),
-  }),
-});
+  useEffect(() => {
+    if (!isConnected) return;
+    let cancelado = false;
+    filaHidratada.then(() => {
+      if (!cancelado) void processarFila();
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, [isConnected]);
+
+  return null;
+}
 
 function SplashGate({ children, fontsReady }: { children: React.ReactNode; fontsReady: boolean }) {
   const { loading } = useAuth();
-  const ready = fontsReady && !loading;
+  const filaPronta = useFilaHidratada();
+  const ready = fontsReady && !loading && filaPronta;
 
   useEffect(() => {
     if (ready) {
@@ -98,7 +108,8 @@ function SplashGate({ children, fontsReady }: { children: React.ReactNode; fonts
 
   return (
     <>
-      <OfflineBanner />
+      <AutoSync />
+      <SyncStatusBar />
       {children}
     </>
   );
@@ -114,19 +125,29 @@ export default function RootLayout() {
   });
   const fontsReady = fontsLoaded || !!fontsError;
 
+  return (
+    <PreferencesProvider>
+      <RootLayoutNavigation fontsReady={fontsReady} />
+    </PreferencesProvider>
+  );
+}
+
+function RootLayoutNavigation({ fontsReady }: { fontsReady: boolean }) {
   const scheme = useColorScheme();
-  const navigationTheme = scheme === 'dark' ? DarkNavigationTheme : LightNavigationTheme;
+  const { colorSchemeOverride } = usePreferences();
+  const resolvido = colorSchemeOverride === 'system' ? scheme : colorSchemeOverride;
+  const navigationTheme = resolvido === 'dark' ? DarkNavigationTheme : LightNavigationTheme;
 
   return (
     <ThemeProvider value={navigationTheme}>
       <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
           <AuthProvider>
             <SplashGate fontsReady={fontsReady}>
               <Slot />
             </SplashGate>
           </AuthProvider>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </ErrorBoundary>
     </ThemeProvider>
   );

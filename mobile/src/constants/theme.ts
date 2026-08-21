@@ -21,6 +21,8 @@ export const Colors = {
     transferSoft: 'rgba(2,132,199,0.10)',
     destructive: '#DC2626',
     destructiveForeground: '#FFFFFF',
+    warning: '#D97706',
+    warningForeground: '#FFFFFF',
   },
   dark: {
     background: '#0B0F17',
@@ -40,6 +42,8 @@ export const Colors = {
     transferSoft: 'rgba(56,189,248,0.15)',
     destructive: '#EF4444',
     destructiveForeground: '#FFFFFF',
+    warning: '#F59E0B',
+    warningForeground: '#111827',
   },
 } as const;
 
@@ -89,6 +93,7 @@ export const Spacing = {
 } as const;
 
 export const Radius = {
+  xs: 9,
   sm: 12,
   md: 14,
   lg: 16,

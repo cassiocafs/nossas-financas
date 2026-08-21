@@ -10,6 +10,7 @@
     "owner": "cassiocafs",
     "android": {
       "package": "com.nossasfinancas.app",
+      "versionCode": 10,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -56,6 +57,12 @@
       "eas": {
         "projectId": "a7031a62-c9e5-4ff5-94a7-f8d4cdcc8577"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/a7031a62-c9e5-4ff5-94a7-f8d4cdcc8577"
     }
   }
 }

@@ -7,8 +7,8 @@ import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui/Card';
 import { MesNavigator } from '@/components/transacoes/MesNavigator';
 import { Spacing } from '@/constants/theme';
+import { useFormatarValor } from '@/hooks/use-formatar-valor';
 import { useTheme } from '@/hooks/use-theme';
-import { formatarValor } from '@/lib/format';
 
 interface EvolucaoSaldoChartProps {
   dados: PontoEvolucaoSaldo[];
@@ -25,6 +25,7 @@ const MARGEM_LATERAL = 8;
 
 export function EvolucaoSaldoChart({ dados, inicio, fim, onChangeInicio, onChangeFim }: EvolucaoSaldoChartProps) {
   const theme = useTheme();
+  const formatarValor = useFormatarValor();
   const largura = 320;
 
   const valores = dados.map((p) => p.saldoFinal);

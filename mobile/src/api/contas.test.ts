@@ -22,4 +22,16 @@ describe('api/contas', () => {
     await listarContas(false);
     expect(mockApiFetch).toHaveBeenCalledWith('/api/contas?incluirInativas=false');
   });
+
+  it('retorna as contas em ordem alfabética', async () => {
+    mockApiFetch.mockResolvedValue([
+      { id: '1', nome: 'Nubank', saldoInicial: 0, ativa: true, saldoAtual: 0 },
+      { id: '2', nome: 'itaú', saldoInicial: 0, ativa: true, saldoAtual: 0 },
+      { id: '3', nome: 'Ágil', saldoInicial: 0, ativa: true, saldoAtual: 0 },
+    ]);
+
+    const contas = await listarContas();
+
+    expect(contas.map((c) => c.nome)).toEqual(['Ágil', 'itaú', 'Nubank']);
+  });
 });

@@ -4,6 +4,7 @@ import { dataSchema, idSchema } from "../../lib/schemas.js";
 export const tipoTransacaoSchema = z.enum(["DESPESA", "RECEITA"]);
 
 export const criarTransacaoSchema = z.object({
+  id: idSchema.optional(),
   tipo: tipoTransacaoSchema,
   data: dataSchema,
   descricao: z.string().trim().min(1, "Descrição é obrigatória"),
@@ -29,6 +30,7 @@ export type EditarTransacaoInput = z.infer<typeof editarTransacaoSchema>;
 
 export const criarTransferenciaSchema = z
   .object({
+    transferenciaGrupoId: idSchema.optional(),
     data: dataSchema,
     descricao: z.string().trim().optional(),
     contaOrigemId: idSchema,

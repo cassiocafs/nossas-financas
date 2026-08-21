@@ -1,4 +1,5 @@
-import type { Prisma, Transacao } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import type { Transacao } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { HttpError } from "../../middlewares/errorHandler.js";
 import {
@@ -171,25 +172,56 @@ export async function criarTransacao(
   espacoId: string,
   input: CriarTransacaoInput,
 ): Promise<TransacaoDTO> {
+  if (input.id) {
+    const existente = await prisma.transacao.findUnique({
+      where: { id: input.id },
+      include: TRANSACAO_INCLUDE,
+    });
+    if (existente) {
+      if (existente.espacoId !== espacoId) {
+        throw new HttpError(409, "Identificador já utilizado por outra transação");
+      }
+      return serializarTransacao(existente);
+    }
+  }
+
   await Promise.all([
     buscarContaOuFalhar(espacoId, input.contaId),
     input.categoriaId ? buscarCategoriaOuFalhar(espacoId, input.categoriaId) : Promise.resolve(),
   ]);
 
-  const transacao = await prisma.transacao.create({
-    data: {
-      espacoId,
-      tipo: input.tipo,
-      data: input.data,
-      descricao: input.descricao,
-      contaId: input.contaId,
-      categoriaId: input.categoriaId ?? null,
-      valor: valorComSinal(input.tipo, input.valor),
-      consolidado: input.consolidado,
-      nota: input.nota,
-    },
-    include: TRANSACAO_INCLUDE,
-  });
+  let transacao;
+  try {
+    transacao = await prisma.transacao.create({
+      data: {
+        ...(input.id ? { id: input.id } : {}),
+        espacoId,
+        tipo: input.tipo,
+        data: input.data,
+        descricao: input.descricao,
+        contaId: input.contaId,
+        categoriaId: input.categoriaId ?? null,
+        valor: valorComSinal(input.tipo, input.valor),
+        consolidado: input.consolidado,
+        nota: input.nota,
+      },
+      include: TRANSACAO_INCLUDE,
+    });
+  } catch (err) {
+    // Corrida entre duas tentativas do mesmo id (ex.: retry de sincronização
+    // offline concorrente): a segunda chamada perde a checagem de replay
+    // acima, mas ainda pode devolver o registro que a primeira acabou de criar.
+    if (input.id && err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      const existente = await prisma.transacao.findUnique({
+        where: { id: input.id },
+        include: TRANSACAO_INCLUDE,
+      });
+      if (existente && existente.espacoId === espacoId) {
+        return serializarTransacao(existente);
+      }
+    }
+    throw err;
+  }
 
   await aprenderComTransacao(espacoId, input.descricao, input.contaId, input.categoriaId ?? null);
 
@@ -336,50 +368,83 @@ export async function criarTransferencia(
   espacoId: string,
   input: CriarTransferenciaInput,
 ) {
+  if (input.transferenciaGrupoId) {
+    const existentes = await prisma.transacao.findMany({
+      where: { espacoId, transferenciaGrupoId: input.transferenciaGrupoId },
+      include: TRANSACAO_INCLUDE,
+    });
+    if (existentes.length > 0) {
+      return montarResultadoTransferencia(input.transferenciaGrupoId, existentes);
+    }
+  }
+
   await Promise.all([
     buscarContaOuFalhar(espacoId, input.contaOrigemId),
     buscarContaOuFalhar(espacoId, input.contaDestinoId),
   ]);
 
-  const grupoId = crypto.randomUUID();
+  const grupoId = input.transferenciaGrupoId ?? crypto.randomUUID();
   const descricao = input.descricao?.trim() || "Transferência entre contas";
 
-  const [saida, entrada] = await prisma.$transaction([
-    prisma.transacao.create({
-      data: {
-        espacoId,
-        tipo: "TRANSFERENCIA",
-        data: input.data,
-        descricao,
-        contaId: input.contaOrigemId,
-        categoriaId: null,
-        valor: -Math.abs(input.valor),
-        consolidado: input.consolidado,
-        nota: input.nota,
-        transferenciaGrupoId: grupoId,
-      },
-      include: TRANSACAO_INCLUDE,
-    }),
-    prisma.transacao.create({
-      data: {
-        espacoId,
-        tipo: "TRANSFERENCIA",
-        data: input.data,
-        descricao,
-        contaId: input.contaDestinoId,
-        categoriaId: null,
-        valor: Math.abs(input.valor),
-        consolidado: input.consolidado,
-        nota: input.nota,
-        transferenciaGrupoId: grupoId,
-      },
-      include: TRANSACAO_INCLUDE,
-    }),
-  ]);
+  try {
+    const [saida, entrada] = await prisma.$transaction([
+      prisma.transacao.create({
+        data: {
+          espacoId,
+          tipo: "TRANSFERENCIA",
+          data: input.data,
+          descricao,
+          contaId: input.contaOrigemId,
+          categoriaId: null,
+          valor: -Math.abs(input.valor),
+          consolidado: input.consolidado,
+          nota: input.nota,
+          transferenciaGrupoId: grupoId,
+        },
+        include: TRANSACAO_INCLUDE,
+      }),
+      prisma.transacao.create({
+        data: {
+          espacoId,
+          tipo: "TRANSFERENCIA",
+          data: input.data,
+          descricao,
+          contaId: input.contaDestinoId,
+          categoriaId: null,
+          valor: Math.abs(input.valor),
+          consolidado: input.consolidado,
+          nota: input.nota,
+          transferenciaGrupoId: grupoId,
+        },
+        include: TRANSACAO_INCLUDE,
+      }),
+    ]);
 
+    return montarResultadoTransferencia(grupoId, [saida, entrada]);
+  } catch (err) {
+    // Corrida entre duas tentativas do mesmo transferenciaGrupoId (retry de
+    // sincronização offline concorrente).
+    if (
+      input.transferenciaGrupoId &&
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
+      const existentes = await prisma.transacao.findMany({
+        where: { espacoId, transferenciaGrupoId: input.transferenciaGrupoId },
+        include: TRANSACAO_INCLUDE,
+      });
+      if (existentes.length > 0) {
+        return montarResultadoTransferencia(input.transferenciaGrupoId, existentes);
+      }
+    }
+    throw err;
+  }
+}
+
+function montarResultadoTransferencia(grupoId: string, transacoes: TransacaoComRelacoes[]) {
   return {
     transferenciaGrupoId: grupoId,
-    transacoes: [serializarTransacao(saida), serializarTransacao(entrada)],
+    transacoes: transacoes.map(serializarTransacao),
   };
 }
 

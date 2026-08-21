@@ -107,6 +107,116 @@ describe("transacoes.service — transferências", () => {
   });
 });
 
+describe("transacoes.service — idempotência (sincronização offline)", () => {
+  it("criarTransacao usa o id enviado pelo cliente quando não existe ainda", async () => {
+    mockPrisma.conta.findFirst.mockResolvedValue({ id: "conta-1" });
+    mockPrisma.transacao.findUnique.mockResolvedValue(null);
+    mockPrisma.transacao.create.mockImplementation(async ({ data }) => ({
+      ...data,
+      ...INCLUDE_PADRAO,
+    }));
+
+    const resultado = await transacoesService.criarTransacao(ESPACO_ID, {
+      id: "id-cliente-1",
+      tipo: "DESPESA",
+      data: new Date("2026-07-10T00:00:00.000Z"),
+      descricao: "Mercado",
+      contaId: "conta-1",
+      valor: 50,
+      consolidado: false,
+    });
+
+    expect(mockPrisma.transacao.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ id: "id-cliente-1" }) }),
+    );
+    expect(resultado.id).toBe("id-cliente-1");
+  });
+
+  it("criarTransacao reenviada com o mesmo id não duplica: devolve o registro já existente", async () => {
+    mockPrisma.transacao.findUnique.mockResolvedValue({
+      id: "id-cliente-1",
+      espacoId: ESPACO_ID,
+      tipo: "DESPESA",
+      data: new Date("2026-07-10T00:00:00.000Z"),
+      descricao: "Mercado",
+      contaId: "conta-1",
+      categoriaId: null,
+      valor: -50,
+      consolidado: false,
+      nota: null,
+      transferenciaGrupoId: null,
+      ...INCLUDE_PADRAO,
+    });
+
+    const resultado = await transacoesService.criarTransacao(ESPACO_ID, {
+      id: "id-cliente-1",
+      tipo: "DESPESA",
+      data: new Date("2026-07-10T00:00:00.000Z"),
+      descricao: "Mercado",
+      contaId: "conta-1",
+      valor: 50,
+      consolidado: false,
+    });
+
+    expect(mockPrisma.transacao.create).not.toHaveBeenCalled();
+    expect(mockPrisma.conta.findFirst).not.toHaveBeenCalled();
+    expect(resultado.id).toBe("id-cliente-1");
+  });
+
+  it("criarTransacao rejeita reaproveitar um id que pertence a outro espaço", async () => {
+    mockPrisma.transacao.findUnique.mockResolvedValue({
+      id: "id-cliente-1",
+      espacoId: "outro-espaco",
+      ...INCLUDE_PADRAO,
+    });
+
+    await expect(
+      transacoesService.criarTransacao(ESPACO_ID, {
+        id: "id-cliente-1",
+        tipo: "DESPESA",
+        data: new Date("2026-07-10T00:00:00.000Z"),
+        descricao: "Mercado",
+        contaId: "conta-1",
+        valor: 50,
+        consolidado: false,
+      }),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+
+  it("criarTransferencia reenviada com o mesmo transferenciaGrupoId devolve as duas pernas existentes", async () => {
+    mockPrisma.transacao.findMany.mockResolvedValue([
+      {
+        id: "t-saida",
+        transferenciaGrupoId: "grupo-1",
+        data: new Date("2026-07-10T00:00:00.000Z"),
+        valor: -150,
+        ...INCLUDE_PADRAO,
+      },
+      {
+        id: "t-entrada",
+        transferenciaGrupoId: "grupo-1",
+        data: new Date("2026-07-10T00:00:00.000Z"),
+        valor: 150,
+        ...INCLUDE_PADRAO,
+      },
+    ]);
+
+    const resultado = await transacoesService.criarTransferencia(ESPACO_ID, {
+      transferenciaGrupoId: "grupo-1",
+      data: new Date("2026-07-10T00:00:00.000Z"),
+      contaOrigemId: "conta-origem",
+      contaDestinoId: "conta-destino",
+      valor: 150,
+      consolidado: false,
+    });
+
+    expect(mockPrisma.transacao.create).not.toHaveBeenCalled();
+    expect(mockPrisma.conta.findFirst).not.toHaveBeenCalled();
+    expect(resultado.transferenciaGrupoId).toBe("grupo-1");
+    expect(resultado.transacoes).toHaveLength(2);
+  });
+});
+
 describe("transacoes.service — aprendizado automático de regras", () => {
   it("criarTransacao grava/atualiza a regra da descrição com a conta e categoria usadas", async () => {
     mockPrisma.conta.findFirst.mockResolvedValue({ id: "conta-1" });

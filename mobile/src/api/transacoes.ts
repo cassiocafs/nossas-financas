@@ -44,6 +44,8 @@ export interface FiltrosTransacoes {
 }
 
 export interface CriarTransacaoInput {
+  /** Opcional: id gerado no cliente (usado ao sincronizar uma transação criada offline). */
+  id?: string;
   tipo: 'DESPESA' | 'RECEITA';
   data: string;
   descricao: string;
@@ -57,6 +59,8 @@ export interface CriarTransacaoInput {
 export type EditarTransacaoInput = Partial<CriarTransacaoInput>;
 
 export interface CriarTransferenciaInput {
+  /** Opcional: grupo gerado no cliente (usado ao sincronizar uma transferência criada offline). */
+  transferenciaGrupoId?: string;
   data: string;
   descricao?: string;
   contaOrigemId: string;

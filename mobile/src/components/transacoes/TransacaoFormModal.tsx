@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, TextInput } from 'react-native';
@@ -12,19 +13,30 @@ import {
   criarTransferencia,
   editarTransacao,
   excluirTransacao,
-  type Transacao,
 } from '@/api/transacoes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { CategoriaSelect } from '@/components/transacoes/CategoriaSelect';
 import { Button } from '@/components/ui/Button';
-import { Chip } from '@/components/ui/Chip';
 import { DateField } from '@/components/ui/DateField';
 import { Select } from '@/components/ui/Select';
-import { Radius, Spacing } from '@/constants/theme';
+import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { useNetworkState } from '@/hooks/use-network-state';
 import { useTheme } from '@/hooks/use-theme';
+import type { TransacaoComPendencia } from '@/hooks/use-transacoes-com-pendencias';
+import {
+  atualizarTransferenciaPendente,
+  enqueueCriarTransacao,
+  enqueueCriarTransferencia,
+  enqueueEditarTransacao,
+  enqueueExcluirTransacao,
+  operacaoPendenteParaId,
+  removerTransferenciaPendente,
+  transferenciaPendente,
+} from '@/lib/syncQueue';
 
 type Tipo = 'DESPESA' | 'RECEITA' | 'TRANSFERENCIA';
+type Theme = ReturnType<typeof useTheme>;
 
 function hojeISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -32,26 +44,64 @@ function hojeISO(): string {
 
 interface TransacaoFormModalProps {
   visible: boolean;
-  transacao?: Transacao | null;
+  transacao?: TransacaoComPendencia | null;
+  /** Tipo pré-selecionado ao abrir o formulário para uma nova transação (ignorado em edição). */
+  tipoInicial?: 'DESPESA' | 'RECEITA';
   onClose: () => void;
   onSaved: () => void;
 }
 
-function CampoLabel({ children, obrigatorio, cor }: { children: string; obrigatorio?: boolean; cor: string }) {
+function corDoTipo(tipo: Tipo, theme: Theme) {
+  if (tipo === 'RECEITA') return { cor: theme.income, corSuave: theme.incomeSoft };
+  if (tipo === 'TRANSFERENCIA') return { cor: theme.transfer, corSuave: theme.transferSoft };
+  return { cor: theme.expense, corSuave: theme.expenseSoft };
+}
+
+function CampoTextoRow({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  disabled,
+  theme,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (texto: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  theme: Theme;
+}) {
   return (
-    <ThemedText
-      type="smallBold"
-      style={obrigatorio ? { color: cor, textDecorationLine: 'underline' } : undefined}>
-      {children}
-    </ThemedText>
+    <ThemedView style={[styles.row, { backgroundColor: theme.surface }]}>
+      <ThemedText type="default" themeColor="textSecondary">
+        {label}
+      </ThemedText>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={theme.textTertiary}
+        editable={!disabled}
+        textAlign="right"
+        style={[styles.rowInput, { color: theme.text }]}
+      />
+    </ThemedView>
   );
 }
 
-export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: TransacaoFormModalProps) {
+export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, onSaved }: TransacaoFormModalProps) {
   const theme = useTheme();
   const queryClient = useQueryClient();
+  const { isConnected } = useNetworkState();
   const editando = !!transacao;
   const isEdicaoTransferencia = !!transacao?.transferenciaGrupoId;
+  // Transferência ainda não sincronizada (criada offline): não existe no servidor
+  // ainda, então as contas de origem/destino vêm da própria fila, não de uma busca.
+  const transferenciaAindaPendente =
+    isEdicaoTransferencia && transacao?.pendenteSync === 'criar'
+      ? transferenciaPendente(transacao.transferenciaGrupoId!)
+      : undefined;
 
   const { data: contas = [] } = useQuery({
     queryKey: ['contas'],
@@ -60,7 +110,7 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
   const { data: transferencia } = useQuery({
     queryKey: ['transferencia', transacao?.transferenciaGrupoId],
     queryFn: () => buscarTransferencia(transacao!.transferenciaGrupoId!),
-    enabled: isEdicaoTransferencia,
+    enabled: isEdicaoTransferencia && !transferenciaAindaPendente,
   });
   const [tipo, setTipo] = useState<Tipo>('DESPESA');
   const [data, setData] = useState(hojeISO());
@@ -97,17 +147,24 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
     } else {
       resetarFormulario();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tipoInicial só deve reaplicar quando o modal reabre
   }, [visible, transacao]);
 
   useEffect(() => {
-    if (!transferencia || contaOrigemId || contaDestinoId) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- preenche os campos editáveis assim que a transferência carrega
+    if (contaOrigemId || contaDestinoId) return;
+    if (transferenciaAindaPendente) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- preenche os campos editáveis a partir da fila pendente
+      setContaOrigemId(transferenciaAindaPendente.payload.contaOrigemId);
+      setContaDestinoId(transferenciaAindaPendente.payload.contaDestinoId);
+      return;
+    }
+    if (!transferencia) return;
     setContaOrigemId(transferencia.contaOrigem?.id ?? null);
     setContaDestinoId(transferencia.contaDestino?.id ?? null);
-  }, [transferencia, contaOrigemId, contaDestinoId]);
+  }, [transferencia, transferenciaAindaPendente, contaOrigemId, contaDestinoId]);
 
   function resetarFormulario() {
-    setTipo('DESPESA');
+    setTipo(tipoInicial ?? 'DESPESA');
     setData(hojeISO());
     setDescricao('');
     setContaId(null);
@@ -156,6 +213,7 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         });
+  const valorInputTexto = valorCentavos == null ? '' : `R$ ${valorExibicao}`;
 
   function handleValorChange(texto: string) {
     const digitos = texto.replace(/\D/g, '');
@@ -165,8 +223,7 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
   const salvarMutation = useMutation({
     mutationFn: async (opcao: 'fechar' | 'novo') => {
       if (tipo === 'TRANSFERENCIA') {
-        if (editando) await excluirTransacao(transacao!.id);
-        return criarTransferencia({
+        const payloadTransferencia = {
           data,
           descricao: descricao.trim() || undefined,
           contaOrigemId: contaOrigemId!,
@@ -174,8 +231,29 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
           valor: valorNumerico,
           consolidado,
           nota: nota || undefined,
-        });
+        };
+
+        if (editando) {
+          if (transferenciaAindaPendente) {
+            // Nunca chegou ao servidor: só atualiza o payload em fila, sem excluir/recriar nada remotamente.
+            atualizarTransferenciaPendente(transferenciaAindaPendente.grupoId, payloadTransferencia);
+            return;
+          }
+          // Já sincronizada: editar uma transferência é excluir a antiga e criar uma nova (mesmo fluxo online de sempre).
+          if (!isConnected) {
+            enqueueExcluirTransacao(transacao!.id);
+          } else {
+            await excluirTransacao(transacao!.id);
+          }
+        }
+
+        if (!isConnected) {
+          enqueueCriarTransferencia(payloadTransferencia);
+          return;
+        }
+        return criarTransferencia(payloadTransferencia);
       }
+
       const payload = {
         tipo,
         data,
@@ -186,7 +264,21 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
         consolidado,
         nota: nota || undefined,
       };
-      return editando ? editarTransacao(transacao!.id, payload) : criarTransacao(payload);
+
+      if (editando) {
+        const pendente = operacaoPendenteParaId(transacao!.id);
+        if (pendente || !isConnected) {
+          enqueueEditarTransacao(transacao!.id, payload);
+          return;
+        }
+        return editarTransacao(transacao!.id, payload);
+      }
+
+      if (!isConnected) {
+        enqueueCriarTransacao(payload);
+        return;
+      }
+      return criarTransacao(payload);
     },
     onSuccess: (_dados, opcao) => {
       queryClient.invalidateQueries({ queryKey: ['transacoes'] });
@@ -202,7 +294,18 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
   });
 
   const excluirMutation = useMutation({
-    mutationFn: () => excluirTransacao(transacao!.id),
+    mutationFn: async () => {
+      if (transferenciaAindaPendente) {
+        removerTransferenciaPendente(transferenciaAindaPendente.grupoId);
+        return;
+      }
+      const pendente = operacaoPendenteParaId(transacao!.id);
+      if (pendente || !isConnected) {
+        enqueueExcluirTransacao(transacao!.id);
+        return;
+      }
+      return excluirTransacao(transacao!.id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transacoes'] });
       onSaved();
@@ -233,11 +336,9 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
         data.length > 0 &&
         !salvarMutation.isPending;
 
-  const descricaoObrigatoria = tipo !== 'TRANSFERENCIA';
-  const contaObrigatoria = tipo !== 'TRANSFERENCIA';
-  const contasTransferenciaObrigatorias = tipo === 'TRANSFERENCIA';
-
   const bloqueado = salvarMutation.isPending || excluirMutation.isPending;
+  const tipoBloqueado = bloqueado || isEdicaoTransferencia;
+  const { cor: corTipo } = corDoTipo(tipo, theme);
 
   return (
     <Modal
@@ -249,154 +350,132 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
         <SafeAreaView edges={['bottom']} style={styles.safeArea}>
           <ThemedView style={styles.header}>
             <ThemedText type="subtitle">{editando ? 'Editar transação' : 'Nova transação'}</ThemedText>
-            <Pressable onPress={onClose} disabled={bloqueado}>
-              <ThemedText type="small" themeColor={bloqueado ? 'textTertiary' : 'textSecondary'}>
-                Fechar
-              </ThemedText>
+            <Pressable
+              onPress={onClose}
+              disabled={bloqueado}
+              hitSlop={8}
+              style={[styles.closeButton, { backgroundColor: theme.surface, opacity: bloqueado ? 0.5 : 1 }]}
+              accessibilityRole="button">
+              <Feather name="x" size={18} color={theme.text} />
             </Pressable>
           </ThemedView>
 
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-            {!isEdicaoTransferencia && (
-              <ThemedView style={styles.field}>
-                <ThemedText type="smallBold">Tipo</ThemedText>
-                <ThemedView style={styles.row}>
-                  {(['DESPESA', 'RECEITA', 'TRANSFERENCIA'] as const).map((opcao) => (
-                    <Chip
-                      key={opcao}
-                      label={
-                        opcao === 'DESPESA' ? 'Despesa' : opcao === 'RECEITA' ? 'Receita' : 'Transferência'
-                      }
-                      selected={tipo === opcao}
-                      onPress={() => setTipo(opcao)}
-                      disabled={bloqueado}
-                    />
-                  ))}
-                </ThemedView>
-              </ThemedView>
-            )}
+            <ThemedView style={[styles.segmented, { backgroundColor: theme.surface }]}>
+              {(['DESPESA', 'RECEITA', 'TRANSFERENCIA'] as const).map((opcao) => {
+                const selecionado = tipo === opcao;
+                const { cor, corSuave } = corDoTipo(opcao, theme);
+                return (
+                  <Pressable
+                    key={opcao}
+                    onPress={() => setTipo(opcao)}
+                    disabled={tipoBloqueado}
+                    style={[styles.segmentedItem, selecionado && { backgroundColor: corSuave }]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: selecionado, disabled: tipoBloqueado }}>
+                    <ThemedText type="smallBold" style={{ color: selecionado ? cor : theme.textSecondary }}>
+                      {opcao === 'DESPESA' ? 'Despesa' : opcao === 'RECEITA' ? 'Receita' : 'Transf.'}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </ThemedView>
 
-            {isEdicaoTransferencia && transacao?.tipo === 'TRANSFERENCIA' && (
-              <ThemedView style={styles.field}>
-                <ThemedText type="smallBold">Tipo</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Transferência
-                </ThemedText>
-              </ThemedView>
-            )}
-
-            <ThemedView style={styles.field}>
-              <CampoLabel obrigatorio cor={theme.expense}>Valor</CampoLabel>
+            <ThemedView style={[styles.valorCard, { backgroundColor: theme.surface }]}>
+              <ThemedText type="caption" themeColor="textTertiary" style={styles.valorLabel}>
+                VALOR
+              </ThemedText>
               <TextInput
-                value={valorExibicao}
+                value={valorInputTexto}
                 onChangeText={handleValorChange}
-                placeholder="0,00"
+                placeholder="R$ 0,00"
                 placeholderTextColor={theme.textTertiary}
                 keyboardType="number-pad"
-                selection={{ start: valorExibicao.length, end: valorExibicao.length }}
+                selection={{ start: valorInputTexto.length, end: valorInputTexto.length }}
                 editable={!bloqueado}
-                style={[styles.input, { borderColor: theme.border, color: theme.text }]}
+                style={[styles.valorInput, { color: corTipo }]}
               />
             </ThemedView>
 
-            <ThemedView style={styles.field}>
-              <ThemedView style={styles.rowSpaced}>
-                <CampoLabel obrigatorio cor={theme.expense}>Data</CampoLabel>
-                <Pressable onPress={() => setData(hojeISO())} disabled={bloqueado}>
-                  <ThemedText type="small" themeColor={bloqueado ? 'textTertiary' : 'textSecondary'}>
-                    Hoje
-                  </ThemedText>
-                </Pressable>
-              </ThemedView>
-              <DateField value={data} onChange={setData} disabled={bloqueado} />
-            </ThemedView>
+            <DateField value={data} onChange={setData} disabled={bloqueado} variant="row" label="Data" />
 
-            <ThemedView style={styles.field}>
-              <CampoLabel obrigatorio={descricaoObrigatoria} cor={theme.expense}>
-                Descrição
-              </CampoLabel>
-              <TextInput
-                value={descricao}
-                onChangeText={setDescricao}
-                placeholder="Ex.: Mercado"
-                placeholderTextColor={theme.textTertiary}
-                editable={!bloqueado}
-                style={[styles.input, { borderColor: theme.border, color: theme.text }]}
+            {tipo !== 'TRANSFERENCIA' && (
+              <Select
+                value={contaId}
+                onChange={(v) => {
+                  setContaId(v);
+                  setContaTocada(true);
+                }}
+                title="Selecionar conta"
+                placeholder="Selecionar"
+                clearLabel="Nenhuma"
+                options={contas.map((conta) => ({ value: conta.id, label: conta.nome }))}
+                disabled={bloqueado}
+                variant="row"
+                label="Conta"
               />
-            </ThemedView>
-
-            {tipo !== 'TRANSFERENCIA' && (
-              <ThemedView style={styles.field}>
-                <ThemedText type="smallBold">Categoria</ThemedText>
-                <CategoriaSelect
-                  value={categoriaId}
-                  onChange={(v) => {
-                    setCategoriaId(v);
-                    setCategoriaTocada(true);
-                  }}
-                  title="Selecionar categoria"
-                  placeholder="Sem categoria"
-                  clearLabel="Sem categoria"
-                  disabled={bloqueado}
-                />
-              </ThemedView>
-            )}
-
-            {tipo !== 'TRANSFERENCIA' && (
-              <ThemedView style={styles.field}>
-                <CampoLabel obrigatorio={contaObrigatoria} cor={theme.expense}>
-                  Conta
-                </CampoLabel>
-                <Select
-                  value={contaId}
-                  onChange={(v) => {
-                    setContaId(v);
-                    setContaTocada(true);
-                  }}
-                  title="Selecionar conta"
-                  placeholder="Selecionar conta"
-                  clearLabel="Nenhuma"
-                  options={contas.map((conta) => ({ value: conta.id, label: conta.nome }))}
-                  disabled={bloqueado}
-                />
-              </ThemedView>
             )}
 
             {tipo === 'TRANSFERENCIA' && (
               <>
-                <ThemedView style={styles.field}>
-                  <CampoLabel obrigatorio={contasTransferenciaObrigatorias} cor={theme.expense}>
-                    Conta origem
-                  </CampoLabel>
-                  <Select
-                    value={contaOrigemId}
-                    onChange={setContaOrigemId}
-                    title="Selecionar conta de origem"
-                    placeholder="Selecionar conta"
-                    clearLabel="Nenhuma"
-                    options={contas.map((conta) => ({ value: conta.id, label: conta.nome }))}
-                    disabled={bloqueado}
-                  />
-                </ThemedView>
-                <ThemedView style={styles.field}>
-                  <CampoLabel obrigatorio={contasTransferenciaObrigatorias} cor={theme.expense}>
-                    Conta destino
-                  </CampoLabel>
-                  <Select
-                    value={contaDestinoId}
-                    onChange={setContaDestinoId}
-                    title="Selecionar conta de destino"
-                    placeholder="Selecionar conta"
-                    clearLabel="Nenhuma"
-                    options={contas.map((conta) => ({ value: conta.id, label: conta.nome }))}
-                    disabled={bloqueado}
-                  />
-                </ThemedView>
+                <Select
+                  value={contaOrigemId}
+                  onChange={setContaOrigemId}
+                  title="Selecionar conta de origem"
+                  placeholder="Selecionar"
+                  clearLabel="Nenhuma"
+                  options={contas
+                    .filter((conta) => conta.id !== contaDestinoId)
+                    .map((conta) => ({ value: conta.id, label: conta.nome }))}
+                  disabled={bloqueado}
+                  variant="row"
+                  label="Conta origem"
+                />
+                <Select
+                  value={contaDestinoId}
+                  onChange={setContaDestinoId}
+                  title="Selecionar conta de destino"
+                  placeholder="Selecionar"
+                  clearLabel="Nenhuma"
+                  options={contas
+                    .filter((conta) => conta.id !== contaOrigemId)
+                    .map((conta) => ({ value: conta.id, label: conta.nome }))}
+                  disabled={bloqueado}
+                  variant="row"
+                  label="Conta destino"
+                />
               </>
             )}
 
-            <ThemedView style={styles.rowSpaced}>
-              <ThemedText type="smallBold">Consolidado</ThemedText>
+            {tipo !== 'TRANSFERENCIA' && (
+              <CategoriaSelect
+                value={categoriaId}
+                onChange={(v) => {
+                  setCategoriaId(v);
+                  setCategoriaTocada(true);
+                }}
+                title="Selecionar categoria"
+                placeholder="Sem categoria"
+                clearLabel="Sem categoria"
+                disabled={bloqueado}
+                variant="row"
+                label="Categoria"
+              />
+            )}
+
+            <CampoTextoRow
+              label="Descrição"
+              value={descricao}
+              onChangeText={setDescricao}
+              placeholder="Ex.: Mercado"
+              disabled={bloqueado}
+              theme={theme}
+            />
+
+            <ThemedView style={[styles.row, { backgroundColor: theme.surface }]}>
+              <ThemedText type="default" themeColor="textSecondary">
+                Consolidado
+              </ThemedText>
               <Switch
                 value={consolidado}
                 onValueChange={setConsolidado}
@@ -405,61 +484,52 @@ export function TransacaoFormModal({ visible, transacao, onClose, onSaved }: Tra
               />
             </ThemedView>
 
-            <ThemedView style={styles.field}>
-              <ThemedText type="smallBold">Nota (opcional)</ThemedText>
-              <TextInput
-                value={nota}
-                onChangeText={setNota}
-                placeholder="Nota"
-                placeholderTextColor={theme.textTertiary}
-                editable={!bloqueado}
-                style={[styles.input, { borderColor: theme.border, color: theme.text }]}
-              />
-            </ThemedView>
+            <CampoTextoRow
+              label="Nota"
+              value={nota}
+              onChangeText={setNota}
+              placeholder="Opcional"
+              disabled={bloqueado}
+              theme={theme}
+            />
 
             {erro && (
-              <ThemedText type="small" themeColor="expense">
+              <ThemedText type="small" themeColor="expense" style={styles.erro}>
                 {erro}
               </ThemedText>
             )}
 
-            {editando ? (
+            <Button
+              title={
+                editando
+                  ? salvarMutation.isPending
+                    ? 'Salvando...'
+                    : 'Salvar transação'
+                  : salvarMutation.isPending && salvarMutation.variables === 'fechar'
+                    ? 'Salvando...'
+                    : 'Salvar transação'
+              }
+              onPress={() => salvarMutation.mutate('fechar')}
+              disabled={!podeSalvar}
+              loading={editando ? salvarMutation.isPending : salvarMutation.isPending && salvarMutation.variables === 'fechar'}
+              style={styles.button}
+            />
+
+            {!editando && (
               <Button
-                title={salvarMutation.isPending ? 'Salvando...' : 'Salvar'}
-                onPress={() => salvarMutation.mutate('fechar')}
+                title={
+                  salvarMutation.isPending && salvarMutation.variables === 'novo' ? 'Salvando...' : 'Salvar e criar nova'
+                }
+                variant="ghost"
+                onPress={() => salvarMutation.mutate('novo')}
                 disabled={!podeSalvar}
-                loading={salvarMutation.isPending}
-                style={styles.button}
+                loading={salvarMutation.isPending && salvarMutation.variables === 'novo'}
               />
-            ) : (
-              <ThemedView style={[styles.row, styles.button]}>
-                <Button
-                  title={
-                    salvarMutation.isPending && salvarMutation.variables === 'fechar' ? 'Salvando...' : 'Salvar'
-                  }
-                  onPress={() => salvarMutation.mutate('fechar')}
-                  disabled={!podeSalvar}
-                  loading={salvarMutation.isPending && salvarMutation.variables === 'fechar'}
-                  style={styles.flexButton}
-                />
-                <Button
-                  title={
-                    salvarMutation.isPending && salvarMutation.variables === 'novo'
-                      ? 'Salvando...'
-                      : 'Salvar e Novo'
-                  }
-                  variant="secondary"
-                  onPress={() => salvarMutation.mutate('novo')}
-                  disabled={!podeSalvar}
-                  loading={salvarMutation.isPending && salvarMutation.variables === 'novo'}
-                  style={styles.flexButton}
-                />
-              </ThemedView>
             )}
 
             {editando && (
               <Button
-                title={excluirMutation.isPending ? 'Excluindo...' : 'Excluir'}
+                title={excluirMutation.isPending ? 'Excluindo...' : 'Excluir transação'}
                 variant="destructive"
                 onPress={confirmarExclusao}
                 disabled={bloqueado}
@@ -482,17 +552,59 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: Spacing.four,
   },
-  scroll: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six, gap: Spacing.three },
-  field: { gap: Spacing.one },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  rowSpaced: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  input: {
-    borderWidth: 1,
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: Radius.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scroll: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six, gap: Spacing.two },
+  segmented: {
+    flexDirection: 'row',
+    borderRadius: Radius.sm,
+    padding: 4,
+    gap: 4,
+    marginBottom: Spacing.two,
+  },
+  segmentedItem: {
+    flex: 1,
+    height: 40,
+    borderRadius: Radius.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  valorCard: {
+    borderRadius: Radius.lg,
+    paddingVertical: Spacing.four,
+    alignItems: 'center',
+    gap: Spacing.one,
+    marginBottom: Spacing.two,
+  },
+  valorLabel: { letterSpacing: 1.2 },
+  valorInput: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 36,
+    lineHeight: 42,
+    textAlign: 'center',
+    padding: 0,
+    minWidth: '100%',
+  },
+  row: {
     borderRadius: Radius.md,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  button: { marginTop: Spacing.one },
-  flexButton: { flex: 1 },
+  rowInput: {
+    flex: 1,
+    marginLeft: Spacing.two,
+    fontFamily: Fonts.bodySemi,
+    fontSize: 16,
+    padding: 0,
+  },
+  erro: { textAlign: 'center' },
+  button: { marginTop: Spacing.two },
 });

@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/Button';
-import { Radius, Spacing } from '@/constants/theme';
+import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -15,6 +15,9 @@ interface DateFieldProps {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  /** 'row' renderiza como linha com rótulo à esquerda e valor à direita, sem borda. */
+  variant?: 'input' | 'row';
+  label?: string;
 }
 
 function paraDate(iso: string): Date {
@@ -32,13 +35,14 @@ function paraISO(date: Date): string {
 function paraBR(iso: string): string {
   const [ano, mes, dia] = iso.split('-');
   if (!ano || !mes || !dia) return iso;
-  return `${dia}-${mes}-${ano}`;
+  return `${dia}/${mes}/${ano}`;
 }
 
-export function DateField({ value, onChange, disabled }: DateFieldProps) {
+export function DateField({ value, onChange, disabled, variant = 'input', label }: DateFieldProps) {
   const theme = useTheme();
   const scheme = useColorScheme();
   const [aberto, setAberto] = useState(false);
+  const isRow = variant === 'row';
 
   function aoConfirmarAndroid(event: DateTimePickerEvent, selecionada?: Date) {
     setAberto(false);
@@ -52,12 +56,12 @@ export function DateField({ value, onChange, disabled }: DateFieldProps) {
       <TextInput
         value={paraBR(value)}
         onChangeText={(texto) => {
-          const [dia, mes, ano] = texto.split('-');
+          const [dia, mes, ano] = texto.split('/');
           if (dia?.length === 2 && mes?.length === 2 && ano?.length === 4) {
             onChange(`${ano}-${mes}-${dia}`);
           }
         }}
-        placeholder="DD-MM-AAAA"
+        placeholder="DD/MM/AAAA"
         placeholderTextColor={theme.textTertiary}
         editable={!disabled}
         style={[styles.input, { borderColor: theme.border, color: theme.text }, disabled && styles.desabilitado]}
@@ -70,12 +74,21 @@ export function DateField({ value, onChange, disabled }: DateFieldProps) {
       <Pressable
         onPress={() => !disabled && setAberto(true)}
         disabled={disabled}
-        style={[styles.input, { borderColor: theme.border }, disabled && styles.desabilitado]}
+        style={[
+          isRow ? styles.row : styles.input,
+          isRow ? { backgroundColor: theme.surface } : { borderColor: theme.border },
+          disabled && styles.desabilitado,
+        ]}
         accessibilityRole="button">
-        <ThemedText type="default" style={styles.inputText}>
+        {isRow && label && (
+          <ThemedText type="default" themeColor="textSecondary">
+            {label}
+          </ThemedText>
+        )}
+        <ThemedText type="default" style={isRow ? styles.rowValue : styles.inputText}>
           {paraBR(value)}
         </ThemedText>
-        <Feather name="calendar" size={18} color={theme.textSecondary} />
+        {!isRow && <Feather name="calendar" size={18} color={theme.textSecondary} />}
       </Pressable>
 
       {Platform.OS === 'android' && aberto && (
@@ -126,6 +139,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   inputText: { flex: 1 },
+  row: {
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.three,
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  rowValue: { fontFamily: Fonts.bodySemi, textAlign: 'right' },
   desabilitado: { opacity: 0.5 },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15, 23, 42, 0.4)' },
   sheet: {

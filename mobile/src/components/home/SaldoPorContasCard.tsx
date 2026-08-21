@@ -7,7 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui/Card';
 import { Radius, Spacing } from '@/constants/theme';
-import { formatarValor } from '@/lib/format';
+import { useFormatarValor } from '@/hooks/use-formatar-valor';
 
 interface SaldoPorContasCardProps {
   ano: number;
@@ -16,6 +16,7 @@ interface SaldoPorContasCardProps {
 
 export function SaldoPorContasCard({ ano, mes }: SaldoPorContasCardProps) {
   const router = useRouter();
+  const formatarValor = useFormatarValor();
 
   const { data: contas, isLoading } = useQuery({
     queryKey: ['contas', 'ativas'],
