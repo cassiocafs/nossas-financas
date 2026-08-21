@@ -157,3 +157,21 @@ Motivo: elimina uma query pesada (`findMany` com `include` de conta+categoria pa
 ## Próximos passos sugeridos
 
 Começar por 3.1 (compressão) e 3.2 (cache do espaço) — são os de maior impacto/esforço e não mudam nenhum contrato de API, então o risco de regressão é baixo.
+
+## Status de execução (2026-08-21)
+
+Implementados: **C** (compressão gzip), **A** (cache de `espacoId` com TTL de 60s em `resolveEspaco.ts`), **E** (`aprenderComTransacao` fire-and-forget) e **B** (campo `recentes` embutido em `buscarResumoMensal`, eliminando o fetch duplicado do mês na Home). Testes de backend (51) e frontend passaram sem regressão.
+
+**D** (mover a soma diária do orçamento para `groupBy`/SQL) ficou de fora deliberadamente: exigiria SQL raw para agrupar por dia (cast de enum, funções de data), com risco de regressão numa tela sensível (orçamento), para um ganho que a própria auditoria já classificou como baixo no volume atual. Vale revisitar se o volume de transações por espaço crescer bastante.
+
+## Melhorias adicionais executadas (2026-08-21)
+
+Durante uma segunda rodada, encontrei e corrigi mais três pontos na mesma linha da auditoria original:
+
+- **Mesmo fetch duplicado do item B, só que no app mobile** — `mobile/src/components/home/TransacoesRecentesCard.tsx` também buscava o mês inteiro de novo via `listarTransacoesMes`, em paralelo ao `buscarResumoMensal` da tela inicial. Corrigido do mesmo jeito: recebe `recentes` via prop (o backend já retornava esse campo desde a correção do item B).
+- **`queryClient` do frontend web sem `staleTime`/retry** — diferente do mobile (que já tinha essa preocupação), o web usava os defaults do React Query: `staleTime: 0` (refetch de todas as ~7 queries da Home a cada foco de aba) e retry automático em erros 4xx (inclusive validação/401/404, onde tentar de novo nunca ajuda). Adicionado `staleTime: 30_000` e a mesma lógica de `shouldRetry` já usada no mobile.
+- **`queryClient` do mobile sem `staleTime`** — tinha o retry certo mas não o `staleTime`, sofrendo do mesmo refetch redundante em remounts de tela. Alinhado com o mesmo valor do web (30s).
+
+Esses três itens têm o efeito colateral de reduzir refetch redundante em outros componentes que buscam categorias/contas/regras em modais e autocompletes (ex.: `CategoriaAutocomplete`, `ContaAutocomplete`), sem precisar tocar neles individualmente.
+
+Validado com type-check + suíte de testes nos três projetos (backend 51/51; frontend e mobile com falhas pré-existentes e não relacionadas, confirmadas via `git stash` antes de mudar qualquer coisa: `frontend/src/App.test.tsx` já falhava no `main`, e a suíte inteira do mobile já não rodava por um problema de tooling — Flow syntax do `react-native` não suportado pelo parser do Rolldown/Vite usado pelo Vitest).

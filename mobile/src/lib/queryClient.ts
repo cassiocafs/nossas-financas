@@ -27,6 +27,9 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: shouldRetry,
+      // Dados financeiros do próprio usuário não precisam ser revalidados a
+      // cada remount de tela; mutations já invalidam as queries afetadas.
+      staleTime: 30_000,
     },
     mutations: {
       retry: false,

@@ -1,8 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet } from 'react-native';
 
-import { listarTransacoesMes } from '@/api/transacoes';
+import type { Transacao } from '@/api/transacoes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TransacaoItem } from '@/components/transacoes/TransacaoItem';
@@ -11,18 +10,15 @@ import { Spacing } from '@/constants/theme';
 
 const LIMITE = 5;
 
-export function TransacoesRecentesCard({ ano, mes }: { ano: number; mes: number }) {
+interface TransacoesRecentesCardProps {
+  ano: number;
+  mes: number;
+  recentes: Transacao[];
+}
+
+export function TransacoesRecentesCard({ ano, mes, recentes: todasRecentes }: TransacoesRecentesCardProps) {
   const router = useRouter();
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['transacoes', { ano, mes, status: 'todas' as const }, 'recentes'],
-    queryFn: () => listarTransacoesMes({ ano, mes, status: 'todas' }),
-  });
-
-  const recentes = (data?.dias ?? [])
-    .flatMap((dia) => dia.transacoes)
-    .sort((a, b) => (a.data < b.data ? 1 : a.data > b.data ? -1 : 0))
-    .slice(0, LIMITE);
+  const recentes = todasRecentes.slice(0, LIMITE);
 
   return (
     <Card style={styles.card}>
@@ -35,11 +31,7 @@ export function TransacoesRecentesCard({ ano, mes }: { ano: number; mes: number 
         </Pressable>
       </ThemedView>
 
-      {isLoading ? (
-        <ThemedText type="small" themeColor="textSecondary">
-          Carregando...
-        </ThemedText>
-      ) : recentes.length === 0 ? (
+      {recentes.length === 0 ? (
         <ThemedText type="small" themeColor="textSecondary">
           Nenhuma transação neste período.
         </ThemedText>

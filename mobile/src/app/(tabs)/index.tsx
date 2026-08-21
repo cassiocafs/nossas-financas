@@ -107,7 +107,7 @@ export default function InicioScreen() {
 
               <SaldoPorContasCard ano={ano} mes={mes} />
 
-              <TransacoesRecentesCard ano={ano} mes={mes} />
+              <TransacoesRecentesCard ano={ano} mes={mes} recentes={data.recentes} />
             </>
           )}
         </ScrollView>

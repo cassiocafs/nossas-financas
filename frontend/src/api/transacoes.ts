@@ -47,6 +47,7 @@ export interface ResumoMensal {
   totalEntradas: number;
   totalSaidas: number;
   saldoFinal: number;
+  recentes: Transacao[];
   anterioresNaoConsolidadas: Transacao[];
   proximasNaoConsolidadas: Transacao[];
   despesasPorCategoria: ItemCategoriaResumo[];

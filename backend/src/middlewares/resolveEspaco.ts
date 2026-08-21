@@ -11,6 +11,13 @@ declare global {
   }
 }
 
+// Resolver o espaço do usuário custa um round trip ao banco, que nesta
+// aplicação roda em host separado do backend (rede real, não localhost).
+// Como o vínculo usuário->espaço praticamente nunca muda após criado, cacheamos
+// por um TTL curto em vez de consultar em toda requisição autenticada.
+const TTL_CACHE_MS = 60_000;
+const cacheEspacoPorUsuario = new Map<string, { espacoId: string; expiraEm: number }>();
+
 export const resolveEspaco = asyncHandler(async function resolveEspaco(
   req: Request,
   _res: Response,
@@ -23,6 +30,13 @@ export const resolveEspaco = asyncHandler(async function resolveEspaco(
 
   const { userId, email } = req.auth;
 
+  const emCache = cacheEspacoPorUsuario.get(userId);
+  if (emCache && emCache.expiraEm > Date.now()) {
+    req.espacoId = emCache.espacoId;
+    next();
+    return;
+  }
+
   // Caminho comum: o usuário já tem espaço, então evitamos abrir transação
   // e tirar lock a cada requisição.
   const existente = await prisma.membroEspaco.findFirst({
@@ -31,6 +45,10 @@ export const resolveEspaco = asyncHandler(async function resolveEspaco(
   });
 
   if (existente) {
+    cacheEspacoPorUsuario.set(userId, {
+      espacoId: existente.espacoId,
+      expiraEm: Date.now() + TTL_CACHE_MS,
+    });
     req.espacoId = existente.espacoId;
     next();
     return;
@@ -62,6 +80,10 @@ export const resolveEspaco = asyncHandler(async function resolveEspaco(
     });
   });
 
+  cacheEspacoPorUsuario.set(userId, {
+    espacoId: membro.espacoId,
+    expiraEm: Date.now() + TTL_CACHE_MS,
+  });
   req.espacoId = membro.espacoId;
   next();
 });

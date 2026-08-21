@@ -1,6 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
-import { listarTransacoesMes } from "@/api/transacoes";
+import type { Transacao } from "@/api/transacoes";
 import { formatarData } from "@/lib/format";
 import { Card } from "@/components/ui/Card";
 import { Valor } from "@/components/ui/Valor";
@@ -9,18 +8,10 @@ import { TypeIcon } from "@/components/transacoes/TransacoesLista";
 interface TransacoesRecentesCardProps {
   ano: number;
   mes: number;
+  recentes: Transacao[];
 }
 
-const LIMITE = 6;
-
-export function TransacoesRecentesCard({ ano, mes }: TransacoesRecentesCardProps) {
-  const { data, isLoading } = useQuery({
-    queryKey: ["transacoes", { ano, mes, status: "todas" as const }],
-    queryFn: () => listarTransacoesMes({ ano, mes, status: "todas" }),
-  });
-
-  const recentes = (data?.dias ?? []).flatMap((dia) => dia.transacoes).slice(0, LIMITE);
-
+export function TransacoesRecentesCard({ ano, mes, recentes }: TransacoesRecentesCardProps) {
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between gap-3">
@@ -40,9 +31,7 @@ export function TransacoesRecentesCard({ ano, mes }: TransacoesRecentesCardProps
         </Link>
       </div>
 
-      {isLoading ? (
-        <p className="mt-4 text-sm text-muted-foreground">Carregando...</p>
-      ) : recentes.length === 0 ? (
+      {recentes.length === 0 ? (
         <p className="mt-4 text-sm text-muted-foreground">Nenhuma transação neste período.</p>
       ) : (
         <ul className="mt-3 divide-y divide-border">

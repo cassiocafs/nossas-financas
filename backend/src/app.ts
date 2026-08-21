@@ -1,3 +1,4 @@
+import compression from "compression";
 import cors from "cors";
 import express from "express";
 import { env } from "./env.js";
@@ -13,6 +14,7 @@ import { regrasRouter } from "./modules/regras/regras.routes.js";
 export function createApp() {
   const app = express();
 
+  app.use(compression());
   app.use(cors({ origin: env.CORS_ORIGIN }));
   app.use(express.json());
 

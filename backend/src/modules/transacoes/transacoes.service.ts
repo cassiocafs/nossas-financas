@@ -23,8 +23,10 @@ const TRANSACAO_INCLUDE = {
 } satisfies Prisma.TransacaoInclude;
 
 const NOME_CATEGORIA_TRANSFERENCIA = "Transferência";
+const LIMITE_RECENTES = 6;
 
 const CATEGORIA_RESUMO_INCLUDE = {
+  conta: { select: { id: true, nome: true } },
   categoria: {
     select: {
       id: true,
@@ -111,6 +113,19 @@ function serializarTransacao(t: TransacaoComRelacoes): TransacaoDTO {
 
 function valorComSinal(tipo: "DESPESA" | "RECEITA", valorPositivo: number): number {
   return tipo === "DESPESA" ? -Math.abs(valorPositivo) : Math.abs(valorPositivo);
+}
+
+// Fire-and-forget: aprender a regra não deve atrasar a resposta ao usuário
+// nem falhar a operação principal caso o upsert dê erro.
+function dispararAprendizado(
+  espacoId: string,
+  descricao: string,
+  contaId: string,
+  categoriaId: string | null,
+): void {
+  aprenderComTransacao(espacoId, descricao, contaId, categoriaId).catch((err) => {
+    console.error("Falha ao aprender regra a partir da transação", err);
+  });
 }
 
 async function buscarContaOuFalhar(espacoId: string, id: string) {
@@ -223,7 +238,7 @@ export async function criarTransacao(
     throw err;
   }
 
-  await aprenderComTransacao(espacoId, input.descricao, input.contaId, input.categoriaId ?? null);
+  dispararAprendizado(espacoId, input.descricao, input.contaId, input.categoriaId ?? null);
 
   return serializarTransacao(transacao);
 }
@@ -293,12 +308,7 @@ export async function editarTransacao(
     include: TRANSACAO_INCLUDE,
   });
 
-  await aprenderComTransacao(
-    espacoId,
-    atualizada.descricao,
-    atualizada.contaId,
-    atualizada.categoriaId,
-  );
+  dispararAprendizado(espacoId, atualizada.descricao, atualizada.contaId, atualizada.categoriaId);
 
   return serializarTransacao(atualizada);
 }
@@ -607,11 +617,19 @@ export async function buscarResumoMensal(
     }
   }
 
+  const recentes = [...transacoesDoMes]
+    .sort(
+      (a, b) => b.data.getTime() - a.data.getTime() || b.criadoEm.getTime() - a.criadoEm.getTime(),
+    )
+    .slice(0, LIMITE_RECENTES)
+    .map(serializarTransacao);
+
   return {
     saldoAnterior,
     totalEntradas,
     totalSaidas,
     saldoFinal: saldoAnterior + movimentoTotal,
+    recentes,
     anterioresNaoConsolidadas: anterioresNaoConsolidadas.map(serializarTransacao),
     proximasNaoConsolidadas: proximasNaoConsolidadas.map(serializarTransacao),
     despesasPorCategoria: Array.from(despesasPorCategoriaMap.values()),

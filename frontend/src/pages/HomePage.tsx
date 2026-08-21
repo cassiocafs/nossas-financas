@@ -209,7 +209,7 @@ export function HomePage() {
                 </Card>
               </div>
 
-              <TransacoesRecentesCard ano={ano} mes={mes} />
+              <TransacoesRecentesCard ano={ano} mes={mes} recentes={data.recentes} />
             </>
           )}
 
