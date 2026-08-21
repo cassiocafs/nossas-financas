@@ -1,6 +1,8 @@
 import compression from "compression";
 import cors from "cors";
 import express from "express";
+import helmet from "helmet";
+import { rateLimit } from "express-rate-limit";
 import { env } from "./env.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
@@ -11,9 +13,32 @@ import { orcamentoRouter } from "./modules/orcamento/orcamento.routes.js";
 import { importacaoRouter } from "./modules/importacao/importacao.routes.js";
 import { regrasRouter } from "./modules/regras/regras.routes.js";
 
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const importacaoLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 export function createApp() {
   const app = express();
 
+  app.use(
+    helmet({
+      // API pura (sem HTML), consumida por frontend web e app mobile em
+      // origens diferentes do backend — CSP não se aplica e o CORP padrão
+      // ("same-origin") bloquearia o navegador de ler as respostas.
+      contentSecurityPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    }),
+  );
   app.use(compression());
   app.use(cors({ origin: env.CORS_ORIGIN }));
   app.use(express.json());
@@ -22,12 +47,14 @@ export function createApp() {
     res.json({ status: "ok" });
   });
 
+  app.use("/api", apiLimiter);
+
   app.use("/api/auth", authRouter);
   app.use("/api/contas", contasRouter);
   app.use("/api/categorias", categoriasRouter);
   app.use("/api/transacoes", transacoesRouter);
   app.use("/api/orcamento", orcamentoRouter);
-  app.use("/api/importacoes", importacaoRouter);
+  app.use("/api/importacoes", importacaoLimiter, importacaoRouter);
   app.use("/api/regras", regrasRouter);
 
   app.use(errorHandler);
