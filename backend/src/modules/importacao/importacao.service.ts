@@ -161,6 +161,42 @@ function linhaInvalida(l: LinhaExtraida): boolean {
   return !l.nomeConta || !l.descricao || !l.data || l.valor === null || l.valor === 0;
 }
 
+export function gerarPlanilhaModelo(): Buffer {
+  const linhasModelo = [
+    {
+      [COLUNA_DATA]: "15/01/2026",
+      [COLUNA_DESCRICAO]: "Salário",
+      [COLUNA_VALOR]: 5000,
+      [COLUNA_CATEGORIA]: "Salário",
+      [COLUNA_CONTA]: "Conta Corrente",
+    },
+    {
+      [COLUNA_DATA]: "16/01/2026",
+      [COLUNA_DESCRICAO]: "Supermercado",
+      [COLUNA_VALOR]: -350.5,
+      [COLUNA_CATEGORIA]: "Mercado",
+      [COLUNA_CONTA]: "Conta Corrente",
+    },
+    {
+      [COLUNA_DATA]: "17/01/2026",
+      [COLUNA_DESCRICAO]: "Assinatura de streaming",
+      [COLUNA_VALOR]: -39.9,
+      [COLUNA_CATEGORIA]: "",
+      [COLUNA_CONTA]: "Cartão de Crédito",
+    },
+  ];
+
+  const planilha = XLSX.utils.json_to_sheet(linhasModelo, {
+    header: [COLUNA_DATA, COLUNA_DESCRICAO, COLUNA_VALOR, COLUNA_CATEGORIA, COLUNA_CONTA],
+  });
+  planilha["!cols"] = [{ wch: 16 }, { wch: 28 }, { wch: 12 }, { wch: 18 }, { wch: 20 }];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, planilha, "Transações");
+
+  return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;
+}
+
 export async function gerarPreviewImportacao(
   espacoId: string,
   arquivos: ArquivoImportacao[],

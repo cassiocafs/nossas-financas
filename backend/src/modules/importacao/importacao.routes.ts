@@ -15,6 +15,22 @@ const upload = multer({
 
 importacaoRouter.use(authenticate, resolveEspaco);
 
+importacaoRouter.get(
+  "/transacoes/modelo",
+  asyncHandler(async (_req, res) => {
+    const planilha = importacaoService.gerarPlanilhaModelo();
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="modelo-importacao-transacoes.xlsx"',
+    );
+    res.send(planilha);
+  }),
+);
+
 importacaoRouter.post(
   "/transacoes/preview",
   upload.array("arquivos", 10),

@@ -38,6 +38,33 @@ export interface PreviewImportacao {
   linhas: LinhaPreviewImportacao[];
 }
 
+export async function baixarModeloImportacao(): Promise<void> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const headers = new Headers();
+  if (session?.access_token) {
+    headers.set("Authorization", `Bearer ${session.access_token}`);
+  }
+
+  const res = await fetch(`${baseUrl}/api/importacoes/transacoes/modelo`, { headers });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new ApiError(res.status, body.error ?? res.statusText);
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "modelo-importacao-transacoes.xlsx";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function previewImportacaoXls(arquivos: File[]): Promise<PreviewImportacao> {
   const formData = new FormData();
   for (const arquivo of arquivos) {

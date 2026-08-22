@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  baixarModeloImportacao,
   importarTransacoesXls,
   previewImportacaoXls,
   type PreviewImportacao,
@@ -37,6 +38,10 @@ export function ImportarExtratoSection() {
   const previewMutation = useMutation({
     mutationFn: previewImportacaoXls,
     onSuccess: () => setPreviewAberto(true),
+  });
+
+  const modeloMutation = useMutation({
+    mutationFn: baixarModeloImportacao,
   });
 
   const importMutation = useMutation({
@@ -102,12 +107,21 @@ export function ImportarExtratoSection() {
         onChange={onArquivoSelecionado}
         className="hidden"
       />
-      <Button
-        onClick={() => inputRef.current?.click()}
-        disabled={previewMutation.isPending || importMutation.isPending}
-      >
-        {previewMutation.isPending ? "Analisando arquivos..." : "Escolher arquivo(s)"}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          onClick={() => inputRef.current?.click()}
+          disabled={previewMutation.isPending || importMutation.isPending}
+        >
+          {previewMutation.isPending ? "Analisando arquivos..." : "Escolher arquivo(s)"}
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={() => modeloMutation.mutate()}
+          disabled={modeloMutation.isPending}
+        >
+          {modeloMutation.isPending ? "Baixando modelo..." : "Baixar planilha modelo"}
+        </Button>
+      </div>
 
       {previewMutation.isPending && <ProgressBar label="Analisando arquivo(s)..." />}
 
@@ -116,6 +130,14 @@ export function ImportarExtratoSection() {
           {previewMutation.error instanceof Error
             ? previewMutation.error.message
             : "Erro ao analisar arquivo"}
+        </p>
+      )}
+
+      {modeloMutation.isError && (
+        <p className="text-sm text-destructive">
+          {modeloMutation.error instanceof Error
+            ? modeloMutation.error.message
+            : "Erro ao baixar planilha modelo"}
         </p>
       )}
 
