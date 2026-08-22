@@ -266,6 +266,24 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
       };
 
       if (editando) {
+        if (isEdicaoTransferencia) {
+          // Transação estava vinculada a uma transferência: converter para despesa/receita
+          // exige excluir as duas pernas vinculadas e criar um registro novo e independente.
+          if (transferenciaAindaPendente) {
+            removerTransferenciaPendente(transferenciaAindaPendente.grupoId);
+          } else if (!isConnected) {
+            enqueueExcluirTransacao(transacao!.id);
+          } else {
+            await excluirTransacao(transacao!.id);
+          }
+
+          if (!isConnected) {
+            enqueueCriarTransacao(payload);
+            return;
+          }
+          return criarTransacao(payload);
+        }
+
         const pendente = operacaoPendenteParaId(transacao!.id);
         if (pendente || !isConnected) {
           enqueueEditarTransacao(transacao!.id, payload);
@@ -337,7 +355,6 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
         !salvarMutation.isPending;
 
   const bloqueado = salvarMutation.isPending || excluirMutation.isPending;
-  const tipoBloqueado = bloqueado || isEdicaoTransferencia;
   const { cor: corTipo } = corDoTipo(tipo, theme);
 
   return (
@@ -369,10 +386,10 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
                   <Pressable
                     key={opcao}
                     onPress={() => setTipo(opcao)}
-                    disabled={tipoBloqueado}
+                    disabled={bloqueado}
                     style={[styles.segmentedItem, selecionado && { backgroundColor: corSuave }]}
                     accessibilityRole="button"
-                    accessibilityState={{ selected: selecionado, disabled: tipoBloqueado }}>
+                    accessibilityState={{ selected: selecionado, disabled: bloqueado }}>
                     <ThemedText type="smallBold" style={{ color: selecionado ? cor : theme.textSecondary }}>
                       {opcao === 'DESPESA' ? 'Despesa' : opcao === 'RECEITA' ? 'Receita' : 'Transf.'}
                     </ThemedText>
