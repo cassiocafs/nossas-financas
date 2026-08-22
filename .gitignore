@@ -37,3 +37,6 @@ venv/
 
 # Builds do app mobile (APK)
 *.apk
+
+# Documentação local
+docs/
