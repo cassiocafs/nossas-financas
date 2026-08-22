@@ -2,6 +2,8 @@ import type { NextFunction, Request, Response } from "express";
 import { asyncHandler } from "./asyncHandler.js";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "./errorHandler.js";
+import { criarCategoriasDefault } from "../modules/categorias/categoriasDefault.js";
+import { criarContasDefault } from "../modules/contas/contasDefault.js";
 
 declare global {
   namespace Express {
@@ -75,10 +77,12 @@ export const resolveEspaco = asyncHandler(async function resolveEspaco(
     const espaco = await tx.espacoFinanceiro.create({
       data: { nome: `Espaço de ${usuario.email}` },
     });
+    await criarCategoriasDefault(tx, espaco.id);
+    await criarContasDefault(tx, espaco.id);
     return tx.membroEspaco.create({
       data: { usuarioId: usuario.id, espacoId: espaco.id, papel: "PROPRIETARIO" },
     });
-  });
+  }, { timeout: 15_000 });
 
   cacheEspacoPorUsuario.set(userId, {
     espacoId: membro.espacoId,
