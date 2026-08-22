@@ -1,5 +1,5 @@
 import { useQueries } from "@tanstack/react-query";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { buscarResumoMensal } from "@/api/transacoes";
 import { formatarMoeda } from "@/lib/format";
 import { Card } from "@/components/ui/Card";
@@ -12,6 +12,15 @@ const MESES_ABREV = [
 function subtrairMeses(ano: number, mes: number, quantidade: number) {
   const data = new Date(Date.UTC(ano, mes - 1 - quantidade, 1));
   return { ano: data.getUTCFullYear(), mes: data.getUTCMonth() + 1 };
+}
+
+function formatarMoedaCompacta(valor: number) {
+  return valor.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  });
 }
 
 interface FluxoCaixaChartProps {
@@ -68,7 +77,7 @@ export function FluxoCaixaChart({ ano, mes }: FluxoCaixaChartProps) {
       ) : (
         <>
           <ResponsiveContainer width="100%" height={196}>
-            <BarChart data={serie} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={6}>
+            <BarChart data={serie} margin={{ top: 20, right: 8, left: 0, bottom: 0 }} barGap={6}>
               <CartesianGrid stroke={corGrid} vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: corEixo }} tickLine={false} axisLine={false} />
               <YAxis
@@ -82,8 +91,22 @@ export function FluxoCaixaChart({ ano, mes }: FluxoCaixaChartProps) {
                 formatter={(valor) => (typeof valor === "number" ? formatarMoeda(valor) : String(valor ?? ""))}
                 contentStyle={{ fontSize: 12 }}
               />
-              <Bar dataKey="entradas" name="Entradas" fill={corEntradas} radius={[6, 6, 2, 2]} />
-              <Bar dataKey="saidas" name="Saídas" fill={corSaidas} radius={[6, 6, 2, 2]} />
+              <Bar dataKey="entradas" name="Entradas" fill={corEntradas} radius={[6, 6, 2, 2]}>
+                <LabelList
+                  dataKey="entradas"
+                  position="top"
+                  formatter={(valor: number) => formatarMoedaCompacta(valor)}
+                  style={{ fontSize: 10, fill: corEixo }}
+                />
+              </Bar>
+              <Bar dataKey="saidas" name="Saídas" fill={corSaidas} radius={[6, 6, 2, 2]}>
+                <LabelList
+                  dataKey="saidas"
+                  position="top"
+                  formatter={(valor: number) => formatarMoedaCompacta(valor)}
+                  style={{ fontSize: 10, fill: corEixo }}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
 
