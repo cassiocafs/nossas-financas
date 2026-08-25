@@ -3,7 +3,8 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { listarTransacoesMes, type ItemCategoriaResumo } from "@/api/transacoes";
 import { formatarData, formatarMoeda } from "@/lib/format";
-import { CATEGORICAL_PALETTE, OUTROS_COR } from "@/lib/chartPalette";
+import { OUTROS_COR } from "@/lib/chartPalette";
+import { categoryColor } from "@/lib/categoryColor";
 import { cardClassName } from "@/components/ui/Card";
 import { Valor } from "@/components/ui/Valor";
 
@@ -134,7 +135,7 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes }: CategoriaDril
   const totalOutros = resto.reduce((soma, d) => soma + d.total, 0);
 
   const fatias = [
-    ...principais.map((d, i) => ({ ...d, cor: CATEGORICAL_PALETTE[i % CATEGORICAL_PALETTE.length] })),
+    ...principais.map((d) => ({ ...d, cor: categoryColor(d.categoriaId) })),
     ...(totalOutros > 0
       ? [
           {

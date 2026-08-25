@@ -1,7 +1,7 @@
 import type { GrupoGrade } from "@/api/orcamento";
 import { Card } from "@/components/ui/Card";
 import { formatarMoeda } from "@/lib/format";
-import { CATEGORICAL_PALETTE } from "@/lib/chartPalette";
+import { categoryColor } from "@/lib/categoryColor";
 
 interface PrevistoRealizadoBarrasProps {
   grupos: GrupoGrade[];
@@ -25,7 +25,7 @@ export function PrevistoRealizadoBarras({ grupos }: PrevistoRealizadoBarrasProps
           </p>
         </div>
         {noLimite > 0 && (
-          <span className="rounded-full bg-expense-soft px-3 py-1 text-[11px] font-bold text-expense">
+          <span className="rounded-full bg-money-alert-soft px-3 py-1 text-[11px] font-bold text-money-alert">
             {noLimite} {noLimite === 1 ? "grupo" : "grupos"} no limite
           </span>
         )}
@@ -35,13 +35,13 @@ export function PrevistoRealizadoBarras({ grupos }: PrevistoRealizadoBarrasProps
         <p className="mt-4 text-sm text-muted-foreground">Nenhum previsto definido este mês.</p>
       ) : (
         <div className="mt-5 space-y-5">
-          {comPrevisto.map((grupo, i) => {
+          {comPrevisto.map((grupo) => {
             const pct =
               grupo.subtotalPrevisto > 0
                 ? (grupo.subtotalRealizado / grupo.subtotalPrevisto) * 100
                 : 0;
             const estourado = pct > 100;
-            const cor = CATEGORICAL_PALETTE[i % CATEGORICAL_PALETTE.length];
+            const cor = categoryColor(grupo.grupoId ?? grupo.grupoNome);
             return (
               <div key={grupo.grupoId ?? grupo.grupoNome}>
                 <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -50,7 +50,7 @@ export function PrevistoRealizadoBarras({ grupos }: PrevistoRealizadoBarrasProps
                     <span className="text-sm font-semibold text-foreground">{grupo.grupoNome}</span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                        estourado ? "bg-expense-soft text-expense" : "bg-income-soft text-income"
+                        estourado ? "bg-money-alert-soft text-money-alert" : "bg-income-soft text-income"
                       }`}
                     >
                       {Math.round(pct)}%

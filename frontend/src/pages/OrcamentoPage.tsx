@@ -17,7 +17,7 @@ type Tom = "positivo" | "negativo" | "neutro";
 
 function StatTile({ label, valor, tom = "neutro" }: { label: string; valor: string; tom?: Tom }) {
   const cor =
-    tom === "positivo" ? "text-income" : tom === "negativo" ? "text-expense" : "text-foreground";
+    tom === "positivo" ? "text-income" : tom === "negativo" ? "text-money-alert" : "text-foreground";
 
   return (
     <Card className="p-4">

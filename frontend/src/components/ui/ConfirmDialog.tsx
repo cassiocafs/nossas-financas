@@ -36,7 +36,7 @@ export function ConfirmDialog({
             Cancelar
           </Button>
           <Button
-            variant={danger ? "danger" : "primary"}
+            variant={danger ? "destructive" : "primary"}
             onClick={onConfirm}
             disabled={confirmando}
           >

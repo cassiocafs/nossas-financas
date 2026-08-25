@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'expo-router';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -44,7 +44,11 @@ export default function LoginScreen() {
             keyboardShouldPersistTaps="handled"
           >
             <ThemedView style={styles.header}>
-              <ThemedText type="display">Nossas Finanças</ThemedText>
+              <Image
+                source={require('../../../assets/images/logo-horizontal.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
               <ThemedText type="default" themeColor="textSecondary">
                 Entrar na conta
               </ThemedText>
@@ -76,7 +80,7 @@ export default function LoginScreen() {
               </ThemedView>
 
               {erro && (
-                <ThemedText type="small" themeColor="expense" style={styles.erro}>
+                <ThemedText type="small" themeColor="destructive" style={styles.erro}>
                   {erro}
                 </ThemedText>
               )}
@@ -121,6 +125,7 @@ const styles = StyleSheet.create({
     gap: Spacing.half,
     marginBottom: Spacing.five,
   },
+  logo: { height: 32, width: 128 },
   card: {
     gap: Spacing.three,
   },

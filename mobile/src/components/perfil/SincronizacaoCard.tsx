@@ -68,7 +68,7 @@ export function SincronizacaoCard() {
               <ThemedView style={styles.itemFalhaTexto}>
                 <ThemedText type="small">{descricaoOperacao(op.tipo)}</ThemedText>
                 {op.ultimoErro && (
-                  <ThemedText type="small" themeColor="expense">
+                  <ThemedText type="small" themeColor="destructive">
                     {op.ultimoErro}
                   </ThemedText>
                 )}

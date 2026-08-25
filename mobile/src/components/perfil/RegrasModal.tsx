@@ -8,7 +8,7 @@ import { ApiError } from '@/api/client';
 import { excluirRegra, listarRegras, type RegraTransacao } from '@/api/regras';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { RegraFormModal } from './RegraFormModal';
@@ -153,10 +153,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    ...Shadow.lift,
   },
 });

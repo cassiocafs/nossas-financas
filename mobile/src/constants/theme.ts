@@ -4,52 +4,56 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    background: '#F3F5F9',
-    surface: '#ECEEF3',
+    background: '#FBF8F0',
+    surface: '#F7F9F8',
     card: '#FFFFFF',
-    border: 'rgba(11,15,23,0.08)',
-    text: '#0B0F17',
-    textSecondary: '#64748B',
-    textTertiary: '#94A3B8',
-    primary: '#4F46E5',
+    border: 'rgba(22,32,27,0.08)',
+    text: '#16201B',
+    textSecondary: '#77887F',
+    textTertiary: '#9BA8A1',
+    primary: '#0D5B2E',
     primaryForeground: '#FFFFFF',
-    income: '#059669',
-    incomeSoft: 'rgba(5,150,105,0.10)',
-    expense: '#DC2626',
-    expenseSoft: 'rgba(220,38,38,0.09)',
-    transfer: '#0284C7',
-    transferSoft: 'rgba(2,132,199,0.10)',
-    destructive: '#DC2626',
+    income: '#1FA34A',
+    incomeSoft: 'rgba(31,163,74,0.12)',
+    expense: '#16201B',
+    expenseSoft: 'rgba(22,32,27,0.06)',
+    transfer: '#2C7BE5',
+    transferSoft: 'rgba(44,123,229,0.10)',
+    destructive: '#D93B30',
+    destructiveSoft: 'rgba(217,59,48,0.10)',
     destructiveForeground: '#FFFFFF',
-    warning: '#D97706',
-    warningForeground: '#FFFFFF',
+    warning: '#FFC107',
+    warningForeground: '#16201B',
+    moneyAlert: '#D93B30',
   },
   dark: {
-    background: '#0B0F17',
-    surface: '#161D29',
-    card: '#151D2A',
-    border: 'rgba(255,255,255,0.08)',
-    text: '#F9FAFB',
-    textSecondary: '#9CA3AF',
-    textTertiary: '#6B7280',
-    primary: '#6366F1',
+    background: '#16201B',
+    surface: '#1C2620',
+    card: '#24312A',
+    border: 'rgba(255,255,255,0.10)',
+    text: '#F7F9F8',
+    textSecondary: '#9BA8A1',
+    textTertiary: '#77887F',
+    primary: '#1FA34A',
     primaryForeground: '#FFFFFF',
-    income: '#10B981',
-    incomeSoft: 'rgba(16,185,129,0.14)',
-    expense: '#EF4444',
-    expenseSoft: 'rgba(239,68,68,0.13)',
-    transfer: '#38BDF8',
-    transferSoft: 'rgba(56,189,248,0.15)',
-    destructive: '#EF4444',
+    income: '#35B45E',
+    incomeSoft: 'rgba(53,180,94,0.16)',
+    expense: '#F7F9F8',
+    expenseSoft: 'rgba(255,255,255,0.06)',
+    transfer: '#4C93EF',
+    transferSoft: 'rgba(76,147,239,0.16)',
+    destructive: '#E5493E',
+    destructiveSoft: 'rgba(229,73,62,0.16)',
     destructiveForeground: '#FFFFFF',
-    warning: '#F59E0B',
-    warningForeground: '#111827',
+    warning: '#FFC107',
+    warningForeground: '#16201B',
+    moneyAlert: '#E5493E',
   },
 } as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
-export const ChartColors = ['#6366F1', '#10B981', '#F59E0B', '#38BDF8', '#A78BFA'];
+export const ChartColors = ['#0D5B2E', '#1FA34A', '#2C7BE5', '#FFC107', '#D93B30'];
 
 const SystemFonts = Platform.select({
   ios: {
@@ -72,14 +76,14 @@ const SystemFonts = Platform.select({
   },
 })!;
 
-/** Space Grotesk (títulos/valores) + DM Sans (corpo), carregadas via expo-font no RootLayout. */
+/** Poppins (títulos, corpo e valores), carregada via expo-font no RootLayout. */
 export const Fonts = {
   ...SystemFonts,
-  display: 'SpaceGrotesk_600SemiBold',
-  displayBold: 'SpaceGrotesk_700Bold',
-  body: 'DMSans_400Regular',
-  bodyMedium: 'DMSans_500Medium',
-  bodySemi: 'DMSans_600SemiBold',
+  display: 'Poppins_700Bold',
+  displayBold: 'Poppins_800ExtraBold',
+  body: 'Poppins_400Regular',
+  bodyMedium: 'Poppins_500Medium',
+  bodySemi: 'Poppins_600SemiBold',
 };
 
 export const Spacing = {
@@ -89,6 +93,7 @@ export const Spacing = {
   three: 16,
   four: 24,
   five: 32,
+  fiveAndHalf: 48,
   six: 64,
 } as const;
 
@@ -104,15 +109,15 @@ export const Radius = {
 
 export const Shadow = {
   card: {
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.08,
+    shadowColor: '#0D5B2E',
+    shadowOpacity: 0.06,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
     elevation: 3,
   },
   lift: {
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.18,
+    shadowColor: '#0D5B2E',
+    shadowOpacity: 0.1,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 10 },
     elevation: 6,

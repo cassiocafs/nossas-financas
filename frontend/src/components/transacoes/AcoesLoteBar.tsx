@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LoaderCircle } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   categorizarLote,
@@ -63,27 +64,7 @@ export function AcoesLoteBar({
     <div className="flex flex-wrap items-center gap-3">
       {excluindo ? (
         <span className="flex items-center gap-2 font-medium text-foreground">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            className="h-4 w-4 animate-spin text-foreground/60"
-            aria-hidden="true"
-          >
-            <circle
-              cx="12"
-              cy="12"
-              r="9"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeOpacity="0.25"
-            />
-            <path
-              d="M21 12a9 9 0 0 0-9-9"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-            />
-          </svg>
+          <LoaderCircle className="h-4 w-4 animate-spin text-foreground/60" aria-hidden="true" />
           Excluindo {selectedIds.length} transação(ões)...
         </span>
       ) : (

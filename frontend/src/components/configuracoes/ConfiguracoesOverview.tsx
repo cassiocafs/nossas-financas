@@ -1,45 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
-import type { SVGProps } from "react";
+import { Wallet, Tag, SlidersHorizontal, Upload } from "lucide-react";
 import { listarContas } from "@/api/contas";
 import { listarGrupos } from "@/api/categorias";
 import { listarRegras } from "@/api/regras";
 import { Card } from "@/components/ui/Card";
 import { ThemeCard } from "@/components/configuracoes/ThemeCard";
-
-type IconProps = SVGProps<SVGSVGElement>;
-
-function IconWallet(props: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M3 8a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Zm13 4h3" />
-    </svg>
-  );
-}
-
-function IconTag(props: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M3 12 12 3h6a3 3 0 0 1 3 3v6l-9 9-9-9Zm12-4h.01" />
-    </svg>
-  );
-}
-
-function IconRules(props: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M4 7h10M4 12h16M4 17h7M18 5v4M18 15v4" />
-    </svg>
-  );
-}
-
-function IconUpload(props: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M12 16V4m-5 5 5-5 5 5M4 18v2h16v-2" />
-    </svg>
-  );
-}
 
 export function ConfiguracoesOverview() {
   const { data: contas } = useQuery({
@@ -64,7 +30,7 @@ export function ConfiguracoesOverview() {
       meta: contas ? `${contas.length} ativas` : "—",
       desc: "Cadastre contas correntes, cartões e reservas. O saldo de cada conta alimenta o patrimônio total.",
       acao: "Gerenciar contas",
-      Icon: IconWallet,
+      Icon: Wallet,
     },
     {
       to: "categorias",
@@ -72,7 +38,7 @@ export function ConfiguracoesOverview() {
       meta: grupos ? `${totalCategorias} em ${grupos.grupos.length} grupos` : "—",
       desc: "Organize categorias em grupos e subgrupos para relatórios e orçamento consistentes.",
       acao: "Gerenciar categorias",
-      Icon: IconTag,
+      Icon: Tag,
     },
     {
       to: "regras",
@@ -80,7 +46,7 @@ export function ConfiguracoesOverview() {
       meta: regras ? `${regras.length} regras` : "—",
       desc: "Categorize automaticamente lançamentos recorrentes a partir da descrição do extrato.",
       acao: "Ver regras",
-      Icon: IconRules,
+      Icon: SlidersHorizontal,
     },
     {
       to: "importacao",
@@ -88,7 +54,7 @@ export function ConfiguracoesOverview() {
       meta: "Arquivos do banco",
       desc: "Importe arquivos do banco, revise duplicidades e confirme a categorização sugerida.",
       acao: "Importar extrato",
-      Icon: IconUpload,
+      Icon: Upload,
     },
   ];
 

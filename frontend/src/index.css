@@ -3,8 +3,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -31,6 +31,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-track: var(--track);
 
   /* semânticos do domínio financeiro */
   --color-income: var(--income);
@@ -39,6 +40,10 @@
   --color-expense-soft: var(--expense-soft);
   --color-transfer: var(--transfer);
   --color-transfer-soft: var(--transfer-soft);
+  --color-money-alert: var(--money-alert);
+  --color-money-alert-soft: var(--money-alert-soft);
+
+  --color-yellow-accent: var(--yellow-accent);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -46,84 +51,92 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  --shadow-soft: 0 1px 2px oklch(0.2 0.03 250 / 0.04), 0 8px 24px -12px oklch(0.2 0.03 250 / 0.12);
-  --shadow-lift: 0 2px 4px oklch(0.2 0.03 250 / 0.05), 0 18px 40px -20px oklch(0.2 0.03 250 / 0.22);
+  --shadow-soft: var(--shadow-soft);
+  --shadow-lift: var(--shadow-lift);
 }
 
 :root {
   color-scheme: light dark;
   --radius: 1rem;
-  --background: #f3f5f9;
-  --foreground: #0b0f17;
+  --background: #fbf8f0;
+  --foreground: #16201b;
   --surface: #ffffff;
-  --card: rgb(255 255 255 / 78%);
-  --card-foreground: #0b0f17;
-  --primary: #4f46e5;
+  --card: #ffffff;
+  --card-foreground: #16201b;
+  --primary: #0d5b2e;
   --primary-foreground: #ffffff;
-  --secondary: rgb(11 15 23 / 7%);
-  --secondary-foreground: #0b0f17;
-  --muted: rgb(11 15 23 / 7%);
-  --muted-foreground: #64748b;
-  --accent: rgb(79 70 229 / 10%);
-  --accent-foreground: #4f46e5;
-  --destructive: #dc2626;
+  --secondary: #f5e6c8;
+  --secondary-foreground: #0d5b2e;
+  --muted: #edf1ef;
+  --muted-foreground: #77887f;
+  --accent: #e4f6ea;
+  --accent-foreground: #0d5b2e;
+  --destructive: #d93b30;
   --destructive-foreground: #ffffff;
-  --border: rgb(11 15 23 / 8%);
-  --input: rgb(11 15 23 / 14%);
-  --ring: #4f46e5;
+  --border: #dde4e0;
+  --input: #c2ccc7;
+  --ring: #1fa34a;
+  --track: #edf1ef;
 
-  --income: #059669;
-  --income-soft: rgb(5 150 105 / 10%);
-  --expense: #dc2626;
-  --expense-soft: rgb(220 38 38 / 9%);
-  --transfer: #0284c7;
-  --transfer-soft: rgb(2 132 199 / 10%);
+  --income: #1fa34a;
+  --income-soft: rgb(31 163 74 / 12%);
+  --expense: #16201b;
+  --expense-soft: rgb(22 32 27 / 6%);
+  --transfer: #2c7be5;
+  --transfer-soft: rgb(44 123 229 / 10%);
+  --money-alert: #d93b30;
+  --money-alert-soft: rgb(217 59 48 / 10%);
+  --yellow-accent: #ffc107;
 
-  --chart-1: #4f46e5;
-  --chart-2: #059669;
-  --chart-3: #d97706;
-  --chart-4: #0284c7;
-  --chart-5: #7c3aed;
+  --chart-1: #0d5b2e;
+  --chart-2: #1fa34a;
+  --chart-3: #2c7be5;
+  --chart-4: #ffc107;
+  --chart-5: #d93b30;
 
-  --shadow-soft: 0 1px 0 rgb(255 255 255 / 90%) inset, 0 10px 24px -16px rgb(15 23 42 / 18%);
-  --shadow-lift: 0 1px 0 rgb(255 255 255 / 90%) inset, 0 18px 40px -26px rgb(15 23 42 / 35%);
+  --shadow-soft: 0 2px 8px rgb(13 91 46 / 6%);
+  --shadow-lift: 0 4px 16px rgb(13 91 46 / 8%);
 }
 
 .dark {
-  --background: #0b0f17;
-  --foreground: #f9fafb;
-  --surface: #151d2a;
-  --card: rgb(21 29 42 / 62%);
-  --card-foreground: #f9fafb;
-  --primary: #6366f1;
+  --background: #16201b;
+  --foreground: #f7f9f8;
+  --surface: #24312a;
+  --card: #24312a;
+  --card-foreground: #f7f9f8;
+  --primary: #1fa34a;
   --primary-foreground: #ffffff;
-  --secondary: rgb(255 255 255 / 7%);
-  --secondary-foreground: #f9fafb;
-  --muted: rgb(255 255 255 / 7%);
-  --muted-foreground: #9ca3af;
-  --accent: rgb(99 102 241 / 16%);
-  --accent-foreground: #818cf8;
-  --destructive: #ef4444;
+  --secondary: #3a4b41;
+  --secondary-foreground: #f7f9f8;
+  --muted: #2c3b33;
+  --muted-foreground: #9ba8a1;
+  --accent: rgb(31 163 74 / 18%);
+  --accent-foreground: #8fd9a9;
+  --destructive: #e5493e;
   --destructive-foreground: #ffffff;
-  --border: rgb(255 255 255 / 8%);
-  --input: rgb(255 255 255 / 16%);
-  --ring: #6366f1;
+  --border: rgb(255 255 255 / 10%);
+  --input: rgb(255 255 255 / 18%);
+  --ring: #35b45e;
+  --track: #3a4b41;
 
-  --income: #10b981;
-  --income-soft: rgb(16 185 129 / 14%);
-  --expense: #ef4444;
-  --expense-soft: rgb(239 68 68 / 13%);
-  --transfer: #38bdf8;
-  --transfer-soft: rgb(56 189 248 / 15%);
+  --income: #35b45e;
+  --income-soft: rgb(53 180 94 / 16%);
+  --expense: #f7f9f8;
+  --expense-soft: rgb(255 255 255 / 6%);
+  --transfer: #4c93ef;
+  --transfer-soft: rgb(76 147 239 / 16%);
+  --money-alert: #e5493e;
+  --money-alert-soft: rgb(229 73 62 / 16%);
+  --yellow-accent: #ffc107;
 
-  --chart-1: #6366f1;
-  --chart-2: #10b981;
-  --chart-3: #f59e0b;
-  --chart-4: #38bdf8;
-  --chart-5: #a78bfa;
+  --chart-1: #1fa34a;
+  --chart-2: #35b45e;
+  --chart-3: #4c93ef;
+  --chart-4: #ffc107;
+  --chart-5: #e5493e;
 
-  --shadow-soft: 0 1px 0 rgb(255 255 255 / 5%) inset, 0 14px 28px -18px rgb(0 0 0 / 70%);
-  --shadow-lift: 0 1px 0 rgb(255 255 255 / 5%) inset, 0 24px 48px -28px rgb(0 0 0 / 85%);
+  --shadow-soft: 0 2px 8px rgb(0 0 0 / 24%);
+  --shadow-lift: 0 4px 16px rgb(0 0 0 / 32%);
 }
 
 @keyframes progress-indeterminate {
@@ -147,8 +160,6 @@
   body {
     margin: 0;
     background-color: var(--color-background);
-    background-image: radial-gradient(1200px 600px at 12% -8%, var(--color-accent), transparent 60%);
-    background-repeat: no-repeat;
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -177,10 +188,8 @@
 @utility card-surface {
   background-color: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
 }
 
 /* numeros alinhados (valores monetarios) */

@@ -124,10 +124,10 @@ export default function PerfilScreen() {
             )}
 
             <Pressable onPress={() => signOut()} style={styles.acaoLinha}>
-              <ThemedView style={[styles.acaoIcone, { backgroundColor: theme.expenseSoft }]}>
-                <Feather name="log-out" size={16} color={theme.expense} />
+              <ThemedView style={[styles.acaoIcone, { backgroundColor: theme.destructiveSoft }]}>
+                <Feather name="log-out" size={16} color={theme.destructive} />
               </ThemedView>
-              <ThemedText type="default" themeColor="expense" style={styles.acaoTexto}>
+              <ThemedText type="default" themeColor="destructive" style={styles.acaoTexto}>
                 Sair
               </ThemedText>
             </Pressable>
