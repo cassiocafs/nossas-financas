@@ -95,7 +95,9 @@ export function FluxoCaixaChart({ ano, mes }: FluxoCaixaChartProps) {
                 <LabelList
                   dataKey="entradas"
                   position="top"
-                  formatter={(valor: number) => formatarMoedaCompacta(valor)}
+                  formatter={(valor: unknown) =>
+                    formatarMoedaCompacta(typeof valor === "number" ? valor : Number(valor ?? 0))
+                  }
                   style={{ fontSize: 10, fill: corEixo }}
                 />
               </Bar>
@@ -103,7 +105,9 @@ export function FluxoCaixaChart({ ano, mes }: FluxoCaixaChartProps) {
                 <LabelList
                   dataKey="saidas"
                   position="top"
-                  formatter={(valor: number) => formatarMoedaCompacta(valor)}
+                  formatter={(valor: unknown) =>
+                    formatarMoedaCompacta(typeof valor === "number" ? valor : Number(valor ?? 0))
+                  }
                   style={{ fontSize: 10, fill: corEixo }}
                 />
               </Bar>

@@ -45,9 +45,9 @@ export function LoginPage() {
       >
         <div>
           <img src={logoHorizontal} alt="Poupeu" className="h-8 w-auto" />
-          <p className="mt-2 text-xs tracking-wide text-muted-foreground uppercase">
+          <h1 className="mt-2 text-xs tracking-wide text-muted-foreground uppercase">
             Entrar na conta
-          </p>
+          </h1>
         </div>
 
         <div className="space-y-1">
