@@ -23,7 +23,7 @@ export function ResumoMesCard({
     <div className="bg-card">
       <div
         className={`border-t-[3px] p-6 ${
-          positivo ? "border-t-foreground" : "border-t-expense"
+          positivo ? "border-t-foreground" : "border-t-money-alert"
         }`}
       >
         <p className="text-[10.5px] font-bold tracking-widest text-muted-foreground uppercase">
@@ -31,7 +31,7 @@ export function ResumoMesCard({
         </p>
         <p
           className={`num text-5xl leading-none font-bold tracking-tight ${
-            positivo ? "text-foreground" : "text-expense"
+            positivo ? "text-foreground" : "text-money-alert"
           }`}
         >
           {formatarMoeda(saldoExibido)}

@@ -9,6 +9,7 @@ import { listarContas } from '@/api/contas';
 import { listarTransacoesMes, type StatusFiltro } from '@/api/transacoes';
 import { AcoesLoteBar } from '@/components/transacoes/AcoesLoteBar';
 import { Chip } from '@/components/ui/Chip';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { FiltrosModal, type FiltrosAplicados } from '@/components/transacoes/FiltrosModal';
 import { MesNavigator } from '@/components/transacoes/MesNavigator';
 import { TransacaoFormModal } from '@/components/transacoes/TransacaoFormModal';
@@ -245,9 +246,9 @@ export default function TransacoesScreen() {
         {isLoading && <ActivityIndicator style={styles.centro} color={theme.primary} />}
 
         {!isLoading && dias.length === 0 && (
-          <ThemedText type="small" themeColor="textSecondary" style={styles.centro}>
-            Nenhuma transação neste período.
-          </ThemedText>
+          <EmptyState mood="thinking" title="Nenhuma transação encontrada">
+            Ajuste o período ou os filtros para ver outras transações.
+          </EmptyState>
         )}
 
         <FlatList

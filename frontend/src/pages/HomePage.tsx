@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Plus, ArrowDownLeft, ArrowUpRight, TrendingUp, CircleAlert } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { buscarEvolucaoSaldo, buscarResumoMensal, type PeriodoMes } from "@/api/transacoes";
@@ -12,6 +13,7 @@ import { CategoriaDrilldownChart } from "@/components/home/CategoriaDrilldownCha
 import { FluxoCaixaChart } from "@/components/home/FluxoCaixaChart";
 import { TransacoesRecentesCard } from "@/components/home/TransacoesRecentesCard";
 import { MesNavigator } from "@/components/shared/MesNavigator";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { formatarMoeda } from "@/lib/format";
 
@@ -23,41 +25,6 @@ function hoje() {
 function subtrairMeses(periodo: PeriodoMes, quantidade: number): PeriodoMes {
   const data = new Date(Date.UTC(periodo.ano, periodo.mes - 1 - quantidade, 1));
   return { ano: data.getUTCFullYear(), mes: data.getUTCMonth() + 1 };
-}
-
-function IconPlus(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-function IconArrowDownLeft(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M17 7 7 17" />
-      <path d="M17 17H7V7" />
-    </svg>
-  );
-}
-
-function IconArrowUpRight(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M7 17 17 7" />
-      <path d="M7 7h10v10" />
-    </svg>
-  );
-}
-
-function IconTrend(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M3 17 9 11l4 4 8-8" />
-      <path d="M15 7h6v6" />
-    </svg>
-  );
 }
 
 function StatCard({
@@ -153,7 +120,7 @@ export function HomePage() {
             to={`/transacoes?ano=${ano}&mes=${mes}&novo=1`}
             className="inline-flex h-10 items-center gap-2 rounded-[11px] bg-primary px-4 text-sm font-bold text-primary-foreground shadow-soft transition-opacity hover:opacity-90"
           >
-            <IconPlus className="size-4" />
+            <Plus className="size-4" />
             Novo lançamento
           </Link>
         </div>
@@ -165,26 +132,32 @@ export function HomePage() {
         </div>
 
         <div className="flex-1 space-y-6">
-          {data && (
+          {data && data.totalEntradas === 0 && data.totalSaidas === 0 && data.recentes.length === 0 && (
+            <EmptyState mood="welcome" title="Vamos começar?">
+              Adicione sua primeira transação deste mês e comece a entender seu dinheiro.
+            </EmptyState>
+          )}
+
+          {data && (data.totalEntradas > 0 || data.totalSaidas > 0 || data.recentes.length > 0) && (
             <>
               <div className="grid gap-4 sm:grid-cols-3">
                 <StatCard
                   label="Receitas do mês"
                   value={data.totalEntradas}
                   tone="income"
-                  icon={<IconArrowDownLeft className="size-4" />}
+                  icon={<ArrowDownLeft className="size-4" />}
                 />
                 <StatCard
                   label="Despesas do mês"
                   value={data.totalSaidas}
                   tone="expense"
-                  icon={<IconArrowUpRight className="size-4" />}
+                  icon={<ArrowUpRight className="size-4" />}
                 />
                 <StatCard
                   label="Resultado do mês"
                   value={resultado}
                   tone={resultado >= 0 ? "income" : "expense"}
-                  icon={<IconTrend className="size-4" />}
+                  icon={<TrendingUp className="size-4" />}
                 />
               </div>
 
@@ -220,9 +193,10 @@ export function HomePage() {
               {despesasSemCategoria && despesasSemCategoria.total > 0 && (
                 <Link
                   to={`/transacoes?ano=${ano}&mes=${mes}`}
-                  className="card-surface block p-3 text-sm text-foreground/70 hover:underline"
+                  className="card-surface flex items-center gap-2 p-3 text-sm text-foreground/70 hover:underline"
                 >
-                  ⚠ {formatarMoeda(despesasSemCategoria.total)} em despesas sem categoria este mês
+                  <CircleAlert className="size-4 shrink-0 text-muted-foreground" />
+                  {formatarMoeda(despesasSemCategoria.total)} em despesas sem categoria este mês
                 </Link>
               )}
 

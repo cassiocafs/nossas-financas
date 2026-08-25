@@ -51,7 +51,7 @@ export function SaldoPorContasCard({ ano, mes }: SaldoPorContasCardProps) {
                 <ThemedText type="small" style={styles.nomeConta} numberOfLines={1}>
                   {conta.nome}
                 </ThemedText>
-                <ThemedText type="smallBold" numeric themeColor={conta.saldoAtual < 0 ? 'expense' : 'text'}>
+                <ThemedText type="smallBold" numeric themeColor={conta.saldoAtual < 0 ? 'moneyAlert' : 'text'}>
                   {formatarValor(conta.saldoAtual)}
                 </ThemedText>
               </ThemedView>

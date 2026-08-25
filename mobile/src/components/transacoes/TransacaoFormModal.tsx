@@ -511,7 +511,7 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
             />
 
             {erro && (
-              <ThemedText type="small" themeColor="expense" style={styles.erro}>
+              <ThemedText type="small" themeColor="destructive" style={styles.erro}>
                 {erro}
               </ThemedText>
             )}

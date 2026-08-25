@@ -1,8 +1,10 @@
+import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { editarTransacao, type DiaTransacoes, type TipoTransacao } from "@/api/transacoes";
 import { formatarData } from "@/lib/format";
 import { Valor } from "@/components/ui/Valor";
 import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { TransacaoFormInline } from "./TransacaoFormInline";
 
 const COLUNAS = "grid-cols-[auto_auto_1fr_140px_160px_140px]";
@@ -13,27 +15,17 @@ const TIPO_TONE: Record<TipoTransacao, string> = {
   TRANSFERENCIA: "bg-transfer-soft text-transfer",
 };
 
+const TIPO_ICON: Record<TipoTransacao, typeof ArrowDownLeft> = {
+  RECEITA: ArrowDownLeft,
+  DESPESA: ArrowUpRight,
+  TRANSFERENCIA: ArrowLeftRight,
+};
+
 export function TypeIcon({ tipo }: { tipo: TipoTransacao }) {
+  const Icon = TIPO_ICON[tipo];
   return (
-    <span className={`grid size-7 shrink-0 place-items-center rounded-[11px] ${TIPO_TONE[tipo]}`}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="size-3.5" aria-hidden="true">
-        {tipo === "RECEITA" ? (
-          <>
-            <path d="M17 7 7 17" />
-            <path d="M17 17H7V7" />
-          </>
-        ) : tipo === "DESPESA" ? (
-          <>
-            <path d="M7 17 17 7" />
-            <path d="M7 7h10v10" />
-          </>
-        ) : (
-          <>
-            <path d="M4 7h13l-3-3" />
-            <path d="M20 17H7l3 3" />
-          </>
-        )}
-      </svg>
+    <span className={`grid size-7 shrink-0 place-items-center rounded-md ${TIPO_TONE[tipo]}`}>
+      <Icon className="size-3.5" aria-hidden="true" />
     </span>
   );
 }
@@ -79,9 +71,9 @@ export function TransacoesLista({
     return (
       <div className="space-y-4">
         {saldoAnteriorEl}
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          Nenhuma transação neste período.
-        </p>
+        <EmptyState mood="thinking" title="Nenhuma transação encontrada">
+          Ajuste o período ou os filtros para ver outras transações.
+        </EmptyState>
       </div>
     );
   }
@@ -149,28 +141,11 @@ export function TransacoesLista({
                     {t.tipo === "TRANSFERENCIA" ? (
                       <>
                         Transferência
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="size-3 shrink-0"
-                          aria-hidden="true"
-                        >
-                          {t.valor < 0 ? (
-                            <>
-                              <path d="M7 17 17 7" />
-                              <path d="M7 7h10v10" />
-                            </>
-                          ) : (
-                            <>
-                              <path d="M17 7 7 17" />
-                              <path d="M17 17H7V7" />
-                            </>
-                          )}
-                        </svg>
+                        {t.valor < 0 ? (
+                          <ArrowUpRight className="size-3 shrink-0" aria-hidden="true" />
+                        ) : (
+                          <ArrowDownLeft className="size-3 shrink-0" aria-hidden="true" />
+                        )}
                       </>
                     ) : t.categoria ? (
                       t.categoria.nome

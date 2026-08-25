@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { TriangleAlert } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { listarContas, type Conta } from "@/api/contas";
 import { Card } from "@/components/ui/Card";
@@ -43,14 +44,11 @@ export function SaldoPorContasCard() {
               </span>
               <div className="flex items-center gap-2">
                 {conta.saldoAtual < 0 && (
-                  <span
-                    className="text-xs text-expense"
-                    title="Saldo negativo"
-                  >
-                    ⚠
+                  <span title="Saldo negativo">
+                    <TriangleAlert className="size-3.5 text-money-alert" />
                   </span>
                 )}
-                <Valor valor={conta.saldoAtual} className="font-medium" />
+                <Valor valor={conta.saldoAtual} saldo className="font-medium" />
               </div>
             </li>
           ))}

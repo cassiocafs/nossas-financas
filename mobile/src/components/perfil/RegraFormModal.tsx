@@ -76,7 +76,7 @@ export function RegraFormModal({ visible, regra, onClose }: RegraFormModalProps)
 
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             <ThemedView style={styles.field}>
-              <ThemedText type="smallBold" style={{ color: theme.expense, textDecorationLine: 'underline' }}>
+              <ThemedText type="smallBold" style={{ color: theme.destructive, textDecorationLine: 'underline' }}>
                 Descrição
               </ThemedText>
               <TextInput
@@ -93,7 +93,7 @@ export function RegraFormModal({ visible, regra, onClose }: RegraFormModalProps)
             </ThemedView>
 
             <ThemedView style={styles.field}>
-              <ThemedText type="smallBold" style={{ color: theme.expense, textDecorationLine: 'underline' }}>
+              <ThemedText type="smallBold" style={{ color: theme.destructive, textDecorationLine: 'underline' }}>
                 Conta
               </ThemedText>
               <Select
@@ -112,7 +112,7 @@ export function RegraFormModal({ visible, regra, onClose }: RegraFormModalProps)
             </ThemedView>
 
             {erro && (
-              <ThemedText type="small" themeColor="expense">
+              <ThemedText type="small" themeColor="destructive">
                 {erro}
               </ThemedText>
             )}

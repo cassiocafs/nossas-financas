@@ -52,7 +52,7 @@ export function OrcamentoResumoCard({ ano, mes }: OrcamentoResumoCardProps) {
               <strong
                 className={`num ${
                   grade.totalRealizado > grade.totalPrevisto
-                    ? "text-expense"
+                    ? "text-money-alert"
                     : "text-foreground"
                 }`}
               >
@@ -66,7 +66,7 @@ export function OrcamentoResumoCard({ ano, mes }: OrcamentoResumoCardProps) {
               {categoriasEstouradas.slice(0, 5).map((c) => (
                 <li
                   key={c.categoriaId}
-                  className="flex justify-between text-expense"
+                  className="flex justify-between text-money-alert"
                 >
                   <span>{c.categoriaNome}</span>
                   <span className="num">

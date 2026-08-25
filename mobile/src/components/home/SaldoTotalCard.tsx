@@ -30,43 +30,51 @@ export function SaldoTotalCard() {
   }
 
   return (
-    <Card style={styles.card}>
-      <ThemedView style={styles.linhaTitulo}>
-        <ThemedText type="small" themeColor="textSecondary">
+    <Card variant="brand" style={styles.card}>
+      <ThemedView style={[styles.linhaTitulo, { backgroundColor: 'transparent' }]}>
+        <ThemedText type="small" style={styles.onBrandSoft}>
           Saldo total
         </ThemedText>
         <Pressable
           onPress={toggleHideValues}
           accessibilityLabel={hideValues ? 'Mostrar valores' : 'Ocultar valores'}
           hitSlop={8}>
-          <Feather name={hideValues ? 'eye-off' : 'eye'} size={16} color={theme.textSecondary} />
+          <Feather name={hideValues ? 'eye-off' : 'eye'} size={16} color={theme.primaryForeground} />
         </Pressable>
       </ThemedView>
       <ThemedText
         type="display"
         numeric
-        themeColor={saldoTotal >= 0 ? 'text' : 'expense'}
+        themeColor="primaryForeground"
         numberOfLines={1}
         adjustsFontSizeToFit>
         {isLoading ? '···' : formatarValor(saldoTotal)}
       </ThemedText>
+      {!isLoading && saldoTotal < 0 && (
+        <ThemedView style={styles.alertaPill}>
+          <Feather name="alert-triangle" size={12} color={theme.moneyAlert} />
+          <ThemedText type="caption" themeColor="moneyAlert" style={styles.alertaTexto}>
+            Saldo negativo
+          </ThemedText>
+        </ThemedView>
+      )}
       {!isLoading && contas && (
-        <ThemedText type="small" themeColor="textSecondary">
+        <ThemedText type="small" style={styles.onBrandSoft}>
           {contas.length === 1 ? '1 conta ativa' : `${contas.length} contas ativas`}
         </ThemedText>
       )}
-      <ThemedView style={styles.acoes}>
+      <ThemedView style={[styles.acoes, { backgroundColor: 'transparent' }]}>
         <Pressable
           onPress={() => abrirNovaTransacao('RECEITA')}
-          style={(state) => [styles.acaoBotao, { backgroundColor: theme.incomeSoft, opacity: state.pressed ? 0.85 : 1 }]}>
-          <ThemedText type="smallBold" themeColor="income">
+          style={(state) => [styles.acaoBotao, { opacity: state.pressed ? 0.85 : 1 }]}>
+          <ThemedText type="smallBold" themeColor="primaryForeground">
             + Receita
           </ThemedText>
         </Pressable>
         <Pressable
           onPress={() => abrirNovaTransacao('DESPESA')}
-          style={(state) => [styles.acaoBotao, { backgroundColor: theme.expenseSoft, opacity: state.pressed ? 0.85 : 1 }]}>
-          <ThemedText type="smallBold" themeColor="expense">
+          style={(state) => [styles.acaoBotao, { opacity: state.pressed ? 0.85 : 1 }]}>
+          <ThemedText type="smallBold" themeColor="primaryForeground">
             − Despesa
           </ThemedText>
         </Pressable>
@@ -78,6 +86,18 @@ export function SaldoTotalCard() {
 const styles = StyleSheet.create({
   card: { gap: Spacing.one },
   linhaTitulo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  onBrandSoft: { color: 'rgba(255,255,255,0.78)' },
+  alertaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: Spacing.half,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 3,
+  },
+  alertaTexto: { textTransform: 'none' },
   acoes: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
   acaoBotao: {
     flex: 1,
@@ -85,5 +105,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: Spacing.three,
     borderRadius: Radius.lg,
+    backgroundColor: 'rgba(255,255,255,0.16)',
   },
 });

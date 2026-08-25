@@ -18,6 +18,6 @@ describe("App", () => {
       </BrowserRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Entrar" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Entrar na conta" })).toBeInTheDocument();
   });
 });

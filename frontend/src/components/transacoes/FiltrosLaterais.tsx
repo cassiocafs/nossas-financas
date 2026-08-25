@@ -243,7 +243,7 @@ export function FiltrosLaterais({
                   Editar
                 </button>
               </span>
-              <Valor valor={conta.saldoAtual} className="shrink-0 text-xs" />
+              <Valor valor={conta.saldoAtual} saldo className="shrink-0 text-xs" />
             </label>
           ))}
         </div>

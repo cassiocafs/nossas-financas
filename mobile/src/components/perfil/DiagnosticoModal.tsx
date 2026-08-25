@@ -34,7 +34,7 @@ function buildReport(logs: LogEntry[], meta: Record<string, string>) {
     .map((entry) => `[${entry.timestamp}] ${LEVEL_LABEL[entry.level]} ${entry.message}${entry.detail ? `\n${entry.detail}` : ''}`)
     .join('\n\n');
 
-  return `Diagnóstico — Nossas Finanças\n${header}\n\n----- LOGS (${logs.length}) -----\n\n${body || '(sem registros)'}`;
+  return `Diagnóstico — Poupeu\n${header}\n\n----- LOGS (${logs.length}) -----\n\n${body || '(sem registros)'}`;
 }
 
 export function DiagnosticoModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
