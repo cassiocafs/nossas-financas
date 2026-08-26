@@ -34,6 +34,8 @@ export const mockPrisma = {
   transacao: modelMock(),
   orcamentoAnual: modelMock(),
   orcamentoCategoriaMes: modelMock(),
+  serieRecorrencia: modelMock(),
+  convite: modelMock(),
   $transaction: vi.fn(),
   $queryRaw: vi.fn(),
 };

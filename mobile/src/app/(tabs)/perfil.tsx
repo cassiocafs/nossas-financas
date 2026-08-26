@@ -1,8 +1,10 @@
 import { Feather } from '@expo/vector-icons';
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { excluirContaUsuario } from '@/api/auth';
 import { DiagnosticoModal } from '@/components/perfil/DiagnosticoModal';
 import { RegrasModal } from '@/components/perfil/RegrasModal';
 import { SincronizacaoCard } from '@/components/perfil/SincronizacaoCard';
@@ -32,6 +34,32 @@ export default function PerfilScreen() {
   const [diagnosticoAberto, setDiagnosticoAberto] = useState(false);
   const [regrasAberto, setRegrasAberto] = useState(false);
   const podeVerDiagnostico = session?.user?.email === 'esteyceecassio@gmail.com';
+
+  const excluirContaMutation = useMutation({
+    mutationFn: excluirContaUsuario,
+    onSuccess: () => signOut(),
+    onError: (err) => {
+      Alert.alert(
+        'Não foi possível excluir a conta',
+        err instanceof Error ? err.message : 'Tente novamente mais tarde.',
+      );
+    },
+  });
+
+  function confirmarExclusaoConta() {
+    Alert.alert(
+      'Excluir sua conta',
+      'Essa ação não pode ser desfeita. Suas contas, transações, categorias, orçamentos e regras serão excluídos permanentemente e você perderá o acesso a esta conta — inclusive para entrar novamente com este e-mail ou com o Google.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir conta',
+          style: 'destructive',
+          onPress: () => excluirContaMutation.mutate(),
+        },
+      ],
+    );
+  }
 
   const nome = nomeDeExibicao(session?.user?.email, session?.user?.user_metadata?.nome);
   const inicial = (nome || '?').slice(0, 1).toUpperCase();
@@ -122,6 +150,21 @@ export default function PerfilScreen() {
                 <Feather name="chevron-right" size={18} color={theme.textTertiary} />
               </Pressable>
             )}
+
+            <Pressable
+              onPress={confirmarExclusaoConta}
+              disabled={excluirContaMutation.isPending}
+              style={[styles.acaoLinha, { borderBottomColor: theme.border }]}>
+              <ThemedView style={[styles.acaoIcone, { backgroundColor: theme.destructiveSoft }]}>
+                <Feather name="trash-2" size={16} color={theme.destructive} />
+              </ThemedView>
+              <ThemedText type="default" themeColor="destructive" style={styles.acaoTexto}>
+                Excluir conta
+              </ThemedText>
+              {excluirContaMutation.isPending && (
+                <ActivityIndicator size="small" color={theme.destructive} />
+              )}
+            </Pressable>
 
             <Pressable onPress={() => signOut()} style={styles.acaoLinha}>
               <ThemedView style={[styles.acaoIcone, { backgroundColor: theme.destructiveSoft }]}>
