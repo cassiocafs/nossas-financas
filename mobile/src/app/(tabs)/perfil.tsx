@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useMutation } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,6 +31,7 @@ function nomeDeExibicao(email: string | undefined, nomeCompleto: unknown): strin
 }
 
 export default function PerfilScreen() {
+  const router = useRouter();
   const theme = useTheme();
   const { session, signOut } = useAuth();
   const { colorSchemeOverride, setColorSchemeOverride, hideValues, setHideValues } = usePreferences();
@@ -122,6 +124,18 @@ export default function PerfilScreen() {
               </ThemedView>
               <ThemedText type="default" style={styles.acaoTexto}>
                 Regras de inserção
+              </ThemedText>
+              <Feather name="chevron-right" size={18} color={theme.textTertiary} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => router.push('/privacidade')}
+              style={[styles.acaoLinha, { borderBottomColor: theme.border }]}>
+              <ThemedView style={[styles.acaoIcone, { backgroundColor: theme.surface }]}>
+                <Feather name="shield" size={16} color={theme.primary} />
+              </ThemedView>
+              <ThemedText type="default" style={styles.acaoTexto}>
+                Política de privacidade
               </ThemedText>
               <Feather name="chevron-right" size={18} color={theme.textTertiary} />
             </Pressable>

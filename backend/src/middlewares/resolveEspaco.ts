@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { Prisma } from "@prisma/client";
 import { asyncHandler } from "./asyncHandler.js";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "./errorHandler.js";
@@ -69,11 +70,26 @@ export const resolveEspaco = asyncHandler(async function resolveEspaco(
       return existenteAposLock;
     }
 
-    const usuario = await tx.usuario.upsert({
-      where: { id: userId },
-      update: email ? { email } : {},
-      create: { id: userId, email: email ?? `${userId}@desconhecido.local` },
-    });
+    let usuario;
+    try {
+      usuario = await tx.usuario.upsert({
+        where: { id: userId },
+        update: email ? { email } : {},
+        create: { id: userId, email: email ?? `${userId}@desconhecido.local` },
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002" &&
+        (err.meta?.target as string[] | undefined)?.includes("email")
+      ) {
+        throw new HttpError(
+          409,
+          "Já existe uma conta com esse e-mail. Entre com e-mail e senha.",
+        );
+      }
+      throw err;
+    }
     const espaco = await tx.espacoFinanceiro.create({
       data: { nome: `Espaço de ${usuario.email}` },
     });

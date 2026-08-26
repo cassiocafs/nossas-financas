@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
-import { Wallet, Tag, SlidersHorizontal, Upload } from "lucide-react";
+import { Wallet, Tag, SlidersHorizontal, Upload, ShieldCheck } from "lucide-react";
 import { listarContas } from "@/api/contas";
 import { listarGrupos } from "@/api/categorias";
 import { listarRegras } from "@/api/regras";
@@ -56,6 +56,14 @@ export function ConfiguracoesOverview() {
       desc: "Importe arquivos do banco, revise duplicidades e confirme a categorização sugerida.",
       acao: "Importar extrato",
       Icon: Upload,
+    },
+    {
+      to: "/privacidade",
+      titulo: "Privacidade",
+      meta: "LGPD",
+      desc: "Veja como tratamos seus dados de cadastro e informações financeiras.",
+      acao: "Ver política de privacidade",
+      Icon: ShieldCheck,
     },
   ];
 

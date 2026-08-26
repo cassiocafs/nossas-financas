@@ -13,6 +13,7 @@ import { useFonts } from 'expo-font';
 import { DefaultTheme, Slot, ThemeProvider } from 'expo-router';
 import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
+import * as WebBrowser from 'expo-web-browser';
 
 import { baseUrl } from '@/api/client';
 import { SyncStatusBar } from '@/components/SyncStatusBar';
@@ -27,6 +28,7 @@ import { queryClient } from '@/lib/queryClient';
 import { filaHidratada, processarFila } from '@/lib/syncQueue';
 
 SplashScreen.preventAutoHideAsync();
+WebBrowser.maybeCompleteAuthSession();
 
 addLog('info', 'App iniciado', { baseUrl });
 

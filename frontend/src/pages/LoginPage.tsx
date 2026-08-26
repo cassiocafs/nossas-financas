@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/Button";
+import { GoogleButton } from "@/components/ui/GoogleButton";
 
 const schema = z.object({
   email: z.string().email("E-mail inválido"),
@@ -16,10 +17,11 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export function LoginPage() {
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [erro, setErro] = useState<string | null>(null);
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [entrandoComGoogle, setEntrandoComGoogle] = useState(false);
 
   const {
     register,
@@ -34,6 +36,17 @@ export function LoginPage() {
       navigate("/");
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Falha ao entrar");
+    }
+  }
+
+  async function onGoogleClick() {
+    setErro(null);
+    setEntrandoComGoogle(true);
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Falha ao entrar com Google");
+      setEntrandoComGoogle(false);
     }
   }
 
@@ -92,10 +105,28 @@ export function LoginPage() {
           {isSubmitting ? "Entrando..." : "Entrar"}
         </Button>
 
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground uppercase">ou</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <GoogleButton
+          label={entrandoComGoogle ? "Conectando..." : "Continuar com Google"}
+          disabled={entrandoComGoogle}
+          onClick={onGoogleClick}
+        />
+
         <p className="text-center text-sm text-muted-foreground">
           Não tem conta?{" "}
           <Link to="/signup" className="font-medium text-foreground underline">
             Criar conta
+          </Link>
+        </p>
+
+        <p className="text-center text-xs text-muted-foreground">
+          <Link to="/privacidade" className="underline hover:text-foreground">
+            Política de Privacidade
           </Link>
         </p>
       </form>
