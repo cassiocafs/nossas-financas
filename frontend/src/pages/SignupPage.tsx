@@ -54,6 +54,7 @@ export function SignupPage() {
     setEntrandoComGoogle(true);
     try {
       await signInWithGoogle();
+      navigate("/");
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Falha ao entrar com Google");
       setEntrandoComGoogle(false);
