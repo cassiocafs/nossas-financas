@@ -6,6 +6,7 @@ import { listarGrupos } from "@/api/categorias";
 import { listarRegras } from "@/api/regras";
 import { Card } from "@/components/ui/Card";
 import { ThemeCard } from "@/components/configuracoes/ThemeCard";
+import { ExcluirContaUsuarioCard } from "@/components/configuracoes/ExcluirContaUsuarioCard";
 
 export function ConfiguracoesOverview() {
   const { data: contas } = useQuery({
@@ -81,6 +82,7 @@ export function ConfiguracoesOverview() {
         </Card>
       ))}
       <ThemeCard />
+      <ExcluirContaUsuarioCard />
     </div>
   );
 }

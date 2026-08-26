@@ -3,6 +3,7 @@ import { prisma } from "../../lib/prisma.js";
 import { authenticate } from "../../middlewares/authenticate.js";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { resolveEspaco } from "../../middlewares/resolveEspaco.js";
+import { excluirContaUsuario } from "./auth.service.js";
 
 export const authRouter = Router();
 
@@ -27,5 +28,14 @@ authRouter.post(
     ]);
 
     res.json({ usuario, espaco });
+  }),
+);
+
+authRouter.delete(
+  "/me",
+  authenticate,
+  asyncHandler(async (req, res) => {
+    await excluirContaUsuario(req.auth!.userId);
+    res.status(204).end();
   }),
 );

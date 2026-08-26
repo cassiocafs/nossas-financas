@@ -11,6 +11,8 @@ const envSchema = z.object({
   DIRECT_URL: z.string().min(1, "DIRECT_URL é obrigatório"),
   SUPABASE_URL: z.string().min(1, "SUPABASE_URL é obrigatório"),
   SUPABASE_JWT_SECRET: z.string().optional(),
+  // Necessária apenas para excluir o usuário no Supabase Auth (Settings > API > service_role).
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   EMAIL_PROVIDER_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default("no-reply@nossasfinancas.app"),
 });
