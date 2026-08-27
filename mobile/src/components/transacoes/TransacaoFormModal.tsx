@@ -179,6 +179,22 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
     setErro(null);
   }
 
+  /**
+   * Limpa apenas os campos específicos da transação recém-criada, mantendo
+   * tipo, data, conta e categoria para agilizar o lançamento em sequência.
+   */
+  function resetarParaNovaTransacao() {
+    setDescricao('');
+    setValorCentavos(null);
+    setConsolidado(true);
+    setNota('');
+    setErro(null);
+    // Conta e categoria são reaproveitadas: marca como "tocadas" para que a
+    // sugestão automática por descrição não as sobrescreva.
+    setContaTocada(true);
+    setCategoriaTocada(true);
+  }
+
   useEffect(() => {
     if (!visible || editando || tipo === 'TRANSFERENCIA') return;
     if (contaTocada && categoriaTocada) return;
@@ -301,7 +317,7 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
     onSuccess: (_dados, opcao) => {
       queryClient.invalidateQueries({ queryKey: ['transacoes'] });
       if (opcao === 'novo') {
-        resetarFormulario();
+        resetarParaNovaTransacao();
       } else {
         onSaved();
       }
@@ -602,10 +618,18 @@ const styles = StyleSheet.create({
   valorInput: {
     fontFamily: Fonts.displayBold,
     fontSize: 36,
-    lineHeight: 42,
+    // Sem lineHeight fixo: o Poppins ExtraBold tem métricas verticais altas e,
+    // combinado com um lineHeight apertado, o Android cortava o topo/base dos
+    // dígitos ("R$ 10,00" aparecia quebrado). Deixamos a altura natural da fonte
+    // mandar e damos folga vertical com padding + minHeight.
+    letterSpacing: -0.8,
     textAlign: 'center',
-    padding: 0,
-    minWidth: '100%',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+    paddingHorizontal: 0,
+    paddingVertical: Spacing.two,
+    minHeight: 52,
+    alignSelf: 'stretch',
   },
   row: {
     borderRadius: Radius.md,
