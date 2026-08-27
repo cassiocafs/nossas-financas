@@ -13,6 +13,10 @@ const TransacoesPage = lazy(() =>
 const OrcamentoPage = lazy(() =>
   import("@/pages/OrcamentoPage").then((m) => ({ default: m.OrcamentoPage })),
 );
+const MetasPage = lazy(() => import("@/pages/MetasPage").then((m) => ({ default: m.MetasPage })));
+const RelatoriosPage = lazy(() =>
+  import("@/pages/RelatoriosPage").then((m) => ({ default: m.RelatoriosPage })),
+);
 const ConfiguracoesPage = lazy(() =>
   import("@/pages/ConfiguracoesPage").then((m) => ({ default: m.ConfiguracoesPage })),
 );
@@ -57,6 +61,8 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/transacoes" element={<TransacoesPage />} />
           <Route path="/orcamento" element={<OrcamentoPage />} />
+          <Route path="/metas" element={<MetasPage />} />
+          <Route path="/relatorios" element={<RelatoriosPage />} />
           <Route path="/configuracoes" element={<ConfiguracoesPage />}>
             <Route index element={<ConfiguracoesOverview />} />
             <Route path="contas" element={<ContasSection />} />

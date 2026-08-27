@@ -7,7 +7,7 @@ interface BuscaEStatusBarProps {
   onTextoChange: (texto: string) => void;
   status: StatusFiltro;
   onStatusChange: (status: StatusFiltro) => void;
-  extra?: ReactNode;
+  acoesInicio?: ReactNode;
   acoesLote?: ReactNode;
   className?: string;
 }
@@ -17,7 +17,7 @@ export function BuscaEStatusBar({
   onTextoChange,
   status,
   onStatusChange,
-  extra,
+  acoesInicio,
   acoesLote,
   className = "",
 }: BuscaEStatusBarProps) {
@@ -25,7 +25,10 @@ export function BuscaEStatusBar({
 
   return (
     <Card className={`flex flex-col gap-3 px-4 py-3 text-sm ${className}`}>
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        {acoesInicio && (
+          <div className="flex flex-wrap items-center gap-2">{acoesInicio}</div>
+        )}
         <div className="flex w-full max-w-xs gap-2">
           <div className="relative w-full">
             <input
@@ -33,7 +36,7 @@ export function BuscaEStatusBar({
               onChange={(e) => setRascunhoBusca(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onTextoChange(rascunhoBusca)}
               placeholder="Buscar transações..."
-              className="w-full rounded-[11px] border border-border bg-muted px-3 py-2 pr-16 text-[13px] text-foreground"
+              className="h-9 w-full rounded-[11px] border border-border bg-muted px-3 pr-16 text-[13px] text-foreground"
             />
             {rascunhoBusca && (
               <button
@@ -51,7 +54,7 @@ export function BuscaEStatusBar({
           <button
             type="button"
             onClick={() => onTextoChange(rascunhoBusca)}
-            className="shrink-0 rounded-[11px] border border-border px-3 py-2 text-[13px] font-semibold text-foreground/80 hover:bg-muted"
+            className="h-9 shrink-0 rounded-[11px] border border-border px-3 text-[13px] font-semibold text-foreground/80 hover:bg-muted"
           >
             Buscar
           </button>
@@ -62,15 +65,13 @@ export function BuscaEStatusBar({
           <select
             value={status}
             onChange={(e) => onStatusChange(e.target.value as StatusFiltro)}
-            className="rounded-[11px] border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
+            className="h-9 rounded-[11px] border border-border bg-muted px-3 text-[13px] text-foreground"
           >
             <option value="todas">Todas</option>
             <option value="consolidadas">Consolidadas</option>
             <option value="pendentes">Não consolidadas</option>
           </select>
         </div>
-
-        {extra && <div className="ml-auto flex flex-wrap items-center gap-3">{extra}</div>}
       </div>
 
       {acoesLote && <div className="border-t border-border pt-3">{acoesLote}</div>}

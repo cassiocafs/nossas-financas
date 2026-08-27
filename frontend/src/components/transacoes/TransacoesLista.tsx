@@ -1,34 +1,14 @@
-import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { editarTransacao, type DiaTransacoes, type TipoTransacao } from "@/api/transacoes";
+import { editarTransacao, type DiaTransacoes } from "@/api/transacoes";
 import { formatarData } from "@/lib/format";
 import { Valor } from "@/components/ui/Valor";
 import { Card } from "@/components/ui/Card";
+import { TransactionTypeIcon } from "@/components/ui/TransactionTypeIcon";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { TransacaoFormInline } from "./TransacaoFormInline";
 
 const COLUNAS = "grid-cols-[auto_auto_1fr_140px_160px_140px]";
-
-const TIPO_TONE: Record<TipoTransacao, string> = {
-  RECEITA: "bg-income-soft text-income",
-  DESPESA: "bg-expense-soft text-expense",
-  TRANSFERENCIA: "bg-transfer-soft text-transfer",
-};
-
-const TIPO_ICON: Record<TipoTransacao, typeof ArrowDownLeft> = {
-  RECEITA: ArrowDownLeft,
-  DESPESA: ArrowUpRight,
-  TRANSFERENCIA: ArrowLeftRight,
-};
-
-export function TypeIcon({ tipo }: { tipo: TipoTransacao }) {
-  const Icon = TIPO_ICON[tipo];
-  return (
-    <span className={`grid size-7 shrink-0 place-items-center rounded-md ${TIPO_TONE[tipo]}`}>
-      <Icon className="size-3.5" aria-hidden="true" />
-    </span>
-  );
-}
 
 interface TransacoesListaProps {
   dias: DiaTransacoes[];
@@ -125,7 +105,7 @@ export function TransacoesLista({
                     disabled={desabilitada}
                     className="accent-primary disabled:cursor-not-allowed disabled:opacity-50"
                   />
-                  <TypeIcon tipo={t.tipo} />
+                  <TransactionTypeIcon tipo={t.tipo} />
                   <span className="flex min-w-0 items-center gap-2">
                     <span
                       className={`truncate text-foreground ${t.consolidado ? "" : "font-bold"}`}

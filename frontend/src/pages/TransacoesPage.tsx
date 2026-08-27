@@ -3,8 +3,9 @@ import { useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { listarTransacoesMes, type StatusFiltro } from "@/api/transacoes";
 import { listarContas } from "@/api/contas";
+import { useAccountFilter } from "@/contexts/AccountFilterContext";
+import { useCategoryFilter } from "@/contexts/CategoryFilterContext";
 import { MesNavigator } from "@/components/shared/MesNavigator";
-import { FiltrosLaterais } from "@/components/transacoes/FiltrosLaterais";
 import { BuscaEStatusBar } from "@/components/transacoes/BuscaEStatusBar";
 import { TransacoesLista } from "@/components/transacoes/TransacoesLista";
 import { TransacaoFormInline } from "@/components/transacoes/TransacaoFormInline";
@@ -24,7 +25,6 @@ export function TransacoesPage() {
 
   const [status, setStatus] = useState<StatusFiltro>("todas");
   const [contaIds, setContaIds] = useState<string[]>([]);
-  const [categoriaIds, setCategoriaIds] = useState<string[]>([]);
   const [texto, setTexto] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [criando, setCriando] = useState(false);
@@ -37,6 +37,10 @@ export function TransacoesPage() {
   const [topBarHeight, setTopBarHeight] = useState(0);
 
   const { data: contas = [] } = useQuery({ queryKey: ["contas"], queryFn: () => listarContas(true) });
+  const { contasSelecionadasIds } = useAccountFilter();
+  const { categoriasSelecionadasIds } = useCategoryFilter();
+  const categoriaIds =
+    categoriasSelecionadasIds.length > 0 ? categoriasSelecionadasIds : undefined;
 
   useEffect(() => {
     if (searchParams.get("novo") === "1") {
@@ -50,19 +54,28 @@ export function TransacoesPage() {
 
   useEffect(() => {
     if (contas.length > 0 && contaIds.length === 0) {
-      setContaIds(contas.map((c) => c.id));
+      setContaIds(contasSelecionadasIds.length > 0 ? contasSelecionadasIds : contas.map((c) => c.id));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contas]);
 
+  useEffect(() => {
+    if (contasSelecionadasIds.length > 0) {
+      setContaIds(contasSelecionadasIds);
+    } else if (contas.length > 0) {
+      setContaIds(contas.map((c) => c.id));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contasSelecionadasIds]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["transacoes", { ano, mes, contaIds, categoriaIds, status, texto }],
+    queryKey: ["transacoes", { ano, mes, contaIds, status, texto, categoriaIds }],
     queryFn: () =>
       listarTransacoesMes({
         ano,
         mes,
         contaIds: contaIds.length > 0 ? contaIds : undefined,
-        categoriaIds: categoriaIds.length > 0 ? categoriaIds : undefined,
+        categoriaIds,
         status,
         texto: texto || undefined,
       }),
@@ -108,27 +121,27 @@ export function TransacoesPage() {
     <div className="space-y-4">
       <div
         ref={topBarRef}
-        className="sticky top-0 z-20 -mx-4 space-y-3 bg-background px-4 pb-2 will-change-transform sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+        className="sticky top-0 z-20 -mx-4 space-y-3 bg-background px-4 pb-2 pt-1 will-change-transform sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
       >
         <BuscaEStatusBar
           texto={texto}
           onTextoChange={setTexto}
           status={status}
           onStatusChange={setStatus}
-          className="!rounded-t-none !border-t-0 !shadow-none"
-          extra={
+          className="!shadow-none"
+          acoesInicio={
             <>
+              <Button size="sm" onClick={() => setCriando(true)} disabled={excluindo}>
+                Adicionar transação
+              </Button>
               <MesNavigator ano={ano} mes={mes} onChange={mudarMes} />
               <button
                 type="button"
                 onClick={() => mudarMes(padrao.ano, padrao.mes)}
-                className="rounded-[11px] border border-border px-2 py-1 text-sm text-foreground/70 hover:bg-muted"
+                className="flex h-9 items-center rounded-[11px] border border-border px-3 text-[13px] text-foreground/70 hover:bg-muted"
               >
                 Hoje
               </button>
-              <Button onClick={() => setCriando(true)} disabled={excluindo}>
-                Adicionar transação
-              </Button>
             </>
           }
           acoesLote={
@@ -180,46 +193,37 @@ export function TransacoesPage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-6 lg:flex-row">
-        <FiltrosLaterais
-          contaIds={contaIds}
-          onContaIdsChange={setContaIds}
-          categoriaIds={categoriaIds}
-          onCategoriaIdsChange={setCategoriaIds}
-        />
+      <div className="space-y-4">
+        {criando && (
+          <TransacaoFormInline
+            key={formCriacaoKey}
+            contaIdPadrao={contaIds.length === 1 ? contaIds[0] : undefined}
+            onSaved={() => {
+              setFormCriacaoKey((k) => k + 1);
+              mostrarMensagemSucesso("Transação criada com sucesso");
+            }}
+            onCancel={() => setCriando(false)}
+          />
+        )}
 
-        <div className="flex-1 space-y-4">
-          {criando && (
-            <TransacaoFormInline
-              key={formCriacaoKey}
-              contaIdPadrao={contaIds.length === 1 ? contaIds[0] : undefined}
-              onSaved={() => {
-                setFormCriacaoKey((k) => k + 1);
-                mostrarMensagemSucesso("Transação criada com sucesso");
-              }}
-              onCancel={() => setCriando(false)}
-            />
-          )}
-
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Carregando...</p>
-          ) : (
-            <TransacoesLista
-              dias={data?.dias ?? []}
-              saldoAnterior={data?.saldoAnterior}
-              headerOffset={topBarHeight}
-              selectedIds={selectedIds}
-              onToggleSelect={toggleSelect}
-              editandoId={editandoId}
-              onEdit={setEditandoId}
-              onSaved={() => {
-                setEditandoId(null);
-                mostrarMensagemSucesso("Transação atualizada com sucesso");
-              }}
-              desabilitada={excluindo}
-            />
-          )}
-        </div>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Carregando...</p>
+        ) : (
+          <TransacoesLista
+            dias={data?.dias ?? []}
+            saldoAnterior={data?.saldoAnterior}
+            headerOffset={topBarHeight}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            editandoId={editandoId}
+            onEdit={setEditandoId}
+            onSaved={() => {
+              setEditandoId(null);
+              mostrarMensagemSucesso("Transação atualizada com sucesso");
+            }}
+            desabilitada={excluindo}
+          />
+        )}
       </div>
     </div>
   );

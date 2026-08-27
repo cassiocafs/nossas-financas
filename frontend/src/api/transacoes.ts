@@ -101,8 +101,14 @@ export function listarTransacoesMes(filtros: FiltrosTransacoes): Promise<Listage
   return apiFetch<ListagemMensal>(`/api/transacoes?${montarQuery(filtros)}`);
 }
 
-export function buscarResumoMensal(ano: number, mes: number): Promise<ResumoMensal> {
-  return apiFetch<ResumoMensal>(`/api/transacoes/resumo?ano=${ano}&mes=${mes}`);
+export function buscarResumoMensal(
+  ano: number,
+  mes: number,
+  contaIds?: string[],
+): Promise<ResumoMensal> {
+  const params = new URLSearchParams({ ano: String(ano), mes: String(mes) });
+  if (contaIds?.length) params.set("contaIds", contaIds.join(","));
+  return apiFetch<ResumoMensal>(`/api/transacoes/resumo?${params.toString()}`);
 }
 
 export interface PontoEvolucaoSaldo {
@@ -119,10 +125,16 @@ export interface PeriodoMes {
 export function buscarEvolucaoSaldo(
   inicio: PeriodoMes,
   fim: PeriodoMes,
+  contaIds?: string[],
 ): Promise<PontoEvolucaoSaldo[]> {
-  return apiFetch<PontoEvolucaoSaldo[]>(
-    `/api/transacoes/evolucao-saldo?anoInicio=${inicio.ano}&mesInicio=${inicio.mes}&anoFim=${fim.ano}&mesFim=${fim.mes}`,
-  );
+  const params = new URLSearchParams({
+    anoInicio: String(inicio.ano),
+    mesInicio: String(inicio.mes),
+    anoFim: String(fim.ano),
+    mesFim: String(fim.mes),
+  });
+  if (contaIds?.length) params.set("contaIds", contaIds.join(","));
+  return apiFetch<PontoEvolucaoSaldo[]>(`/api/transacoes/evolucao-saldo?${params.toString()}`);
 }
 
 export function criarTransacao(input: CriarTransacaoInput): Promise<Transacao> {

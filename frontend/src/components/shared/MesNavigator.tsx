@@ -61,12 +61,12 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
   const anos = Array.from({ length: 11 }, (_, i) => ano - 5 + i);
 
   return (
-    <div ref={containerRef} className="relative flex items-center gap-3">
+    <div ref={containerRef} className="relative flex items-center gap-2">
       <button
         type="button"
         onClick={() => irPara(-1)}
         aria-label="Mês anterior"
-        className="rounded-[11px] border border-border px-2 py-1 text-[13px] text-foreground/70 hover:bg-muted"
+        className="flex h-9 items-center rounded-[11px] border border-border px-2.5 text-[13px] text-foreground/70 hover:bg-muted"
       >
         ←
       </button>
@@ -74,7 +74,7 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
         type="button"
         onClick={() => setAberto((v) => !v)}
         aria-expanded={aberto}
-        className="flex min-w-36 items-center justify-center gap-1 rounded-[11px] px-2 py-1 text-center font-display text-sm font-medium text-foreground hover:bg-muted"
+        className="flex h-9 min-w-36 items-center justify-center gap-1 rounded-[11px] px-3 text-center font-display text-sm font-medium text-foreground hover:bg-muted"
       >
         {MESES[mes - 1]} {ano}
         <IconeSeta aberta={aberto} />
@@ -83,7 +83,7 @@ export function MesNavigator({ ano, mes, onChange }: MesNavigatorProps) {
         type="button"
         onClick={() => irPara(1)}
         aria-label="Próximo mês"
-        className="rounded-[11px] border border-border px-2 py-1 text-[13px] text-foreground/70 hover:bg-muted"
+        className="flex h-9 items-center rounded-[11px] border border-border px-2.5 text-[13px] text-foreground/70 hover:bg-muted"
       >
         →
       </button>

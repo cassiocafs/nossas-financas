@@ -40,3 +40,6 @@ venv/
 
 # Documentação local
 docs/
+
+# Handoff de design (gerado, nao versionar)
+frontend/design_handoff_dashboard_web/
