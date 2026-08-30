@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { excluirContaUsuario } from '@/api/auth';
@@ -10,8 +10,10 @@ import { RegrasModal } from '@/components/perfil/RegrasModal';
 import { SincronizacaoCard } from '@/components/perfil/SincronizacaoCard';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { AppSwitch } from '@/components/ui/AppSwitch';
 import { Card } from '@/components/ui/Card';
-import { Radius, Spacing } from '@/constants/theme';
+import { Tabs } from '@/components/ui/Tabs';
+import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePreferences, type ColorSchemeOverride } from '@/contexts/PreferencesContext';
 import { useTheme } from '@/hooks/use-theme';
@@ -89,38 +91,25 @@ export default function PerfilScreen() {
           <Card style={styles.preferenciasCard}>
             <ThemedText type="smallBold">Preferências</ThemedText>
 
-            <ThemedView style={styles.preferenciaLinha}>
-              <ThemedView style={styles.preferenciaTextos}>
-                <ThemedText type="small">Tema do app</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Escuro, claro ou o mesmo do sistema
-                </ThemedText>
-              </ThemedView>
+            <ThemedView style={styles.preferenciaTextos}>
+              <ThemedText type="label">Tema do app</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Escuro, claro ou o mesmo do sistema
+              </ThemedText>
             </ThemedView>
-            <ThemedView style={[styles.segmentado, { backgroundColor: theme.surface }]}>
-              {OPCOES_TEMA.map((opcao) => {
-                const ativo = colorSchemeOverride === opcao.valor;
-                return (
-                  <Pressable
-                    key={opcao.valor}
-                    onPress={() => setColorSchemeOverride(opcao.valor)}
-                    style={[styles.segmentoBotao, ativo && { backgroundColor: theme.card }]}>
-                    <ThemedText type="small" themeColor={ativo ? 'text' : 'textSecondary'} style={ativo ? { fontWeight: '700' } : undefined}>
-                      {opcao.label}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
-            </ThemedView>
+            <Tabs
+              items={OPCOES_TEMA.map((o) => ({ value: o.valor, label: o.label }))}
+              value={colorSchemeOverride}
+              onChange={setColorSchemeOverride}
+            />
 
-            <ThemedView style={[styles.preferenciaLinha, styles.preferenciaLinhaComBorda, { borderTopColor: theme.border }]}>
-              <ThemedView style={styles.preferenciaTextos}>
-                <ThemedText type="small">Ocultar valores</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Esconde saldos e valores em locais públicos
-                </ThemedText>
-              </ThemedView>
-              <Switch value={hideValues} onValueChange={setHideValues} trackColor={{ true: theme.primary }} />
+            <ThemedView style={[styles.preferenciaLinhaComBorda, { borderTopColor: theme.border }]}>
+              <AppSwitch
+                value={hideValues}
+                onValueChange={setHideValues}
+                label="Ocultar valores"
+                hint="Esconde saldos e valores em locais públicos"
+              />
             </ThemedView>
           </Card>
 
@@ -191,16 +180,13 @@ export default function PerfilScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
-  scroll: { padding: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six * 2 },
+  scroll: { padding: Spacing.page, gap: Spacing.three, paddingBottom: Spacing.six * 2 },
   perfilCard: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   perfilTextos: { flex: 1, gap: 2 },
-  preferenciasCard: { gap: Spacing.two },
-  preferenciaLinha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three },
-  preferenciaLinhaComBorda: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.three, marginTop: Spacing.one },
+  preferenciasCard: { gap: Spacing.three },
+  preferenciaLinhaComBorda: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.two, marginTop: Spacing.one },
   preferenciaTextos: { flex: 1, gap: 2 },
-  segmentado: { flexDirection: 'row', borderRadius: Radius.md, padding: 3, gap: 3 },
-  segmentoBotao: { flex: 1, alignItems: 'center', paddingVertical: Spacing.two, borderRadius: Radius.sm },
   acoesCard: { overflow: 'hidden' },
   acaoLinha: {
     flexDirection: 'row',

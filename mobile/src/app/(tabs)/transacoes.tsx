@@ -1,26 +1,35 @@
-import { Feather } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, TextInput } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listarContas } from '@/api/contas';
 import { listarTransacoesMes, type StatusFiltro } from '@/api/transacoes';
 import { AcoesLoteBar } from '@/components/transacoes/AcoesLoteBar';
+import { AppHeader } from '@/components/ui/AppHeader';
+import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { IconButton } from '@/components/ui/IconButton';
+import { SearchInput } from '@/components/ui/SearchInput';
+import { SummaryStrip } from '@/components/ui/SummaryStrip';
 import { FiltrosModal, type FiltrosAplicados } from '@/components/transacoes/FiltrosModal';
 import { MesNavigator } from '@/components/transacoes/MesNavigator';
 import { TransacaoFormModal } from '@/components/transacoes/TransacaoFormModal';
 import { TransacaoItem } from '@/components/transacoes/TransacaoItem';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useFormatarValor } from '@/hooks/use-formatar-valor';
-import { formatarDataCurta } from '@/lib/format';
+import { formatarDiaGrupo } from '@/lib/format';
 import { useTheme } from '@/hooks/use-theme';
 import { useTransacoesComPendencias, type TransacaoComPendencia } from '@/hooks/use-transacoes-com-pendencias';
+
+const MESES = [
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+];
 
 function hoje() {
   const agora = new Date();
@@ -163,16 +172,9 @@ export default function TransacoesScreen() {
     }
   }
 
-  const dias = data?.dias ?? [];
-
-  type ItemLista =
-    | { tipo: 'cabecalho'; key: string; data: string }
-    | { tipo: "transacao"; key: string; transacao: TransacaoComPendencia }
-    | { tipo: 'rodape'; key: string; saldoDia: number };
-
   const buscaNormalizada = busca.trim().toLowerCase();
 
-  const itensLista = useMemo<ItemLista[]>(
+  const grupos = useMemo(
     () =>
       (data?.dias ?? [])
         .map((dia) => ({
@@ -181,16 +183,7 @@ export default function TransacoesScreen() {
             ? dia.transacoes.filter((t) => t.descricao.toLowerCase().includes(buscaNormalizada))
             : dia.transacoes,
         }))
-        .filter((dia) => dia.transacoes.length > 0)
-        .flatMap((dia) => [
-          { tipo: 'cabecalho' as const, key: `cabecalho-${dia.data}`, data: dia.data },
-          ...dia.transacoes.map((transacao) => ({
-            tipo: 'transacao' as const,
-            key: transacao.id,
-            transacao,
-          })),
-          { tipo: 'rodape' as const, key: `rodape-${dia.data}`, saldoDia: dia.saldoDia },
-        ]),
+        .filter((dia) => dia.transacoes.length > 0),
     [data?.dias, buscaNormalizada],
   );
 
@@ -204,89 +197,92 @@ export default function TransacoesScreen() {
     <ThemedView type="background" style={styles.container}>
       <SafeAreaView edges={['bottom']} style={styles.safeArea}>
         <ThemedView style={styles.topo}>
-          <ThemedText type="title">Transações</ThemedText>
+          <AppHeader variant="title" title="Transações" />
 
           <ThemedView style={styles.topoLinha}>
             <MesNavigator ano={ano} mes={mes} onChange={mudarMes} />
-            <ThemedView style={styles.topoAcoes}>
-              <Pressable
+            <ThemedView style={styles.filtroWrap}>
+              <IconButton
+                icon="sliders"
+                label={filtrosAtivos ? 'Filtros ativos' : 'Filtros'}
                 onPress={() => setFiltrosVisiveis(true)}
-                style={[styles.botaoTopo, { borderColor: filtrosAtivos ? theme.primary : theme.border }]}>
-                <Feather name="sliders" size={14} color={theme.text} />
-                <ThemedText type="small">Filtros</ThemedText>
-                {filtrosAtivos && <ThemedView style={[styles.pontoFiltro, { backgroundColor: theme.primary }]} />}
-              </Pressable>
+                color={filtrosAtivos ? theme.primary : theme.text}
+              />
+              {filtrosAtivos ? <ThemedView style={[styles.pontoFiltro, { backgroundColor: theme.primary }]} /> : null}
             </ThemedView>
           </ThemedView>
 
-          {data && (
-            <ThemedText type="small" themeColor="textSecondary">
-              Saldo anterior: {formatarValor(data.saldoAnterior)}
-            </ThemedText>
-          )}
+          <SearchInput value={busca} onChangeText={setBusca} placeholder="Buscar transação" />
 
-          <ThemedView style={[styles.busca, { borderColor: theme.border, backgroundColor: theme.surface }]}>
-            <Feather name="search" size={15} color={theme.textTertiary} />
-            <TextInput
-              value={busca}
-              onChangeText={setBusca}
-              placeholder="Buscar por descrição"
-              placeholderTextColor={theme.textTertiary}
-              style={[styles.buscaInput, { color: theme.text }]}
-            />
-          </ThemedView>
-
-          <ThemedView style={styles.statusRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chips}
+            keyboardShouldPersistTaps="handled">
             <Chip label="Todas" selected={status === 'todas'} onPress={() => setStatus('todas')} />
             <Chip label="Pagas" selected={status === 'consolidadas'} onPress={() => setStatus('consolidadas')} />
             <Chip label="Pendentes" selected={status === 'pendentes'} onPress={() => setStatus('pendentes')} />
-          </ThemedView>
+          </ScrollView>
         </ThemedView>
 
-        {isLoading && <ActivityIndicator style={styles.centro} color={theme.primary} />}
+        {isLoading ? <ActivityIndicator style={styles.centro} color={theme.primary} /> : null}
 
-        {!isLoading && dias.length === 0 && (
+        {!isLoading && grupos.length === 0 ? (
           <EmptyState mood="thinking" title="Nenhuma transação encontrada">
             Ajuste o período ou os filtros para ver outras transações.
           </EmptyState>
-        )}
+        ) : null}
 
-        <FlatList
-          data={itensLista}
-          keyExtractor={(item) => item.key}
-          contentContainerStyle={styles.lista}
-          refreshControl={
-            <RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={theme.primary} />
-          }
-          renderItem={({ item }: { item: ItemLista }) => {
-            if (item.tipo === 'cabecalho') {
-              return (
-                <ThemedView style={styles.diaHeader}>
-                  <ThemedText type="smallBold">{formatarDataCurta(item.data)}</ThemedText>
-                </ThemedView>
-              );
+        {!isLoading && grupos.length > 0 ? (
+          <FlatList
+            data={grupos}
+            keyExtractor={(dia) => dia.data}
+            contentContainerStyle={styles.lista}
+            refreshControl={
+              <RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={theme.primary} />
             }
-            if (item.tipo === 'rodape') {
-              return (
-                <ThemedView style={styles.diaRodape}>
-                  <ThemedText type="small" themeColor="textSecondary" numeric>
-                    Saldo do dia: {formatarValor(item.saldoDia)}
+            ListHeaderComponent={
+              data ? <SummaryStrip label={`Saiu em ${MESES[mes - 1]}`} value={-Math.abs(data.totalSaidas)} /> : null
+            }
+            renderItem={({ item: dia }) => (
+              <ThemedView style={styles.grupo}>
+                <ThemedView style={styles.grupoHeader}>
+                  <ThemedText type="caption" themeColor="textSecondary">
+                    {formatarDiaGrupo(dia.data)}
+                  </ThemedText>
+                  <ThemedText
+                    type="caption"
+                    numeric
+                    themeColor={dia.saldoDia < 0 ? 'expense' : 'income'}
+                    style={styles.grupoTotal}>
+                    {dia.saldoDia >= 0 ? '+ ' : ''}
+                    {formatarValor(dia.saldoDia)}
                   </ThemedText>
                 </ThemedView>
-              );
-            }
-            return (
-              <TransacaoItem
-                transacao={item.transacao}
-                pendenteSync={item.transacao.pendenteSync}
-                selecionado={selectedIds.includes(item.transacao.id)}
-                modoSelecao={selectedIds.length > 0}
-                onPress={() => aoPressionar(item.transacao)}
-                onLongPress={() => aoSegurar(item.transacao)}
-              />
-            );
-          }}
-        />
+                <Card padding="compact">
+                  {dia.transacoes.map((transacao, i) => (
+                    <ThemedView
+                      key={transacao.id}
+                      style={
+                        i < dia.transacoes.length - 1
+                          ? [styles.divider, { borderBottomColor: theme.divider }]
+                          : undefined
+                      }>
+                      <TransacaoItem
+                        transacao={transacao}
+                        pendenteSync={transacao.pendenteSync}
+                        selecionado={selectedIds.includes(transacao.id)}
+                        modoSelecao={selectedIds.length > 0}
+                        onPress={() => aoPressionar(transacao)}
+                        onLongPress={() => aoSegurar(transacao)}
+                      />
+                    </ThemedView>
+                  ))}
+                </Card>
+              </ThemedView>
+            )}
+          />
+        ) : null}
 
         <AcoesLoteBar selectedIds={selectedIds} onDone={() => setSelectedIds([])} />
       </SafeAreaView>
@@ -324,32 +320,15 @@ export default function TransacoesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
-  topo: { paddingHorizontal: Spacing.three, paddingTop: Spacing.two, gap: Spacing.two },
+  topo: { paddingHorizontal: Spacing.page, paddingTop: Spacing.two, gap: Spacing.two },
   topoLinha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  topoAcoes: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  botaoTopo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    borderWidth: 1,
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  pontoFiltro: { width: 6, height: 6, borderRadius: 3 },
-  busca: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    borderWidth: 1,
-    borderRadius: Radius.lg,
-    paddingHorizontal: Spacing.three,
-    height: 42,
-  },
-  buscaInput: { flex: 1, fontSize: 14, padding: 0 },
-  statusRow: { flexDirection: 'row', gap: Spacing.two },
+  filtroWrap: {},
+  pontoFiltro: { position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: 3 },
+  chips: { flexDirection: 'row', gap: Spacing.two, paddingVertical: Spacing.half },
   centro: { marginTop: Spacing.five },
-  lista: { padding: Spacing.three, gap: Spacing.two, flexGrow: 1 },
-  diaHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.two },
-  diaRodape: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
+  lista: { padding: Spacing.page, gap: Spacing.three, flexGrow: 1 },
+  grupo: { gap: Spacing.two },
+  grupoHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  grupoTotal: { letterSpacing: 0 },
+  divider: { borderBottomWidth: StyleSheet.hairlineWidth },
 });

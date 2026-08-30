@@ -69,7 +69,7 @@ export default function CadastroScreen() {
 
             <Card style={styles.card}>
               <ThemedView style={styles.field}>
-                <ThemedText type="smallBold">Nome</ThemedText>
+                <ThemedText type="label">Nome</ThemedText>
                 <TextInput
                   value={nome}
                   onChangeText={setNome}
@@ -79,7 +79,7 @@ export default function CadastroScreen() {
               </ThemedView>
 
               <ThemedView style={styles.field}>
-                <ThemedText type="smallBold">E-mail</ThemedText>
+                <ThemedText type="label">E-mail</ThemedText>
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
@@ -92,7 +92,7 @@ export default function CadastroScreen() {
               </ThemedView>
 
               <ThemedView style={styles.field}>
-                <ThemedText type="smallBold">Senha</ThemedText>
+                <ThemedText type="label">Senha</ThemedText>
                 <TextInput
                   value={senha}
                   onChangeText={setSenha}
@@ -103,7 +103,7 @@ export default function CadastroScreen() {
               </ThemedView>
 
               <ThemedView style={styles.field}>
-                <ThemedText type="smallBold">Confirmar senha</ThemedText>
+                <ThemedText type="label">Confirmar senha</ThemedText>
                 <TextInput
                   value={confirmarSenha}
                   onChangeText={setConfirmarSenha}

@@ -10,6 +10,7 @@ import { DonutChart } from '@/components/ui/DonutChart';
 import { ChartColors, Spacing } from '@/constants/theme';
 import { useFormatarValor } from '@/hooks/use-formatar-valor';
 import { useTheme } from '@/hooks/use-theme';
+import { corCategoria } from '@/lib/categoria-visual';
 import { formatarData } from '@/lib/format';
 
 type Nivel =
@@ -137,7 +138,11 @@ export function CategoriaDrilldownChart({ titulo, dados, tipo, ano, mes }: Categ
   const totalOutros = resto.reduce((soma, d) => soma + d.total, 0);
 
   const fatias = [
-    ...principais.map((d, i) => ({ ...d, cor: ChartColors[i % ChartColors.length] })),
+    ...principais.map((d, i) => ({
+      ...d,
+      // Categoria-folha mantém sua cor estável; grupos/subgrupos usam a paleta por ordem.
+      cor: d.folha && d.categoriaId ? corCategoria(d.categoriaId).fg : ChartColors[i % ChartColors.length],
+    })),
     ...(totalOutros > 0
       ? [
           {

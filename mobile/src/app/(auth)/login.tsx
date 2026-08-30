@@ -56,7 +56,7 @@ export default function LoginScreen() {
 
             <Card style={styles.card}>
               <ThemedView style={styles.field}>
-                <ThemedText type="smallBold">E-mail</ThemedText>
+                <ThemedText type="label">E-mail</ThemedText>
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
@@ -69,7 +69,7 @@ export default function LoginScreen() {
               </ThemedView>
 
               <ThemedView style={styles.field}>
-                <ThemedText type="smallBold">Senha</ThemedText>
+                <ThemedText type="label">Senha</ThemedText>
                 <TextInput
                   value={password}
                   onChangeText={setPassword}

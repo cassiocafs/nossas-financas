@@ -1,6 +1,6 @@
-# Nossas Finanças — App Mobile
+# Poupeu — App Mobile
 
-App mobile (Expo / React Native) do **Nossas Finanças**, um app de controle financeiro pessoal/familiar. Este pacote é o "companion" mobile do projeto: consome a mesma API em `backend/` que já serve o app web em `frontend/`, permitindo lançar e consultar transações direto do celular.
+App mobile (Expo / React Native) do **Poupeu**, um app de controle financeiro pessoal/familiar. Este pacote é o "companion" mobile do projeto: consome a mesma API em `backend/` que já serve o app web em `frontend/`, permitindo lançar e consultar transações direto do celular.
 
 O monorepo tem três pacotes (npm workspaces):
 

@@ -5,7 +5,7 @@ import { Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Chip } from '@/components/ui/Chip';
-import { Radius, Spacing } from '@/constants/theme';
+import { Overlay, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 const MESES = [
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: Overlay,
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.four,

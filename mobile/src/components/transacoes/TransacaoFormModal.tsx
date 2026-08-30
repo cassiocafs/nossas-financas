@@ -1,7 +1,6 @@
-import { Feather } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, TextInput } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/client';
@@ -17,9 +16,14 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { CategoriaSelect } from '@/components/transacoes/CategoriaSelect';
+import { AppSwitch } from '@/components/ui/AppSwitch';
 import { Button } from '@/components/ui/Button';
 import { DateField } from '@/components/ui/DateField';
+import { IconButton } from '@/components/ui/IconButton';
+import { MascotMessage } from '@/components/ui/MascotMessage';
+import { MoneyInput, type MoneySign } from '@/components/ui/MoneyInput';
 import { Select } from '@/components/ui/Select';
+import { Tabs } from '@/components/ui/Tabs';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useNetworkState } from '@/hooks/use-network-state';
 import { useTheme } from '@/hooks/use-theme';
@@ -51,13 +55,25 @@ interface TransacaoFormModalProps {
   onSaved: () => void;
 }
 
-function corDoTipo(tipo: Tipo, theme: Theme) {
-  if (tipo === 'RECEITA') return { cor: theme.income, corSuave: theme.incomeSoft };
-  if (tipo === 'TRANSFERENCIA') return { cor: theme.transfer, corSuave: theme.transferSoft };
-  return { cor: theme.expense, corSuave: theme.expenseSoft };
+const TIPO_TABS: { value: Tipo; label: string }[] = [
+  { value: 'DESPESA', label: 'Saiu' },
+  { value: 'RECEITA', label: 'Entrou' },
+  { value: 'TRANSFERENCIA', label: 'Transferir' },
+];
+
+function hintValor(tipo: Tipo): string {
+  if (tipo === 'TRANSFERENCIA') return 'Move dinheiro entre suas contas, sem contar como receita nem despesa.';
+  if (tipo === 'RECEITA') return 'Uma entrada nova no mês.';
+  return 'Gastar não é erro — é só registrar.';
 }
 
-function CampoTextoRow({
+function dicaMascote(tipo: Tipo): string {
+  if (tipo === 'TRANSFERENCIA') return 'Transferências só mudam seu dinheiro de lugar — não mexem no total.';
+  if (tipo === 'RECEITA') return 'Boa! Toda entrada registrada deixa seu mês mais claro.';
+  return 'Cada gasto registrado deixa seu mês mais claro. Você está indo bem.';
+}
+
+function CampoTexto({
   label,
   value,
   onChangeText,
@@ -73,8 +89,8 @@ function CampoTextoRow({
   theme: Theme;
 }) {
   return (
-    <ThemedView style={[styles.row, { backgroundColor: theme.surface }]}>
-      <ThemedText type="default" themeColor="textSecondary">
+    <View style={styles.field}>
+      <ThemedText type="label" themeColor="textSecondary">
         {label}
       </ThemedText>
       <TextInput
@@ -83,10 +99,9 @@ function CampoTextoRow({
         placeholder={placeholder}
         placeholderTextColor={theme.textTertiary}
         editable={!disabled}
-        textAlign="right"
-        style={[styles.rowInput, { color: theme.text }]}
+        style={[styles.fieldInput, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
       />
-    </ThemedView>
+    </View>
   );
 }
 
@@ -222,19 +237,6 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
   }, [descricao, visible, editando, tipo]);
 
   const valorNumerico = (valorCentavos ?? 0) / 100;
-  const valorExibicao =
-    valorCentavos == null
-      ? ''
-      : (valorCentavos / 100).toLocaleString('pt-BR', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        });
-  const valorInputTexto = valorCentavos == null ? '' : `R$ ${valorExibicao}`;
-
-  function handleValorChange(texto: string) {
-    const digitos = texto.replace(/\D/g, '');
-    setValorCentavos(digitos ? parseInt(digitos, 10) : null);
-  }
 
   const salvarMutation = useMutation({
     mutationFn: async (opcao: 'fechar' | 'novo') => {
@@ -371,7 +373,7 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
         !salvarMutation.isPending;
 
   const bloqueado = salvarMutation.isPending || excluirMutation.isPending;
-  const { cor: corTipo } = corDoTipo(tipo, theme);
+  const sign: MoneySign = tipo === 'RECEITA' ? 'in' : tipo === 'TRANSFERENCIA' ? 'none' : 'out';
 
   return (
     <Modal
@@ -382,55 +384,50 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
       <ThemedView type="background" style={styles.container}>
         <SafeAreaView edges={['bottom']} style={styles.safeArea}>
           <ThemedView style={styles.header}>
-            <ThemedText type="subtitle">{editando ? 'Editar transação' : 'Nova transação'}</ThemedText>
-            <Pressable
-              onPress={onClose}
-              disabled={bloqueado}
-              hitSlop={8}
-              style={[styles.closeButton, { backgroundColor: theme.surface, opacity: bloqueado ? 0.5 : 1 }]}
-              accessibilityRole="button">
-              <Feather name="x" size={18} color={theme.text} />
-            </Pressable>
+            <IconButton icon="x" label="Fechar" onPress={onClose} disabled={bloqueado} />
+            <ThemedText type="subtitle" style={styles.headerTitle}>
+              {editando ? 'Editar transação' : 'Nova transação'}
+            </ThemedText>
+          </ThemedView>
+
+          <ThemedView style={styles.tabsWrap}>
+            <Tabs items={TIPO_TABS} value={tipo} onChange={setTipo} disabled={bloqueado} />
           </ThemedView>
 
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-            <ThemedView style={[styles.segmented, { backgroundColor: theme.surface }]}>
-              {(['DESPESA', 'RECEITA', 'TRANSFERENCIA'] as const).map((opcao) => {
-                const selecionado = tipo === opcao;
-                const { cor, corSuave } = corDoTipo(opcao, theme);
-                return (
-                  <Pressable
-                    key={opcao}
-                    onPress={() => setTipo(opcao)}
-                    disabled={bloqueado}
-                    style={[styles.segmentedItem, selecionado && { backgroundColor: corSuave }]}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: selecionado, disabled: bloqueado }}>
-                    <ThemedText type="smallBold" style={{ color: selecionado ? cor : theme.textSecondary }}>
-                      {opcao === 'DESPESA' ? 'Despesa' : opcao === 'RECEITA' ? 'Receita' : 'Transf.'}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
-            </ThemedView>
+            <MoneyInput
+              label="Quanto foi?"
+              valorCentavos={valorCentavos}
+              onChange={setValorCentavos}
+              sign={sign}
+              hint={hintValor(tipo)}
+              disabled={bloqueado}
+            />
 
-            <ThemedView style={[styles.valorCard, { backgroundColor: theme.surface }]}>
-              <ThemedText type="caption" themeColor="textTertiary" style={styles.valorLabel}>
-                VALOR
-              </ThemedText>
-              <TextInput
-                value={valorInputTexto}
-                onChangeText={handleValorChange}
-                placeholder="R$ 0,00"
-                placeholderTextColor={theme.textTertiary}
-                keyboardType="number-pad"
-                selection={{ start: valorInputTexto.length, end: valorInputTexto.length }}
-                editable={!bloqueado}
-                style={[styles.valorInput, { color: corTipo }]}
+            <CampoTexto
+              label="Descrição"
+              value={descricao}
+              onChangeText={setDescricao}
+              placeholder="Ex.: mercado da esquina"
+              disabled={bloqueado}
+              theme={theme}
+            />
+
+            {tipo !== 'TRANSFERENCIA' && (
+              <CategoriaSelect
+                value={categoriaId}
+                onChange={(v) => {
+                  setCategoriaId(v);
+                  setCategoriaTocada(true);
+                }}
+                title="Selecionar categoria"
+                placeholder="Sem categoria"
+                clearLabel="Sem categoria"
+                disabled={bloqueado}
+                variant="row"
+                label="Categoria"
               />
-            </ThemedView>
-
-            <DateField value={data} onChange={setData} disabled={bloqueado} variant="row" label="Data" />
+            )}
 
             {tipo !== 'TRANSFERENCIA' && (
               <Select
@@ -462,7 +459,7 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
                     .map((conta) => ({ value: conta.id, label: conta.nome }))}
                   disabled={bloqueado}
                   variant="row"
-                  label="Conta origem"
+                  label="De"
                 />
                 <Select
                   value={contaDestinoId}
@@ -475,49 +472,18 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
                     .map((conta) => ({ value: conta.id, label: conta.nome }))}
                   disabled={bloqueado}
                   variant="row"
-                  label="Conta destino"
+                  label="Para"
                 />
               </>
             )}
 
-            {tipo !== 'TRANSFERENCIA' && (
-              <CategoriaSelect
-                value={categoriaId}
-                onChange={(v) => {
-                  setCategoriaId(v);
-                  setCategoriaTocada(true);
-                }}
-                title="Selecionar categoria"
-                placeholder="Sem categoria"
-                clearLabel="Sem categoria"
-                disabled={bloqueado}
-                variant="row"
-                label="Categoria"
-              />
-            )}
+            <DateField value={data} onChange={setData} disabled={bloqueado} variant="row" label="Data" />
 
-            <CampoTextoRow
-              label="Descrição"
-              value={descricao}
-              onChangeText={setDescricao}
-              placeholder="Ex.: Mercado"
-              disabled={bloqueado}
-              theme={theme}
-            />
-
-            <ThemedView style={[styles.row, { backgroundColor: theme.surface }]}>
-              <ThemedText type="default" themeColor="textSecondary">
-                Consolidado
-              </ThemedText>
-              <Switch
-                value={consolidado}
-                onValueChange={setConsolidado}
-                trackColor={{ true: theme.primary }}
-                disabled={bloqueado}
-              />
+            <ThemedView style={[styles.switchCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <AppSwitch value={consolidado} onValueChange={setConsolidado} label="Já foi pago" disabled={bloqueado} />
             </ThemedView>
 
-            <CampoTextoRow
+            <CampoTexto
               label="Nota"
               value={nota}
               onChangeText={setNota}
@@ -526,50 +492,55 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
               theme={theme}
             />
 
-            {erro && (
+            <MascotMessage>{dicaMascote(tipo)}</MascotMessage>
+
+            {erro ? (
               <ThemedText type="small" themeColor="destructive" style={styles.erro}>
                 {erro}
               </ThemedText>
-            )}
+            ) : null}
 
-            <Button
-              title={
-                editando
-                  ? salvarMutation.isPending
-                    ? 'Salvando...'
-                    : 'Salvar transação'
-                  : salvarMutation.isPending && salvarMutation.variables === 'fechar'
-                    ? 'Salvando...'
-                    : 'Salvar transação'
-              }
-              onPress={() => salvarMutation.mutate('fechar')}
-              disabled={!podeSalvar}
-              loading={editando ? salvarMutation.isPending : salvarMutation.isPending && salvarMutation.variables === 'fechar'}
-              style={styles.button}
-            />
-
-            {!editando && (
-              <Button
-                title={
-                  salvarMutation.isPending && salvarMutation.variables === 'novo' ? 'Salvando...' : 'Salvar e criar nova'
-                }
-                variant="ghost"
-                onPress={() => salvarMutation.mutate('novo')}
-                disabled={!podeSalvar}
-                loading={salvarMutation.isPending && salvarMutation.variables === 'novo'}
-              />
-            )}
-
-            {editando && (
+            {editando ? (
               <Button
                 title={excluirMutation.isPending ? 'Excluindo...' : 'Excluir transação'}
                 variant="destructive"
                 onPress={confirmarExclusao}
                 disabled={bloqueado}
                 loading={excluirMutation.isPending}
+                style={styles.deleteButton}
               />
-            )}
+            ) : null}
           </ScrollView>
+
+          <ThemedView style={[styles.footer, { backgroundColor: theme.card, borderTopColor: theme.divider }]}>
+            <Button
+              title={
+                salvarMutation.isPending && (editando || salvarMutation.variables === 'fechar')
+                  ? 'Salvando...'
+                  : 'Salvar transação'
+              }
+              size="lg"
+              fullWidth
+              onPress={() => salvarMutation.mutate('fechar')}
+              disabled={!podeSalvar}
+              loading={editando ? salvarMutation.isPending : salvarMutation.isPending && salvarMutation.variables === 'fechar'}
+            />
+            {!editando ? (
+              <Button
+                title={
+                  salvarMutation.isPending && salvarMutation.variables === 'novo' ? 'Salvando...' : 'Salvar e criar nova'
+                }
+                variant="tertiary"
+                size="sm"
+                fullWidth
+                onPress={() => salvarMutation.mutate('novo')}
+                disabled={!podeSalvar}
+                loading={salvarMutation.isPending && salvarMutation.variables === 'novo'}
+              />
+            ) : (
+              <Button title="Cancelar" variant="tertiary" size="sm" fullWidth onPress={onClose} disabled={bloqueado} />
+            )}
+          </ThemedView>
         </SafeAreaView>
       </ThemedView>
     </Modal>
@@ -582,70 +553,36 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: Spacing.four,
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.page,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.three,
   },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scroll: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six, gap: Spacing.two },
-  segmented: {
-    flexDirection: 'row',
-    borderRadius: Radius.sm,
-    padding: 4,
-    gap: 4,
-    marginBottom: Spacing.two,
-  },
-  segmentedItem: {
-    flex: 1,
-    height: 40,
-    borderRadius: Radius.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  valorCard: {
-    borderRadius: Radius.lg,
-    paddingVertical: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.one,
-    marginBottom: Spacing.two,
-  },
-  valorLabel: { letterSpacing: 1.2 },
-  valorInput: {
-    fontFamily: Fonts.displayBold,
-    fontSize: 36,
-    // Sem lineHeight fixo: o Poppins ExtraBold tem métricas verticais altas e,
-    // combinado com um lineHeight apertado, o Android cortava o topo/base dos
-    // dígitos ("R$ 10,00" aparecia quebrado). Deixamos a altura natural da fonte
-    // mandar e damos folga vertical com padding + minHeight.
-    letterSpacing: -0.8,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    includeFontPadding: false,
-    paddingHorizontal: 0,
-    paddingVertical: Spacing.two,
-    minHeight: 52,
-    alignSelf: 'stretch',
-  },
-  row: {
-    borderRadius: Radius.md,
+  headerTitle: { flex: 1 },
+  tabsWrap: { paddingHorizontal: Spacing.page, paddingBottom: Spacing.three },
+  scroll: { paddingHorizontal: Spacing.page, paddingTop: Spacing.one, paddingBottom: Spacing.six * 2, gap: Spacing.gap },
+  field: { gap: Spacing.one },
+  fieldInput: {
+    borderWidth: 1,
+    borderRadius: Radius.input,
     paddingHorizontal: Spacing.three,
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  rowInput: {
-    flex: 1,
-    marginLeft: Spacing.two,
-    fontFamily: Fonts.bodySemi,
+    height: 48,
+    fontFamily: Fonts.body,
     fontSize: 16,
-    padding: 0,
+  },
+  switchCard: {
+    borderWidth: 1,
+    borderRadius: Radius.card,
+    paddingHorizontal: 18,
+    paddingVertical: Spacing.two,
   },
   erro: { textAlign: 'center' },
-  button: { marginTop: Spacing.two },
+  deleteButton: { marginTop: Spacing.two },
+  footer: {
+    paddingHorizontal: Spacing.page,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.four,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: Spacing.two,
+  },
 });

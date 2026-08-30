@@ -5,23 +5,39 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive';
+export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'ghost' | 'destructive';
+export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export type ButtonProps = Omit<PressableProps, 'style'> & {
   title: string;
   variant?: ButtonVariant;
+  size?: ButtonSize;
+  fullWidth?: boolean;
   loading?: boolean;
   icon?: keyof typeof Feather.glyphMap;
   style?: PressableProps['style'];
 };
 
-export function Button({ title, variant = 'primary', loading, icon, disabled, style, ...rest }: ButtonProps) {
+const HEIGHT: Record<ButtonSize, number> = { sm: 36, md: 48, lg: 52 };
+
+export function Button({
+  title,
+  variant = 'primary',
+  size = 'md',
+  fullWidth,
+  loading,
+  icon,
+  disabled,
+  style,
+  ...rest
+}: ButtonProps) {
   const theme = useTheme();
   const inactive = disabled || loading;
 
   const variantStyle = {
-    primary: { backgroundColor: theme.primary, borderWidth: 0 },
+    primary: { backgroundColor: theme.brandSurface, borderWidth: 0 },
     secondary: { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.border },
+    tertiary: { backgroundColor: 'transparent', borderWidth: 0 },
     ghost: { backgroundColor: 'transparent', borderWidth: 0 },
     destructive: { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.destructive },
   }[variant];
@@ -29,9 +45,12 @@ export function Button({ title, variant = 'primary', loading, icon, disabled, st
   const textColor = {
     primary: theme.primaryForeground,
     secondary: theme.text,
+    tertiary: theme.primary,
     ghost: theme.textSecondary,
     destructive: theme.destructive,
   }[variant];
+
+  const textType = size === 'sm' ? 'label' : 'smallBold';
 
   return (
     <Pressable
@@ -40,8 +59,10 @@ export function Button({ title, variant = 'primary', loading, icon, disabled, st
       disabled={inactive}
       style={(state) => [
         styles.base,
+        { height: HEIGHT[size] },
         variantStyle,
-        { opacity: inactive ? 0.5 : state.pressed ? 0.85 : 1 },
+        fullWidth && styles.fullWidth,
+        { opacity: inactive ? 0.5 : 1, transform: [{ translateY: state.pressed ? 1 : 0 }] },
         typeof style === 'function' ? style(state) : style,
       ]}
       {...rest}>
@@ -50,7 +71,7 @@ export function Button({ title, variant = 'primary', loading, icon, disabled, st
       ) : (
         <>
           {icon ? <Feather name={icon} size={16} color={textColor} /> : null}
-          <ThemedText type="smallBold" style={{ color: textColor }}>
+          <ThemedText type={textType} style={{ color: textColor }}>
             {title}
           </ThemedText>
         </>
@@ -63,10 +84,10 @@ const styles = StyleSheet.create({
   base: {
     flexDirection: 'row',
     gap: Spacing.two,
-    height: 48,
-    borderRadius: Radius.md,
+    borderRadius: Radius.button,
     paddingHorizontal: Spacing.four,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  fullWidth: { alignSelf: 'stretch' },
 });

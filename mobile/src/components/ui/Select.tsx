@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { Fonts, Overlay, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export interface SelectOption {
@@ -56,7 +56,7 @@ export function Select({
         ]}
         accessibilityRole="button">
         {isRow && label && (
-          <ThemedText type="default" themeColor="textSecondary">
+          <ThemedText type="label" themeColor="textSecondary">
             {label}
           </ThemedText>
         )}
@@ -131,11 +131,11 @@ const styles = StyleSheet.create({
   },
   rowValue: { fontFamily: Fonts.bodySemi, textAlign: 'right' },
   desabilitado: { opacity: 0.5 },
-  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15, 23, 42, 0.4)' },
+  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: Overlay },
   sheet: {
     maxHeight: '70%',
-    borderTopLeftRadius: Radius.card,
-    borderTopRightRadius: Radius.card,
+    borderTopLeftRadius: Radius.sheet,
+    borderTopRightRadius: Radius.sheet,
   },
   sheetHeader: {
     flexDirection: 'row',

@@ -9,8 +9,8 @@ import { useTheme } from '@/hooks/use-theme';
 
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   index: 'home',
-  transacoes: 'repeat',
-  relatorios: 'pie-chart',
+  transacoes: 'list',
+  relatorios: 'bar-chart-2',
   perfil: 'settings',
 };
 
@@ -51,8 +51,8 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
             accessibilityState={isFocused ? { selected: true } : {}}
             onPress={onPress}
             style={styles.item}>
-            <Feather name={icon} size={21} color={isFocused ? theme.primary : theme.textTertiary} />
-            <ThemedText type="small" style={styles.label} themeColor={isFocused ? 'primary' : 'textTertiary'}>
+            <Feather name={icon} size={21} color={isFocused ? theme.primary : theme.textSecondary} />
+            <ThemedText type="label" style={styles.label} themeColor={isFocused ? 'primary' : 'textSecondary'}>
               {label}
             </ThemedText>
           </Pressable>,
@@ -67,10 +67,10 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
               onPress={abrirNovaTransacao}
               style={(pressState) => [
                 styles.fab,
-                { backgroundColor: theme.primary, opacity: pressState.pressed ? 0.9 : 1 },
+                { backgroundColor: theme.brandSurface, opacity: pressState.pressed ? 0.9 : 1 },
                 Shadow.lift,
               ]}>
-              <Feather name="plus" size={24} color={theme.primaryForeground} />
+              <Feather name="plus" size={24} color="#FFFFFF" />
             </Pressable>,
           );
         }

@@ -1,7 +1,6 @@
-import { Feather } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { buscarEvolucaoSaldo, buscarResumoMensal, type ItemCategoriaResumo, type PeriodoMes } from '@/api/transacoes';
@@ -11,6 +10,8 @@ import { CategoriaDrilldownChart } from '@/components/relatorios/CategoriaDrilld
 import { EvolucaoSaldoChart } from '@/components/relatorios/EvolucaoSaldoChart';
 import { RelatoriosFiltrosModal } from '@/components/relatorios/RelatoriosFiltrosModal';
 import { MesNavigator } from '@/components/transacoes/MesNavigator';
+import { AppHeader } from '@/components/ui/AppHeader';
+import { IconButton } from '@/components/ui/IconButton';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { subtrairMeses } from '@/lib/date';
@@ -78,16 +79,18 @@ export default function RelatoriosScreen() {
           contentContainerStyle={styles.scroll}
           refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={theme.primary} />}>
           <ThemedView style={styles.header}>
-            <ThemedText type="title">Relatórios</ThemedText>
+            <AppHeader variant="title" title="Relatórios" />
             <ThemedView style={styles.headerLinha}>
               <MesNavigator ano={ano} mes={mes} onChange={mudarMes} />
-              <Pressable
-                onPress={() => setFiltrosVisiveis(true)}
-                style={[styles.botaoFiltros, { borderColor: filtrosAtivos ? theme.primary : theme.border }]}>
-                <Feather name="sliders" size={14} color={theme.text} />
-                <ThemedText type="small">Filtros</ThemedText>
-                {filtrosAtivos && <ThemedView style={[styles.pontoFiltro, { backgroundColor: theme.primary }]} />}
-              </Pressable>
+              <ThemedView>
+                <IconButton
+                  icon="sliders"
+                  label={filtrosAtivos ? 'Filtros ativos' : 'Filtros'}
+                  onPress={() => setFiltrosVisiveis(true)}
+                  color={filtrosAtivos ? theme.primary : theme.text}
+                />
+                {filtrosAtivos ? <ThemedView style={[styles.pontoFiltro, { backgroundColor: theme.primary }]} /> : null}
+              </ThemedView>
             </ThemedView>
           </ThemedView>
 
@@ -144,17 +147,8 @@ export default function RelatoriosScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
-  scroll: { padding: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six * 2 },
+  scroll: { padding: Spacing.page, gap: Spacing.three, paddingBottom: Spacing.six * 2 },
   header: { gap: Spacing.two },
   headerLinha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
-  botaoFiltros: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    borderWidth: 1,
-    borderRadius: Spacing.six,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  pontoFiltro: { width: 6, height: 6, borderRadius: 3 },
+  pontoFiltro: { position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: 3 },
 });
