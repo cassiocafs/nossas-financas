@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/Button";
+import { GoogleButton } from "@/components/ui/GoogleButton";
 
 const schema = z
   .object({
@@ -23,12 +24,13 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 export function SignupPage() {
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [erro, setErro] = useState<string | null>(null);
   const [criado, setCriado] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
+  const [entrandoComGoogle, setEntrandoComGoogle] = useState(false);
 
   const {
     register,
@@ -44,6 +46,18 @@ export function SignupPage() {
       setTimeout(() => navigate("/"), 1500);
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Falha ao criar conta");
+    }
+  }
+
+  async function onGoogleClick() {
+    setErro(null);
+    setEntrandoComGoogle(true);
+    try {
+      await signInWithGoogle();
+      navigate("/");
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Falha ao entrar com Google");
+      setEntrandoComGoogle(false);
     }
   }
 
@@ -140,6 +154,26 @@ export function SignupPage() {
         <Button type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? "Criando..." : "Criar conta"}
         </Button>
+
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground uppercase">ou</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <GoogleButton
+          label={entrandoComGoogle ? "Conectando..." : "Continuar com Google"}
+          disabled={entrandoComGoogle}
+          onClick={onGoogleClick}
+        />
+
+        <p className="text-center text-xs text-muted-foreground">
+          Ao criar uma conta, você concorda com nossa{" "}
+          <Link to="/privacidade" className="font-medium text-foreground underline">
+            Política de Privacidade
+          </Link>
+          .
+        </p>
 
         <p className="text-center text-sm text-muted-foreground">
           Já tem conta?{" "}

@@ -25,7 +25,11 @@ export async function verifySupabaseToken(
   }
 
   const userMetadata = payload.user_metadata as Record<string, unknown> | undefined;
-  const nome = typeof userMetadata?.nome === "string" ? userMetadata.nome : undefined;
+  // Cadastro com e-mail/senha grava "nome"; login social (Google) grava "full_name"/"name".
+  const nome =
+    [userMetadata?.nome, userMetadata?.full_name, userMetadata?.name].find(
+      (valor): valor is string => typeof valor === "string" && valor.length > 0,
+    ) ?? undefined;
 
   return { sub: payload.sub, email: payload.email as string | undefined, nome };
 }

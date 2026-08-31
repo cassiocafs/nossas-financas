@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { signInWithGoogleIdentity } from "@/lib/googleIdentity";
 import { apiFetch } from "@/api/client";
 
 interface AuthContextValue {
@@ -9,6 +10,7 @@ interface AuthContextValue {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (nome: string, email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -58,12 +60,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }
 
+  async function signInWithGoogle() {
+    const { credential, nonce } = await signInWithGoogleIdentity(
+      import.meta.env.VITE_GOOGLE_CLIENT_ID,
+    );
+    const { error } = await supabase.auth.signInWithIdToken({
+      provider: "google",
+      token: credential,
+      nonce,
+    });
+    if (error) throw error;
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
   }
 
   return (
-    <AuthContext.Provider value={{ session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{ session, loading, signIn, signUp, signInWithGoogle, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );

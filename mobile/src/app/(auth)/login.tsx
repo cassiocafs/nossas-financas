@@ -7,18 +7,20 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { GoogleButton } from '@/components/ui/GoogleButton';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function LoginScreen() {
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const theme = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
 
   async function handleSubmit() {
     setErro(null);
@@ -29,6 +31,18 @@ export default function LoginScreen() {
       setErro(err instanceof Error ? err.message : 'Falha ao entrar');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGoogle() {
+    setErro(null);
+    setLoadingGoogle(true);
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Falha ao entrar com Google');
+    } finally {
+      setLoadingGoogle(false);
     }
   }
 
@@ -94,9 +108,29 @@ export default function LoginScreen() {
               />
             </Card>
 
+            <ThemedView style={styles.divider}>
+              <ThemedView style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+              <ThemedText type="small" themeColor="textTertiary">
+                ou
+              </ThemedText>
+              <ThemedView style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+            </ThemedView>
+
+            <GoogleButton
+              title={loadingGoogle ? 'Redirecionando...' : 'Continuar com Google'}
+              onPress={handleGoogle}
+              loading={loadingGoogle}
+            />
+
             <Link href="/cadastro" style={styles.link}>
               <ThemedText type="link" themeColor="textSecondary">
                 Não tem conta? <ThemedText type="linkPrimary">Criar conta</ThemedText>
+              </ThemedText>
+            </Link>
+
+            <Link href="/privacidade" style={styles.privacidadeLink}>
+              <ThemedText type="small" themeColor="textTertiary" style={styles.privacidadeTexto}>
+                Política de Privacidade
               </ThemedText>
             </Link>
           </ScrollView>
@@ -145,8 +179,25 @@ const styles = StyleSheet.create({
   button: {
     marginTop: Spacing.one,
   },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    marginTop: Spacing.four,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
   link: {
     alignSelf: 'center',
     marginTop: Spacing.four,
+  },
+  privacidadeLink: {
+    alignSelf: 'center',
+    marginTop: Spacing.three,
+  },
+  privacidadeTexto: {
+    textDecorationLine: 'underline',
   },
 });
