@@ -53,6 +53,7 @@ export function CategoriaAutocomplete({ value, onChange, disabled }: CategoriaAu
   const [indiceAtivo, setIndiceAtivo] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listaRef = useRef<HTMLUListElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const itens = useMemo<ItemCategoria[]>(() => {
@@ -126,7 +127,10 @@ export function CategoriaAutocomplete({ value, onChange, disabled }: CategoriaAu
 
   useEffect(() => {
     function onDocMouseDown(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const alvo = e.target as Node;
+      const dentroContainer = containerRef.current?.contains(alvo);
+      const dentroLista = listaRef.current?.contains(alvo);
+      if (!dentroContainer && !dentroLista) {
         setFocado(false);
         setBusca("");
         setMostrarTudo(false);
@@ -207,6 +211,7 @@ export function CategoriaAutocomplete({ value, onChange, disabled }: CategoriaAu
       {mostrarLista && !disabled && posicao &&
         createPortal(
           <ul
+            ref={listaRef}
             style={{ top: posicao.top + 4, left: posicao.left, width: posicao.width }}
             className="card-surface fixed z-50 max-h-64 overflow-auto py-1"
           >

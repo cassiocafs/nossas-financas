@@ -73,7 +73,10 @@ export function ContaAutocomplete({
 
   useEffect(() => {
     function onDocMouseDown(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const alvo = e.target as Node;
+      const dentroContainer = containerRef.current?.contains(alvo);
+      const dentroLista = listaRef.current?.contains(alvo);
+      if (!dentroContainer && !dentroLista) {
         setFocado(false);
         setBusca("");
         setMostrarTudo(false);
