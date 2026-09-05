@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -14,7 +15,9 @@ import { StatCard } from '@/components/ui/StatCard';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useInsightMensal } from '@/hooks/use-insight-mensal';
+import { useSyncQueue } from '@/hooks/use-sync-queue';
 import { useTheme } from '@/hooks/use-theme';
+import { aplicarPendenciasEmResumo } from '@/lib/saldosPendentes';
 
 const MESES = [
   'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -42,9 +45,11 @@ export default function InicioScreen() {
   });
 
   const insight = useInsightMensal(ano, mes);
+  const { fila } = useSyncQueue();
+  const resumo = useMemo(() => aplicarPendenciasEmResumo(data, fila, ano, mes), [data, fila, ano, mes]);
 
   const nome = nomeDeExibicao(session?.user?.email, session?.user?.user_metadata?.nome);
-  const economia = data ? data.totalEntradas - data.totalSaidas : 0;
+  const economia = resumo ? resumo.totalEntradas - resumo.totalSaidas : 0;
 
   return (
     <ThemedView type="background" style={styles.container}>
@@ -57,7 +62,7 @@ export default function InicioScreen() {
             subtitle={`Vamos olhar ${MESES[mes - 1]}?`}
           />
 
-          {isLoading || !data ? (
+          {isLoading || !resumo ? (
             <ThemedText type="small" themeColor="textSecondary">
               Carregando...
             </ThemedText>
@@ -66,14 +71,14 @@ export default function InicioScreen() {
               <FinancialCard />
 
               <View style={styles.statRow}>
-                <StatCard label="Entrou" value={data.totalEntradas} tone="in" style={styles.stat} />
-                <StatCard label="Saiu" value={-Math.abs(data.totalSaidas)} tone="out" style={styles.stat} />
+                <StatCard label="Entrou" value={resumo.totalEntradas} tone="in" style={styles.stat} />
+                <StatCard label="Saiu" value={-Math.abs(resumo.totalSaidas)} tone="out" style={styles.stat} />
                 <StatCard label="Sobrou" value={economia} tone="saved" style={styles.stat} />
               </View>
 
               {insight ? <InsightCard>{insight.texto}</InsightCard> : null}
 
-              <TransacoesRecentesCard ano={ano} mes={mes} recentes={data.recentes} />
+              <TransacoesRecentesCard ano={ano} mes={mes} recentes={resumo.recentes} />
 
               <SaldoPorContasCard ano={ano} mes={mes} />
             </>

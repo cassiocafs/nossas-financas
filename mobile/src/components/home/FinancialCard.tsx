@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { listarContas } from '@/api/contas';
@@ -10,6 +11,8 @@ import { Radius, Spacing } from '@/constants/theme';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useFormatarValor } from '@/hooks/use-formatar-valor';
 import { useTheme } from '@/hooks/use-theme';
+import { useSyncQueue } from '@/hooks/use-sync-queue';
+import { aplicarPendenciasEmContas } from '@/lib/saldosPendentes';
 
 const ON_BRAND_SOFT = 'rgba(255,255,255,0.78)';
 const ON_BRAND_CONTROL = 'rgba(255,255,255,0.16)';
@@ -25,14 +28,19 @@ export function FinancialCard({ delta }: FinancialCardProps) {
   const router = useRouter();
   const formatarValor = useFormatarValor();
   const { hideValues, toggleHideValues } = usePreferences();
+  const { fila } = useSyncQueue();
 
   const { data: contas, isLoading } = useQuery({
     queryKey: ['contas', 'ativas'],
     queryFn: () => listarContas(false),
   });
 
-  const saldoTotal = contas?.reduce((soma, conta) => soma + conta.saldoAtual, 0) ?? 0;
-  const qtd = contas?.length ?? 0;
+  const contasComPendencias = useMemo(
+    () => aplicarPendenciasEmContas(contas, fila, new Date().toISOString().slice(0, 10)),
+    [contas, fila],
+  );
+  const saldoTotal = contasComPendencias?.reduce((soma, conta) => soma + conta.saldoAtual, 0) ?? 0;
+  const qtd = contasComPendencias?.length ?? 0;
   const label = qtd === 1 ? 'Seu saldo em uma conta' : `Seu saldo em ${qtd || 'suas'} contas`;
 
   return (

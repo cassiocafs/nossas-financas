@@ -56,7 +56,7 @@ export async function listarContas(
 ): Promise<ContaComSaldo[]> {
   const contas = await prisma.conta.findMany({
     where: { espacoId, ...(incluirInativas ? {} : { ativa: true }) },
-    orderBy: { criadoEm: "asc" },
+    orderBy: { nome: "asc" },
   });
 
   const saldos = await calcularSaldos(espacoId, contas);

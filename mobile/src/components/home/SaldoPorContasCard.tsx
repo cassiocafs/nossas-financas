@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { listarContas } from '@/api/contas';
@@ -8,6 +9,8 @@ import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui/Card';
 import { Radius, Spacing } from '@/constants/theme';
 import { useFormatarValor } from '@/hooks/use-formatar-valor';
+import { useSyncQueue } from '@/hooks/use-sync-queue';
+import { aplicarPendenciasEmContas } from '@/lib/saldosPendentes';
 
 interface SaldoPorContasCardProps {
   ano: number;
@@ -17,27 +20,33 @@ interface SaldoPorContasCardProps {
 export function SaldoPorContasCard({ ano, mes }: SaldoPorContasCardProps) {
   const router = useRouter();
   const formatarValor = useFormatarValor();
+  const { fila } = useSyncQueue();
 
   const { data: contas, isLoading } = useQuery({
     queryKey: ['contas', 'ativas'],
     queryFn: () => listarContas(false),
   });
 
+  const contasComPendencias = useMemo(
+    () => aplicarPendenciasEmContas(contas, fila, new Date().toISOString().slice(0, 10)),
+    [contas, fila],
+  );
+
   return (
     <Card style={styles.card}>
       <ThemedText type="smallBold">Saldo por conta</ThemedText>
 
-      {isLoading || !contas ? (
+      {isLoading || !contasComPendencias ? (
         <ThemedText type="small" themeColor="textSecondary">
           Carregando...
         </ThemedText>
-      ) : contas.length === 0 ? (
+      ) : contasComPendencias.length === 0 ? (
         <ThemedText type="small" themeColor="textSecondary">
           Nenhuma conta cadastrada.
         </ThemedText>
       ) : (
         <ThemedView style={styles.lista}>
-          {contas.map((conta) => (
+          {contasComPendencias.map((conta) => (
             <Pressable
               key={conta.id}
               onPress={() =>

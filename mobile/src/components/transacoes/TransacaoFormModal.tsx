@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ApiError } from '@/api/client';
+import { ApiError, NetworkError } from '@/api/client';
 import { listarContas } from '@/api/contas';
 import { sugerirTransacao } from '@/api/regras';
 import {
@@ -238,6 +238,38 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
 
   const valorNumerico = (valorCentavos ?? 0) / 100;
 
+  async function criarTransacaoComFallbackOffline(payload: Parameters<typeof criarTransacao>[0]) {
+    if (!isConnected) {
+      enqueueCriarTransacao(payload);
+      return;
+    }
+    try {
+      return await criarTransacao(payload);
+    } catch (err) {
+      if (err instanceof NetworkError) {
+        enqueueCriarTransacao(payload);
+        return;
+      }
+      throw err;
+    }
+  }
+
+  async function criarTransferenciaComFallbackOffline(payload: Parameters<typeof criarTransferencia>[0]) {
+    if (!isConnected) {
+      enqueueCriarTransferencia(payload);
+      return;
+    }
+    try {
+      return await criarTransferencia(payload);
+    } catch (err) {
+      if (err instanceof NetworkError) {
+        enqueueCriarTransferencia(payload);
+        return;
+      }
+      throw err;
+    }
+  }
+
   const salvarMutation = useMutation({
     mutationFn: async (opcao: 'fechar' | 'novo') => {
       if (tipo === 'TRANSFERENCIA') {
@@ -265,11 +297,7 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
           }
         }
 
-        if (!isConnected) {
-          enqueueCriarTransferencia(payloadTransferencia);
-          return;
-        }
-        return criarTransferencia(payloadTransferencia);
+        return criarTransferenciaComFallbackOffline(payloadTransferencia);
       }
 
       const payload = {
@@ -310,14 +338,11 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
         return editarTransacao(transacao!.id, payload);
       }
 
-      if (!isConnected) {
-        enqueueCriarTransacao(payload);
-        return;
-      }
-      return criarTransacao(payload);
+      return criarTransacaoComFallbackOffline(payload);
     },
     onSuccess: (_dados, opcao) => {
       queryClient.invalidateQueries({ queryKey: ['transacoes'] });
+      queryClient.invalidateQueries({ queryKey: ['contas'] });
       if (opcao === 'novo') {
         resetarParaNovaTransacao();
       } else {
@@ -344,6 +369,7 @@ export function TransacaoFormModal({ visible, transacao, tipoInicial, onClose, o
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transacoes'] });
+      queryClient.invalidateQueries({ queryKey: ['contas'] });
       onSaved();
     },
     onError: (err) => {
