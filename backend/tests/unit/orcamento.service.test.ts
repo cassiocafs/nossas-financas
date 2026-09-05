@@ -68,4 +68,46 @@ describe("orcamento.service", () => {
     expect(linha.realizado).toBe(150);
     expect(linha.estourado).toBe(true);
   });
+
+  it("buscarGrade inclui categoria com transação lançada mas sem previsto definido no mês", async () => {
+    mockPrisma.orcamentoAnual.findFirst.mockResolvedValue({ id: "orc-1", ano: 2026 });
+    mockPrisma.orcamentoCategoriaMes.findMany.mockResolvedValue([]);
+    mockPrisma.transacao.findMany.mockImplementation((args: { distinct?: unknown }) =>
+      Promise.resolve(args.distinct ? [{ categoriaId: "categoria-1" }] : []),
+    );
+    mockPrisma.categoria.findMany.mockResolvedValue([
+      { id: "categoria-1", nome: "Mercado", grupo: null, subgrupo: null },
+    ]);
+    mockPrisma.transacao.groupBy.mockResolvedValue([
+      { categoriaId: "categoria-1", tipo: "DESPESA", _sum: { valor: -80 } },
+    ]);
+
+    const grade = await orcamentoService.buscarGrade(ESPACO_ID, "orc-1", 7);
+
+    const linha = grade.grupos[0].categorias[0];
+    expect(linha.categoriaId).toBe("categoria-1");
+    expect(linha.previsto).toBe(0);
+    expect(linha.realizado).toBe(80);
+  });
+
+  it("buscarGrade não deixa receita e despesa na mesma categoria se cancelarem", async () => {
+    mockPrisma.orcamentoAnual.findFirst.mockResolvedValue({ id: "orc-1", ano: 2026 });
+    mockPrisma.orcamentoCategoriaMes.findMany.mockResolvedValue([
+      {
+        categoriaId: "categoria-1",
+        valorPrevisto: 100,
+        categoria: { id: "categoria-1", nome: "Mercado", grupo: null },
+      },
+    ]);
+    mockPrisma.transacao.findMany.mockResolvedValue([]);
+    mockPrisma.transacao.groupBy.mockResolvedValue([
+      { categoriaId: "categoria-1", tipo: "DESPESA", _sum: { valor: -500 } },
+      { categoriaId: "categoria-1", tipo: "RECEITA", _sum: { valor: 500 } },
+    ]);
+
+    const grade = await orcamentoService.buscarGrade(ESPACO_ID, "orc-1", 7);
+
+    const linha = grade.grupos[0].categorias[0];
+    expect(linha.realizado).toBe(1000);
+  });
 });

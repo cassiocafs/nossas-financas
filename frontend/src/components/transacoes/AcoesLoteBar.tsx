@@ -28,6 +28,7 @@ export function AcoesLoteBar({
 
   function invalidarEFinalizar() {
     queryClient.invalidateQueries({ queryKey: ["transacoes"] });
+    queryClient.invalidateQueries({ queryKey: ["orcamento"] });
     onDone();
   }
 

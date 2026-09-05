@@ -65,23 +65,47 @@ async function montarGrade(
     include: { categoria: { include: { grupo: true, subgrupo: true } } },
   });
 
-  const categoriaIds = itensMes.map((i) => i.categoriaId);
   const primeiroDia = primeiroDiaMesUTC(orcamento.ano, mes);
   const ultimoDia = ultimoDiaMesUTC(orcamento.ano, mes);
 
-  const realizadoPorCategoria = await prisma.transacao.groupBy({
-    by: ["categoriaId"],
+  const categoriaIdsOrcadas = new Set(itensMes.map((i) => i.categoriaId));
+
+  const transacoesForaDoOrcamento = await prisma.transacao.findMany({
     where: {
       espacoId,
-      categoriaId: { in: categoriaIds },
+      tipo: { not: "TRANSFERENCIA" },
+      categoriaId: { not: null, notIn: [...categoriaIdsOrcadas] },
+      data: { gte: primeiroDia, lte: ultimoDia },
+    },
+    select: { categoriaId: true },
+    distinct: ["categoriaId"],
+  });
+
+  const categoriasExtras = transacoesForaDoOrcamento.length > 0
+    ? await prisma.categoria.findMany({
+        where: { id: { in: transacoesForaDoOrcamento.map((t) => t.categoriaId!) } },
+        include: { grupo: true, subgrupo: true },
+      })
+    : [];
+
+  const todasCategoriaIds = [...categoriaIdsOrcadas, ...categoriasExtras.map((c) => c.id)];
+
+  const realizadoPorCategoria = await prisma.transacao.groupBy({
+    by: ["categoriaId", "tipo"],
+    where: {
+      espacoId,
+      categoriaId: { in: todasCategoriaIds },
       tipo: { not: "TRANSFERENCIA" },
       data: { gte: primeiroDia, lte: ultimoDia },
     },
     _sum: { valor: true },
   });
-  const realizadoMap = new Map(
-    realizadoPorCategoria.map((r) => [r.categoriaId, Math.abs(toNumber(r._sum.valor))]),
-  );
+  const realizadoMap = new Map<string, number>();
+  for (const r of realizadoPorCategoria) {
+    if (!r.categoriaId) continue;
+    const atual = realizadoMap.get(r.categoriaId) ?? 0;
+    realizadoMap.set(r.categoriaId, atual + Math.abs(toNumber(r._sum.valor)));
+  }
 
   interface SubgrupoBucket {
     subgrupoId: string;
@@ -106,8 +130,17 @@ async function montarGrade(
   let totalPrevisto = 0;
   let totalRealizado = 0;
 
-  for (const item of itensMes) {
-    const previsto = toNumber(item.valorPrevisto);
+  const itensParaExibir = [
+    ...itensMes.map((i) => ({
+      categoriaId: i.categoriaId,
+      valorPrevisto: toNumber(i.valorPrevisto),
+      categoria: i.categoria,
+    })),
+    ...categoriasExtras.map((c) => ({ categoriaId: c.id, valorPrevisto: 0, categoria: c })),
+  ];
+
+  for (const item of itensParaExibir) {
+    const previsto = item.valorPrevisto;
     const realizado = realizadoMap.get(item.categoriaId) ?? 0;
     totalPrevisto += previsto;
     totalRealizado += realizado;
