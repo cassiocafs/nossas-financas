@@ -30,6 +30,12 @@ const importacaoLimiter = rateLimit({
 export function createApp() {
   const app = express();
 
+  // Em produção o app roda atrás do proxy da Hostinger (LiteSpeed), que envia
+  // o IP real em X-Forwarded-For. Sem isto o express-rate-limit não consegue
+  // distinguir os clientes (agrupa todo mundo no IP do proxy) e ainda dispara
+  // um ValidationError a cada requisição.
+  app.set("trust proxy", 1);
+
   app.use(
     helmet({
       // API pura (sem HTML), consumida por frontend web e app mobile em

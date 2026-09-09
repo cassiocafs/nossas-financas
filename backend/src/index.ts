@@ -1,3 +1,4 @@
+import "./bootstrap.js";
 import { createApp } from "./app.js";
 import { env } from "./env.js";
 import { prisma } from "./lib/prisma.js";
