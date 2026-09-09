@@ -1,5 +1,4 @@
-import type { ReactNode } from "react";
-import { Card } from "@/components/ui/Card";
+import { Link } from "react-router";
 import { formatarMoeda } from "@/lib/format";
 
 type Tone = "in" | "out" | "saved";
@@ -8,38 +7,65 @@ interface StatCardProps {
   label: string;
   amount: number;
   tone: Tone;
-  icon: ReactNode;
   caption: string;
+  /** Quando presente, o card vira link (alvo ≥ 44px) para a lista de transações. */
+  href?: string;
+  /** Rótulo acessível completo; cai no `label` quando ausente. */
+  ariaLabel?: string;
+  /** Classes extras no elemento raiz (ex.: `order-*` do grid do topo). */
+  className?: string;
 }
 
-const TONES: Record<Tone, { icon: string; caption: string }> = {
-  in: { icon: "bg-income-soft text-income", caption: "bg-income-soft text-income" },
-  out: {
-    icon: "bg-yellow-accent/15 text-yellow-accent",
-    caption: "bg-yellow-accent/15 text-yellow-accent",
-  },
-  saved: { icon: "bg-income-soft text-income", caption: "bg-income-soft text-income" },
+/** Cor do número por papel. Despesa é neutra (nunca vermelha); "sobrou" negativo também. */
+const VALOR_COR: Record<Tone, string> = {
+  in: "text-income",
+  out: "text-foreground",
+  saved: "text-income",
 };
 
-/** `saved` com valor negativo usa o mesmo tom de alerta que `out`. */
-export function StatCard({ label, amount, tone, icon, caption }: StatCardProps) {
-  const efetivo: Tone = tone === "saved" && amount < 0 ? "out" : tone;
-  const cores = TONES[efetivo];
+/**
+ * Card de fluxo do topo do dashboard (spec "Topo — Opção B"): label, número e
+ * legenda empilhados. Branco, ao lado do card verde de saldo, mesma altura.
+ */
+export function StatCard({
+  label,
+  amount,
+  tone,
+  caption,
+  href,
+  ariaLabel,
+  className = "",
+}: StatCardProps) {
+  const corValor =
+    tone === "saved" && amount < 0 ? "text-foreground" : VALOR_COR[tone];
+
+  const conteudo = (
+    <>
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className={`num text-[19px] font-semibold ${corValor}`}>
+        {formatarMoeda(amount)}
+      </span>
+      <span className="text-xs text-muted-foreground">{caption}</span>
+    </>
+  );
+
+  const base = `card-surface flex min-h-[44px] flex-col gap-1.5 rounded-lg p-3.5 ${className}`;
+
+  if (href) {
+    return (
+      <Link
+        to={href}
+        aria-label={ariaLabel ?? label}
+        className={`${base} transition-[box-shadow,transform] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] hover:-translate-y-0.5 hover:shadow-lift focus-visible:shadow-[0_0_0_3px_rgba(31,163,74,0.35)] focus-visible:outline-none`}
+      >
+        {conteudo}
+      </Link>
+    );
+  }
 
   return (
-    <Card className="flex flex-col items-start gap-2 p-5">
-      <div className="flex items-center gap-2.5">
-        <span className={`grid size-8 place-items-center rounded-[10px] ${cores.icon}`}>
-          {icon}
-        </span>
-        <span className="text-sm font-medium text-muted-foreground">{label}</span>
-      </div>
-      <p className="num text-[26px] font-bold tracking-tight text-foreground">
-        {formatarMoeda(amount)}
-      </p>
-      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${cores.caption}`}>
-        {caption}
-      </span>
-    </Card>
+    <article aria-label={ariaLabel} className={base}>
+      {conteudo}
+    </article>
   );
 }

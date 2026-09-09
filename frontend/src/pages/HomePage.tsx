@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, ArrowDownLeft, ArrowUpRight, TrendingUp, CircleAlert, Plane, PiggyBank } from "lucide-react";
+import { Plus, CircleAlert, Plane, PiggyBank } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { buscarEvolucaoSaldo, buscarResumoMensal, type PeriodoMes } from "@/api/transacoes";
@@ -37,13 +37,23 @@ function subtrairMeses(periodo: PeriodoMes, quantidade: number): PeriodoMes {
   return { ano: data.getUTCFullYear(), mes: data.getUTCMonth() + 1 };
 }
 
-function variacaoTexto(atual: number, anterior: number): string {
-  if (anterior === 0) return "sem dado do mês anterior";
-  const percentual = ((atual - anterior) / Math.abs(anterior)) * 100;
-  const sinalPercentual = percentual >= 0 ? "+" : "";
-  const delta = atual - anterior;
-  const sinalDelta = delta >= 0 ? "+" : "";
-  return `${sinalPercentual}${percentual.toFixed(1).replace(".", ",")}% · ${sinalDelta}${formatarMoeda(delta)}`;
+/** Legenda curta do card do topo (só a variação percentual contra o mês anterior). */
+function variacaoPercentual(atual: number, anterior: number): string {
+  if (anterior === 0) return "sem base de comparação";
+  const pct = ((atual - anterior) / Math.abs(anterior)) * 100;
+  const arredondado = Number(pct.toFixed(1));
+  const sinal = arredondado > 0 ? "+" : arredondado < 0 ? "−" : "";
+  return `${sinal}${Math.abs(arredondado).toFixed(1).replace(".", ",")}%`;
+}
+
+/** Descrição da variação para leitores de tela (não depende de ícone de direção). */
+function variacaoDescritiva(atual: number, anterior: number): string {
+  if (anterior === 0) return "sem comparação com o mês anterior";
+  const pct = ((atual - anterior) / Math.abs(anterior)) * 100;
+  const arredondado = Number(pct.toFixed(1));
+  if (arredondado === 0) return "estável ante o mês anterior";
+  const direcao = arredondado > 0 ? "alta" : "queda";
+  return `${direcao} de ${Math.abs(arredondado).toFixed(1).replace(".", ",")}% ante o mês anterior`;
 }
 
 export function HomePage() {
@@ -139,51 +149,63 @@ export function HomePage() {
       {temDados && data && (
         <div className="grid items-start gap-6 lg:grid-cols-[1fr_372px]">
           <div className="flex min-w-0 flex-col gap-6">
-            <FinancialCard
-              label="Seu saldo nas contas"
-              amount={patrimonio}
-              action={{ label: "Ver extrato", onClick: () => {} }}
-              footer={{
-                label: `Saldo anterior (${MESES[anterior.mes - 1].toLowerCase()} ${anterior.ano}) ·`,
-                value: data.saldoAnterior,
-              }}
-            />
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <StatCard
-                label={`Entrou em ${MESES[mes - 1].toLowerCase()}`}
-                amount={data.totalEntradas}
-                tone="in"
-                icon={<ArrowDownLeft className="size-4" />}
-                caption={
-                  resumoAnterior
-                    ? variacaoTexto(data.totalEntradas, resumoAnterior.totalEntradas)
-                    : "…"
-                }
-              />
-              <StatCard
-                label={`Saiu em ${MESES[mes - 1].toLowerCase()}`}
-                amount={data.totalSaidas}
-                tone="out"
-                icon={<ArrowUpRight className="size-4" />}
-                caption={
-                  resumoAnterior
-                    ? variacaoTexto(data.totalSaidas, resumoAnterior.totalSaidas)
-                    : "…"
-                }
-              />
-              <StatCard
-                label="Sobrou"
-                amount={resultado}
-                tone="saved"
-                icon={<TrendingUp className="size-4" />}
-                caption={
-                  data.totalEntradas > 0
-                    ? `${((resultado / data.totalEntradas) * 100).toFixed(1).replace(".", ",")}% do que entrou`
-                    : "—"
-                }
-              />
-            </div>
+            {(() => {
+              const mesNome = MESES[mes - 1].toLowerCase();
+              const deltaSaldo = data.saldoAnterior ? patrimonio - data.saldoAnterior : null;
+              const pctSobrou =
+                data.totalEntradas > 0
+                  ? `${((resultado / data.totalEntradas) * 100).toFixed(1).replace(".", ",")}%`
+                  : "—";
+              return (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-[1.35fr_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                  <div className="order-1 sm:col-span-3 lg:col-span-1">
+                    <FinancialCard
+                      label="Saldo nas contas"
+                      amount={patrimonio}
+                      delta={
+                        deltaSaldo === null
+                          ? undefined
+                          : `${deltaSaldo >= 0 ? "+" : "−"}${formatarMoeda(Math.abs(deltaSaldo))}`
+                      }
+                    />
+                  </div>
+                  <StatCard
+                    className="order-3 sm:order-2"
+                    label="Entrou"
+                    amount={data.totalEntradas}
+                    tone="in"
+                    href={`/transacoes?ano=${ano}&mes=${mes}`}
+                    ariaLabel={`Entrou em ${mesNome}, ${formatarMoeda(data.totalEntradas)}${resumoAnterior ? `, ${variacaoDescritiva(data.totalEntradas, resumoAnterior.totalEntradas)}` : ""}`}
+                    caption={
+                      resumoAnterior
+                        ? variacaoPercentual(data.totalEntradas, resumoAnterior.totalEntradas)
+                        : "…"
+                    }
+                  />
+                  <StatCard
+                    className="order-4 sm:order-3"
+                    label="Saiu"
+                    amount={data.totalSaidas}
+                    tone="out"
+                    href={`/transacoes?ano=${ano}&mes=${mes}`}
+                    ariaLabel={`Saiu em ${mesNome}, ${formatarMoeda(data.totalSaidas)}${resumoAnterior ? `, ${variacaoDescritiva(data.totalSaidas, resumoAnterior.totalSaidas)}` : ""}`}
+                    caption={
+                      resumoAnterior
+                        ? variacaoPercentual(data.totalSaidas, resumoAnterior.totalSaidas)
+                        : "…"
+                    }
+                  />
+                  <StatCard
+                    className="order-2 sm:order-4"
+                    label="Sobrou"
+                    amount={resultado}
+                    tone="saved"
+                    ariaLabel={`Sobrou em ${mesNome}, ${formatarMoeda(resultado)}, ${pctSobrou} do que entrou`}
+                    caption={pctSobrou}
+                  />
+                </div>
+              );
+            })()}
 
             <FluxoCaixaChart ano={ano} mes={mes} contaIds={contaIds} />
 
