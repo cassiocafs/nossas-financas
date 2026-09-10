@@ -12,6 +12,7 @@ import { transacoesRouter } from "./modules/transacoes/transacoes.routes.js";
 import { orcamentoRouter } from "./modules/orcamento/orcamento.routes.js";
 import { importacaoRouter } from "./modules/importacao/importacao.routes.js";
 import { regrasRouter } from "./modules/regras/regras.routes.js";
+import { metasRouter } from "./modules/metas/metas.routes.js";
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -62,6 +63,7 @@ export function createApp() {
   app.use("/api/orcamento", orcamentoRouter);
   app.use("/api/importacoes", importacaoLimiter, importacaoRouter);
   app.use("/api/regras", regrasRouter);
+  app.use("/api/metas", metasRouter);
 
   app.use(errorHandler);
 

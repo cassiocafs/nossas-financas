@@ -11,6 +11,7 @@ import {
   editarTransacaoSchema,
   evolucaoSaldoQuerySchema,
   fluxoCaixaQuerySchema,
+  relatorioQuerySchema,
   excluirLoteSchema,
   listarTransacoesQuerySchema,
   resumoQuerySchema,
@@ -43,6 +44,20 @@ transacoesRouter.get(
       contaIds,
     );
     res.json(evolucao);
+  }),
+);
+
+transacoesRouter.get(
+  "/relatorio",
+  asyncHandler(async (req, res) => {
+    const q = relatorioQuerySchema.parse(req.query);
+    const relatorio = await transacoesService.buscarRelatorio(
+      req.espacoId!,
+      { ano: q.anoInicio, mes: q.mesInicio },
+      { ano: q.anoFim, mes: q.mesFim },
+      { contaIds: q.contaIds, tipo: q.tipo },
+    );
+    res.json(relatorio);
   }),
 );
 

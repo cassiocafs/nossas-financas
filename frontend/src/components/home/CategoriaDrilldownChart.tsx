@@ -4,98 +4,8 @@ import { type ItemCategoriaResumo } from "@/api/transacoes";
 import { formatarMoeda } from "@/lib/format";
 import { OUTROS_COR } from "@/lib/chartPalette";
 import { categoryColor } from "@/lib/categoryColor";
+import { itensDoNivel, type ItemGrafico, type Nivel } from "@/lib/categoriaNiveis";
 import { TransacoesDaCategoria } from "@/components/transacoes/TransacoesDaCategoria";
-
-type Nivel =
-  | { tipo: "raiz" }
-  | { tipo: "grupo"; id: string; nome: string }
-  | { tipo: "subgrupo"; grupoId: string; id: string; nome: string }
-  | { tipo: "outros"; nome: string; itens: ItemGrafico[] };
-
-interface ItemGrafico {
-  chave: string;
-  nome: string;
-  total: number;
-  folha: boolean;
-  categoriaId?: string | null;
-  proximoNivel?: Nivel;
-}
-
-function itensDoNivel(dados: ItemCategoriaResumo[], nivel: Nivel): ItemGrafico[] {
-  if (nivel.tipo === "outros") {
-    return nivel.itens;
-  }
-
-  if (nivel.tipo === "raiz") {
-    const porGrupo = new Map<string, { nome: string; total: number }>();
-    const soltos: ItemGrafico[] = [];
-    for (const item of dados) {
-      if (item.grupoId) {
-        const atual = porGrupo.get(item.grupoId) ?? { nome: item.grupoNome ?? "", total: 0 };
-        atual.total += item.total;
-        porGrupo.set(item.grupoId, atual);
-      } else {
-        soltos.push({
-          chave: item.categoriaId ?? "sem-categoria",
-          nome: item.categoriaNome,
-          total: item.total,
-          folha: true,
-          categoriaId: item.categoriaId,
-        });
-      }
-    }
-    const grupos: ItemGrafico[] = Array.from(porGrupo.entries()).map(([id, v]) => ({
-      chave: id,
-      nome: v.nome,
-      total: v.total,
-      folha: false,
-      proximoNivel: { tipo: "grupo", id, nome: v.nome },
-    }));
-    return [...grupos, ...soltos];
-  }
-
-  if (nivel.tipo === "grupo") {
-    const doGrupo = dados.filter((d) => d.grupoId === nivel.id);
-    const porSubgrupo = new Map<string, { nome: string; total: number }>();
-    const soltos: ItemGrafico[] = [];
-    for (const item of doGrupo) {
-      if (item.subgrupoId) {
-        const atual = porSubgrupo.get(item.subgrupoId) ?? {
-          nome: item.subgrupoNome ?? "",
-          total: 0,
-        };
-        atual.total += item.total;
-        porSubgrupo.set(item.subgrupoId, atual);
-      } else {
-        soltos.push({
-          chave: item.categoriaId ?? "sem-categoria",
-          nome: item.categoriaNome,
-          total: item.total,
-          folha: true,
-          categoriaId: item.categoriaId,
-        });
-      }
-    }
-    const subgrupos: ItemGrafico[] = Array.from(porSubgrupo.entries()).map(([id, v]) => ({
-      chave: id,
-      nome: v.nome,
-      total: v.total,
-      folha: false,
-      proximoNivel: { tipo: "subgrupo", grupoId: nivel.id, id, nome: v.nome },
-    }));
-    return [...subgrupos, ...soltos];
-  }
-
-  return dados
-    .filter((d) => d.subgrupoId === nivel.id)
-    .map((item) => ({
-      chave: item.categoriaId ?? "sem-categoria",
-      nome: item.categoriaNome,
-      total: item.total,
-      folha: true,
-      categoriaId: item.categoriaId,
-    }));
-}
 
 interface CategoriaDrilldownChartProps {
   dados: ItemCategoriaResumo[];
@@ -103,11 +13,29 @@ interface CategoriaDrilldownChartProps {
   ano: number;
   mes: number;
   contaIds?: string[];
+  /**
+   * Rótulo do período (ex.: "abr–set/2025"). Quando presente, substitui o
+   * "de setembro" mensal nos subtítulos — uso em Relatórios, que cobre um intervalo.
+   */
+  periodoLabel?: string;
+  /**
+   * Quando informado, o clique numa categoria folha delega para o callback em vez
+   * de renderizar a lista mensal `TransacoesDaCategoria` (que não serve para intervalo).
+   */
+  onSelecionarCategoria?: (categoria: { id: string | null; nome: string }) => void;
 }
 
 const LIMITE_FATIAS = 8;
 
-export function CategoriaDrilldownChart({ dados, tipo, ano, mes, contaIds }: CategoriaDrilldownChartProps) {
+export function CategoriaDrilldownChart({
+  dados,
+  tipo,
+  ano,
+  mes,
+  contaIds,
+  periodoLabel,
+  onSelecionarCategoria,
+}: CategoriaDrilldownChartProps) {
   const [pilha, setPilha] = useState<Nivel[]>([{ tipo: "raiz" }]);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<{
     id: string | null;
@@ -164,6 +92,10 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes, contaIds }: Cat
       setCategoriaSelecionada(null);
       return;
     }
+    if (onSelecionarCategoria) {
+      onSelecionarCategoria({ id: item.categoriaId ?? null, nome: item.nome });
+      return;
+    }
     setCategoriaSelecionada({ id: item.categoriaId ?? null, nome: item.nome });
   }
 
@@ -178,10 +110,11 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes, contaIds }: Cat
     new Date(Date.UTC(ano, mes - 1, 1)),
   );
   const nivel1Titulo = tipo === "DESPESA" ? "Para onde foi" : "De onde veio";
+  const periodoTexto = periodoLabel ?? `de ${nomeMes}`;
   const nivel1Subtitulo =
     tipo === "DESPESA"
-      ? `Despesas de ${nomeMes} por categoria`
-      : `Receitas de ${nomeMes} por origem`;
+      ? `Despesas ${periodoTexto} por categoria`
+      : `Receitas ${periodoTexto} por origem`;
   const voltarTexto = tipo === "DESPESA" ? "← Todas as categorias" : "← Todas as origens";
   const emNivel1 = pilha.length === 1 && !categoriaSelecionada;
   const nivelAtualNome = nivelAtual.tipo === "raiz" ? "" : nivelAtual.nome;

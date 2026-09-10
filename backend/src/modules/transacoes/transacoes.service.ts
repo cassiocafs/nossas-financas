@@ -41,7 +41,7 @@ const CATEGORIA_RESUMO_INCLUDE = {
   },
 } satisfies Prisma.TransacaoInclude;
 
-interface ItemCategoriaResumo {
+export interface ItemCategoriaResumo {
   categoriaId: string | null;
   categoriaNome: string;
   grupoId: string | null;
@@ -720,6 +720,168 @@ export async function buscarEvolucaoSaldo(
   }
 
   return evolucao;
+}
+
+export interface RelatorioMes {
+  ano: number;
+  mes: number;
+  receitas: number;
+  despesas: number;
+  resultado: number;
+}
+
+export interface RelatorioResponse {
+  periodo: {
+    inicio: { ano: number; mes: number };
+    fim: { ano: number; mes: number };
+  };
+  meses: RelatorioMes[];
+  totais: { receitas: number; despesas: number; resultado: number };
+  despesasPorCategoria: ItemCategoriaResumo[];
+  receitasPorCategoria: ItemCategoriaResumo[];
+}
+
+export async function buscarRelatorio(
+  espacoId: string,
+  inicio: { ano: number; mes: number },
+  fim: { ano: number; mes: number },
+  opts?: { contaIds?: string[]; tipo?: "DESPESA" | "RECEITA" },
+): Promise<RelatorioResponse> {
+  return comTempo(
+    "buscarRelatorio",
+    { espacoId, inicio: `${inicio.ano}-${inicio.mes}`, fim: `${fim.ano}-${fim.mes}` },
+    () => buscarRelatorioImpl(espacoId, inicio, fim, opts),
+  );
+}
+
+async function buscarRelatorioImpl(
+  espacoId: string,
+  inicio: { ano: number; mes: number },
+  fim: { ano: number; mes: number },
+  opts?: { contaIds?: string[]; tipo?: "DESPESA" | "RECEITA" },
+): Promise<RelatorioResponse> {
+  const contas = await resolverContasEmEscopo(espacoId, opts?.contaIds);
+  const contaIdsEmEscopo = contas.map((c) => c.id);
+
+  const sequencia = sequenciaMeses(inicio.ano, inicio.mes, fim.ano, fim.mes);
+  const primeiroDia = primeiroDiaMesUTC(inicio.ano, inicio.mes);
+  const ultimoDia = ultimoDiaMesUTC(fim.ano, fim.mes);
+
+  const whereBase = {
+    espacoId,
+    contaId: { in: contaIdsEmEscopo },
+    data: { gte: primeiroDia, lte: ultimoDia },
+  };
+
+  // (1) Árvore de categorias — agregado do intervalo inteiro, no Postgres.
+  // (2) Série mensal — soma por dia e tipo, bucketizada em meses no JS.
+  const [porCategoria, porDia] = await Promise.all([
+    prisma.transacao.groupBy({
+      by: ["categoriaId", "tipo"],
+      where: {
+        ...whereBase,
+        tipo: opts?.tipo ? opts.tipo : { in: ["DESPESA", "RECEITA"] },
+      },
+      _sum: { valor: true },
+    }),
+    prisma.transacao.groupBy({
+      by: ["data", "tipo"],
+      where: { ...whereBase, tipo: { in: ["DESPESA", "RECEITA"] } },
+      _sum: { valor: true },
+    }),
+  ]);
+
+  const categoriaIds = [
+    ...new Set(
+      porCategoria
+        .map((l) => l.categoriaId)
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+  const categorias =
+    categoriaIds.length > 0
+      ? await prisma.categoria.findMany({
+          where: { id: { in: categoriaIds } },
+          select: {
+            id: true,
+            nome: true,
+            grupoId: true,
+            grupo: { select: { nome: true } },
+            subgrupoId: true,
+            subgrupo: { select: { nome: true } },
+          },
+        })
+      : [];
+  const categoriaPorId = new Map(categorias.map((c) => [c.id, c]));
+
+  const despesasMap = new Map<string, ItemCategoriaResumo>();
+  const receitasMap = new Map<string, ItemCategoriaResumo>();
+
+  for (const linha of porCategoria) {
+    const valorAbs = Math.abs(toNumber(linha._sum.valor));
+    if (valorAbs === 0) continue;
+
+    const cat = linha.categoriaId ? categoriaPorId.get(linha.categoriaId) : undefined;
+    // Guard legado: categoria chamada "Transferência" não entra na árvore,
+    // exatamente como `buscarResumoMensal` faz.
+    if (cat?.nome === NOME_CATEGORIA_TRANSFERENCIA) continue;
+
+    const mapa = linha.tipo === "DESPESA" ? despesasMap : receitasMap;
+    const chave = linha.categoriaId ?? "sem-categoria";
+    const atual = mapa.get(chave);
+    if (atual) {
+      atual.total += valorAbs;
+    } else {
+      mapa.set(chave, {
+        categoriaId: linha.categoriaId,
+        categoriaNome: cat?.nome ?? "Sem Categoria",
+        grupoId: cat?.grupoId ?? null,
+        grupoNome: cat?.grupo?.nome ?? null,
+        subgrupoId: cat?.subgrupoId ?? null,
+        subgrupoNome: cat?.subgrupo?.nome ?? null,
+        total: valorAbs,
+      });
+    }
+  }
+
+  const chave = (ano: number, mes: number) => `${ano}-${mes}`;
+  const baldes = new Map<string, RelatorioMes>();
+  for (const { ano, mes } of sequencia) {
+    baldes.set(chave(ano, mes), { ano, mes, receitas: 0, despesas: 0, resultado: 0 });
+  }
+  for (const linha of porDia) {
+    const ano = linha.data.getUTCFullYear();
+    const mes = linha.data.getUTCMonth() + 1;
+    const balde = baldes.get(chave(ano, mes));
+    if (!balde) continue;
+    const valorAbs = Math.abs(toNumber(linha._sum.valor));
+    if (linha.tipo === "RECEITA") balde.receitas += valorAbs;
+    else balde.despesas += valorAbs;
+  }
+
+  const meses = sequencia.map(({ ano, mes }) => {
+    const balde = baldes.get(chave(ano, mes))!;
+    balde.resultado = balde.receitas - balde.despesas;
+    return balde;
+  });
+
+  const totais = meses.reduce(
+    (acc, m) => ({
+      receitas: acc.receitas + m.receitas,
+      despesas: acc.despesas + m.despesas,
+      resultado: 0,
+    }),
+    { receitas: 0, despesas: 0, resultado: 0 },
+  );
+  totais.resultado = totais.receitas - totais.despesas;
+
+  return {
+    periodo: { inicio, fim },
+    meses,
+    totais,
+    despesasPorCategoria: opts?.tipo === "RECEITA" ? [] : Array.from(despesasMap.values()),
+    receitasPorCategoria: opts?.tipo === "DESPESA" ? [] : Array.from(receitasMap.values()),
+  };
 }
 
 export interface PontoFluxoCaixa {

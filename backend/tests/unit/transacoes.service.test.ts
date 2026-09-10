@@ -291,6 +291,74 @@ describe("transacoes.service — lote", () => {
   });
 });
 
+describe("transacoes.service — buscarRelatorio", () => {
+  it("agrega a árvore por categoria e a série mensal, aplicando o guard de transferência", async () => {
+    mockPrisma.conta.findMany.mockResolvedValue([{ id: "conta-1", saldoInicial: 0 }]);
+
+    // (1) groupBy por ["categoriaId", "tipo"]  (2) groupBy por ["data", "tipo"]
+    mockPrisma.transacao.groupBy
+      .mockResolvedValueOnce([
+        { categoriaId: "cat-mercado", tipo: "DESPESA", _sum: { valor: -300 } },
+        { categoriaId: "cat-transf", tipo: "DESPESA", _sum: { valor: -999 } },
+        { categoriaId: null, tipo: "DESPESA", _sum: { valor: -50 } },
+        { categoriaId: "cat-salario", tipo: "RECEITA", _sum: { valor: 5000 } },
+      ])
+      .mockResolvedValueOnce([
+        { data: new Date("2026-05-10T00:00:00.000Z"), tipo: "DESPESA", _sum: { valor: -200 } },
+        { data: new Date("2026-05-15T00:00:00.000Z"), tipo: "RECEITA", _sum: { valor: 5000 } },
+        { data: new Date("2026-06-02T00:00:00.000Z"), tipo: "DESPESA", _sum: { valor: -150 } },
+      ]);
+
+    mockPrisma.categoria.findMany.mockResolvedValue([
+      {
+        id: "cat-mercado",
+        nome: "Mercado",
+        grupoId: "g-casa",
+        grupo: { nome: "Casa" },
+        subgrupoId: null,
+        subgrupo: null,
+      },
+      {
+        id: "cat-transf",
+        nome: "Transferência",
+        grupoId: null,
+        grupo: null,
+        subgrupoId: null,
+        subgrupo: null,
+      },
+      {
+        id: "cat-salario",
+        nome: "Salário",
+        grupoId: "g-renda",
+        grupo: { nome: "Renda" },
+        subgrupoId: null,
+        subgrupo: null,
+      },
+    ]);
+
+    const resultado = await transacoesService.buscarRelatorio(
+      ESPACO_ID,
+      { ano: 2026, mes: 5 },
+      { ano: 2026, mes: 6 },
+    );
+
+    expect(resultado.meses).toEqual([
+      { ano: 2026, mes: 5, receitas: 5000, despesas: 200, resultado: 4800 },
+      { ano: 2026, mes: 6, receitas: 0, despesas: 150, resultado: -150 },
+    ]);
+    expect(resultado.totais).toEqual({ receitas: 5000, despesas: 350, resultado: 4650 });
+
+    // "Transferência" legada não entra; "Sem Categoria" entra.
+    expect(resultado.despesasPorCategoria).toEqual([
+      expect.objectContaining({ categoriaId: "cat-mercado", categoriaNome: "Mercado", total: 300 }),
+      expect.objectContaining({ categoriaId: null, categoriaNome: "Sem Categoria", total: 50 }),
+    ]);
+    expect(resultado.receitasPorCategoria).toEqual([
+      expect.objectContaining({ categoriaId: "cat-salario", total: 5000 }),
+    ]);
+  });
+});
+
 describe("transacoes.service — buscarEvolucaoSaldo", () => {
   it("acumula o saldo base com as transações de cada mês, mês a mês", async () => {
     mockPrisma.conta.findMany.mockResolvedValue([{ id: "conta-1", saldoInicial: 1000 }]);

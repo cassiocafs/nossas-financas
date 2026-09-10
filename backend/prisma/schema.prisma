@@ -31,6 +31,7 @@ model EspacoFinanceiro {
   convites           Convite[]
   seriesRecorrencia  SerieRecorrencia[]
   regrasTransacao    RegraTransacao[]
+  metas              Meta[]
 }
 
 enum PapelMembro {
@@ -242,6 +243,40 @@ model Transacao {
   @@index([categoriaId])
   @@index([serieId])
   @@index([transferenciaGrupoId])
+}
+
+model Meta {
+  id           String           @id @default(uuid())
+  espacoId     String
+  nome         String
+  emoji        String?
+  valorAlvo    Decimal          @db.Decimal(14, 2)
+  dataAlvo     DateTime?        @db.Date
+  concluidaEm  DateTime?
+  arquivada    Boolean          @default(false)
+  ordem        Int              @default(0)
+  criadoEm     DateTime         @default(now())
+  atualizadoEm DateTime         @updatedAt
+
+  espaco  EspacoFinanceiro @relation(fields: [espacoId], references: [id])
+  aportes AporteMeta[]
+
+  @@index([espacoId])
+}
+
+model AporteMeta {
+  id       String   @id @default(uuid())
+  metaId   String
+  espacoId String
+  valor    Decimal  @db.Decimal(14, 2)
+  data     DateTime @db.Date
+  nota     String?
+  criadoEm DateTime @default(now())
+
+  meta Meta @relation(fields: [metaId], references: [id], onDelete: Cascade)
+
+  @@index([metaId])
+  @@index([espacoId])
 }
 
 model OrcamentoAnual {

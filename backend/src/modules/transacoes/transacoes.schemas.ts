@@ -84,6 +84,25 @@ export const evolucaoSaldoQuerySchema = z
     path: ["anoInicio"],
   });
 
+export const relatorioQuerySchema = z
+  .object({
+    anoInicio: z.coerce.number().int(),
+    mesInicio: z.coerce.number().int().min(1).max(12),
+    anoFim: z.coerce.number().int(),
+    mesFim: z.coerce.number().int().min(1).max(12),
+    contaIds: contaIdsSchema,
+    tipo: tipoTransacaoSchema.optional(),
+  })
+  .refine((v) => v.anoInicio * 12 + v.mesInicio <= v.anoFim * 12 + v.mesFim, {
+    message: "Início deve ser anterior ou igual ao fim",
+    path: ["anoInicio"],
+  })
+  .refine(
+    (v) => v.anoFim * 12 + v.mesFim - (v.anoInicio * 12 + v.mesInicio) <= 23,
+    { message: "Período máximo de 24 meses", path: ["anoFim"] },
+  );
+export type RelatorioQuery = z.infer<typeof relatorioQuerySchema>;
+
 export const fluxoCaixaQuerySchema = z.object({
   ano: z.coerce.number().int(),
   mes: z.coerce.number().int().min(1).max(12),

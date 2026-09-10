@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, CircleAlert, Plane, PiggyBank } from "lucide-react";
+import { Plus, CircleAlert } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { buscarEvolucaoSaldo, buscarResumoMensal, type PeriodoMes } from "@/api/transacoes";
@@ -18,8 +18,8 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { FinancialCard } from "@/components/ui/FinancialCard";
 import { StatCard } from "@/components/ui/StatCard";
-import { GoalCard } from "@/components/ui/GoalCard";
 import { InsightCard } from "@/components/ui/InsightCard";
+import { MetasResumo } from "@/components/home/MetasResumo";
 import { useFormatarValor } from "@/hooks/use-formatar-valor";
 import { useInsightMensal } from "@/hooks/use-insight-mensal";
 import type { InsightCta } from "@/lib/insights";
@@ -276,33 +276,7 @@ export function HomePage() {
               />
             </Card>
 
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="font-display text-sm font-semibold text-foreground">Suas metas</h3>
-                <button
-                  type="button"
-                  className="text-xs font-semibold text-primary hover:underline"
-                >
-                  + Nova
-                </button>
-              </div>
-              <div className="flex flex-col gap-3">
-                <GoalCard
-                  name="Viagem para o Chile"
-                  icon={<Plane className="size-4" />}
-                  current={6250}
-                  target={8000}
-                  note="Faltam R$ 1.750 para realizar."
-                />
-                <GoalCard
-                  name="Reserva de emergência"
-                  icon={<PiggyBank className="size-4" />}
-                  current={11700}
-                  target={18000}
-                  note="Você está mais perto da sua meta."
-                />
-              </div>
-            </div>
+            <MetasResumo />
           </div>
         </div>
       )}
