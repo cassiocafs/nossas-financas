@@ -20,7 +20,7 @@ export function InsightCard({ children, cta, onPressCta }: InsightCardProps) {
   return (
     <Card variant="feature" style={[styles.card, { backgroundColor: theme.cream, borderColor: theme.border }]}>
       <View style={styles.row}>
-        <Mascot state="thinking" size={56} />
+        <Mascot state="thinking" size={88} />
         <ThemedText type="small" themeColor="text" style={styles.text}>
           {children}
         </ThemedText>

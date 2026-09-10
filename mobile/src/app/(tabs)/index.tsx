@@ -14,10 +14,13 @@ import { InsightCard } from '@/components/ui/InsightCard';
 import { StatCard } from '@/components/ui/StatCard';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFormatarValor } from '@/hooks/use-formatar-valor';
 import { useInsightMensal } from '@/hooks/use-insight-mensal';
 import { useSyncQueue } from '@/hooks/use-sync-queue';
 import { useTheme } from '@/hooks/use-theme';
+import { subtrairMeses } from '@/lib/date';
 import { aplicarPendenciasEmResumo } from '@/lib/saldosPendentes';
+import { captionSobrou, variacaoTopoCaption } from '@/lib/variacao';
 
 const MESES = [
   'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -36,12 +39,19 @@ function nomeDeExibicao(email: string | undefined, nomeCompleto: unknown): strin
 
 export default function InicioScreen() {
   const theme = useTheme();
+  const formatarValor = useFormatarValor();
   const { session } = useAuth();
   const { ano, mes } = hoje();
+  const anterior = useMemo(() => subtrairMeses({ ano, mes }, 1), [ano, mes]);
 
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['transacoes', 'resumo', ano, mes],
     queryFn: () => buscarResumoMensal(ano, mes),
+  });
+
+  const { data: resumoAnterior } = useQuery({
+    queryKey: ['transacoes', 'resumo', anterior.ano, anterior.mes],
+    queryFn: () => buscarResumoMensal(anterior.ano, anterior.mes),
   });
 
   const insight = useInsightMensal(ano, mes);
@@ -50,6 +60,7 @@ export default function InicioScreen() {
 
   const nome = nomeDeExibicao(session?.user?.email, session?.user?.user_metadata?.nome);
   const economia = resumo ? resumo.totalEntradas - resumo.totalSaidas : 0;
+  const mesNome = MESES[mes - 1];
 
   return (
     <ThemedView type="background" style={styles.container}>
@@ -59,7 +70,7 @@ export default function InicioScreen() {
           refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={theme.primary} />}>
           <AppHeader
             greeting={nome ? `Oi, ${nome} 👋` : 'Oi 👋'}
-            subtitle={`Vamos olhar ${MESES[mes - 1]}?`}
+            subtitle={`Vamos olhar ${mesNome}?`}
           />
 
           {isLoading || !resumo ? (
@@ -68,12 +79,43 @@ export default function InicioScreen() {
             </ThemedText>
           ) : (
             <>
-              <FinancialCard />
+              <FinancialCard
+                footer={{
+                  label: `Saldo anterior (${MESES[anterior.mes - 1]} ${anterior.ano}) ·`,
+                  value: resumo.saldoAnterior,
+                }}
+              />
 
               <View style={styles.statRow}>
-                <StatCard label="Entrou" value={resumo.totalEntradas} tone="in" style={styles.stat} />
-                <StatCard label="Saiu" value={-Math.abs(resumo.totalSaidas)} tone="out" style={styles.stat} />
-                <StatCard label="Sobrou" value={economia} tone="saved" style={styles.stat} />
+                <StatCard
+                  label={`Entrou em ${mesNome}`}
+                  value={resumo.totalEntradas}
+                  tone="in"
+                  caption={
+                    resumoAnterior
+                      ? variacaoTopoCaption(resumo.totalEntradas, resumoAnterior.totalEntradas, formatarValor)
+                      : '…'
+                  }
+                  style={styles.stat}
+                />
+                <StatCard
+                  label={`Saiu em ${mesNome}`}
+                  value={-Math.abs(resumo.totalSaidas)}
+                  tone="out"
+                  caption={
+                    resumoAnterior
+                      ? variacaoTopoCaption(resumo.totalSaidas, resumoAnterior.totalSaidas, formatarValor)
+                      : '…'
+                  }
+                  style={styles.stat}
+                />
+                <StatCard
+                  label="Sobrou"
+                  value={economia}
+                  tone="saved"
+                  caption={captionSobrou(economia, resumo.totalEntradas)}
+                  style={styles.stat}
+                />
               </View>
 
               {insight ? <InsightCard>{insight.texto}</InsightCard> : null}

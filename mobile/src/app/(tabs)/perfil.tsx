@@ -117,6 +117,30 @@ export default function PerfilScreen() {
 
           <Card padded={false} style={styles.acoesCard}>
             <Pressable
+              onPress={() => router.push('/contas')}
+              style={[styles.acaoLinha, { borderBottomColor: theme.border }]}>
+              <ThemedView style={[styles.acaoIcone, { backgroundColor: theme.surface }]}>
+                <Feather name="credit-card" size={16} color={theme.primary} />
+              </ThemedView>
+              <ThemedText type="default" style={styles.acaoTexto}>
+                Contas
+              </ThemedText>
+              <Feather name="chevron-right" size={18} color={theme.textTertiary} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => router.push('/categorias')}
+              style={[styles.acaoLinha, { borderBottomColor: theme.border }]}>
+              <ThemedView style={[styles.acaoIcone, { backgroundColor: theme.surface }]}>
+                <Feather name="tag" size={16} color={theme.primary} />
+              </ThemedView>
+              <ThemedText type="default" style={styles.acaoTexto}>
+                Categorias e subcategorias
+              </ThemedText>
+              <Feather name="chevron-right" size={18} color={theme.textTertiary} />
+            </Pressable>
+
+            <Pressable
               onPress={() => setRegrasAberto(true)}
               style={[styles.acaoLinha, { borderBottomColor: theme.border }]}>
               <ThemedView style={[styles.acaoIcone, { backgroundColor: theme.surface }]}>

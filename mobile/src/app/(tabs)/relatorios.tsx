@@ -1,13 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { buscarRelatorio } from '@/api/relatorios';
 import { buscarEvolucaoSaldo, buscarResumoMensal, type ItemCategoriaResumo, type PeriodoMes } from '@/api/transacoes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { CategoriaDrilldownChart } from '@/components/relatorios/CategoriaDrilldownChart';
 import { EvolucaoSaldoChart } from '@/components/relatorios/EvolucaoSaldoChart';
+import { PrevistoRealizadoChart } from '@/components/relatorios/PrevistoRealizadoChart';
+import { ReceitaDespesaChart } from '@/components/relatorios/ReceitaDespesaChart';
 import { RelatoriosFiltrosModal } from '@/components/relatorios/RelatoriosFiltrosModal';
 import { MesNavigator } from '@/components/transacoes/MesNavigator';
 import { AppHeader } from '@/components/ui/AppHeader';
@@ -65,6 +68,15 @@ export default function RelatoriosScreen() {
     queryFn: () => buscarEvolucaoSaldo(evolucaoInicio, evolucaoFim, contaIds.length > 0 ? contaIds : undefined),
   });
 
+  const relatorioInicio = useMemo<PeriodoMes>(() => subtrairMeses({ ano, mes }, 35), [ano, mes]);
+  const { data: relatorio } = useQuery({
+    queryKey: ['transacoes', 'relatorio', relatorioInicio.ano, relatorioInicio.mes, ano, mes, contaIds],
+    queryFn: () =>
+      buscarRelatorio(relatorioInicio, { ano, mes }, {
+        contaIds: contaIds.length > 0 ? contaIds : undefined,
+      }),
+  });
+
   function mudarMes(novoAno: number, novoMes: number) {
     setAno(novoAno);
     setMes(novoMes);
@@ -116,6 +128,8 @@ export default function RelatoriosScreen() {
                 mes={mes}
               />
 
+              {relatorio && <ReceitaDespesaChart meses={relatorio.meses} />}
+
               {evolucaoSaldo && (
                 <EvolucaoSaldoChart
                   dados={evolucaoSaldo}
@@ -125,6 +139,8 @@ export default function RelatoriosScreen() {
                   onChangeFim={(novoAno, novoMes) => setEvolucaoFim({ ano: novoAno, mes: novoMes })}
                 />
               )}
+
+              <PrevistoRealizadoChart ano={ano} mes={mes} />
             </>
           )}
         </ScrollView>

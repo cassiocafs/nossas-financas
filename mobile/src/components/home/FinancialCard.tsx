@@ -7,7 +7,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { listarContas } from '@/api/contas';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/Card';
-import { Radius, Spacing } from '@/constants/theme';
+import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useFormatarValor } from '@/hooks/use-formatar-valor';
 import { useTheme } from '@/hooks/use-theme';
@@ -20,10 +20,12 @@ const ON_BRAND_CONTROL = 'rgba(255,255,255,0.16)';
 interface FinancialCardProps {
   /** Texto de variação do mês, ex.: "R$ 1.860 este mês". */
   delta?: string;
+  /** Rodapé "Saldo anterior (agosto 2026) · R$ X" — mesma info da versão web. */
+  footer?: { label: string; value: number };
 }
 
 /** Card herói verde: saldo consolidado das contas, olho para mascarar, ação "Ver extrato". */
-export function FinancialCard({ delta }: FinancialCardProps) {
+export function FinancialCard({ delta, footer }: FinancialCardProps) {
   const theme = useTheme();
   const router = useRouter();
   const formatarValor = useFormatarValor();
@@ -75,14 +77,23 @@ export function FinancialCard({ delta }: FinancialCardProps) {
         </ThemedText>
       ) : null}
 
-      <Pressable
-        onPress={() => router.push('/transacoes')}
-        style={(state) => [styles.action, { opacity: state.pressed ? 0.85 : 1 }]}>
-        <ThemedText type="smallBold" themeColor="primaryForeground">
-          Ver extrato
-        </ThemedText>
-        <Feather name="arrow-right" size={15} color="#FFFFFF" />
-      </Pressable>
+      <View style={styles.base}>
+        {footer ? (
+          <ThemedText style={[styles.footerText, { color: ON_BRAND_SOFT }]}>
+            {footer.label}{' '}
+            <ThemedText style={styles.footerValue}>{formatarValor(footer.value)}</ThemedText>
+          </ThemedText>
+        ) : null}
+
+        <Pressable
+          onPress={() => router.push('/transacoes')}
+          style={(state) => [styles.action, { opacity: state.pressed ? 0.85 : 1 }]}>
+          <ThemedText type="smallBold" themeColor="primaryForeground">
+            Ver extrato
+          </ThemedText>
+          <Feather name="arrow-right" size={15} color="#FFFFFF" />
+        </Pressable>
+      </View>
     </Card>
   );
 }
@@ -103,12 +114,20 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   alertText: { textTransform: 'none', letterSpacing: 0 },
+  base: {
+    marginTop: Spacing.two,
+    paddingTop: Spacing.three,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.18)',
+    gap: Spacing.two,
+  },
+  footerText: { fontFamily: Fonts.body, fontSize: 11, lineHeight: 15 },
+  footerValue: { fontFamily: Fonts.bodySemi, fontSize: 11, color: '#FFFFFF' },
   action: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: Spacing.one,
-    marginTop: Spacing.two,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Radius.pill,
