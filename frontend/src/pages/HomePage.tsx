@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, CircleAlert } from "lucide-react";
+import { Plus, CircleAlert, ArrowDownLeft, ArrowUpRight, TrendingUp } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { buscarEvolucaoSaldo, buscarResumoMensal, type PeriodoMes } from "@/api/transacoes";
@@ -39,18 +39,6 @@ function subtrairMeses(periodo: PeriodoMes, quantidade: number): PeriodoMes {
   return { ano: data.getUTCFullYear(), mes: data.getUTCMonth() + 1 };
 }
 
-/** Legenda curta do card: só o delta em reais contra o mês anterior. */
-function variacaoTexto(
-  atual: number,
-  anterior: number,
-  formatar: (valor: number) => string,
-): string {
-  if (anterior === 0) return "sem dado do mês anterior";
-  const delta = atual - anterior;
-  const sinal = delta > 0 ? "+" : delta < 0 ? "−" : "";
-  return `${sinal}${formatar(Math.abs(delta))}`;
-}
-
 /** Descrição da variação para leitores de tela (não depende de ícone). */
 function variacaoDescritiva(
   atual: number,
@@ -62,6 +50,20 @@ function variacaoDescritiva(
   if (delta === 0) return "estável ante o mês anterior";
   const direcao = delta > 0 ? "alta" : "queda";
   return `${direcao} de ${formatar(Math.abs(delta))} ante o mês anterior`;
+}
+
+/** Legenda dos cards do topo: variação percentual e delta em reais (ex.: "+8,2% · +R$ 950"). */
+function variacaoTopoCaption(
+  atual: number,
+  anterior: number,
+  formatar: (valor: number) => string,
+): string {
+  if (anterior === 0) return "sem base de comparação";
+  const pct = Number((((atual - anterior) / Math.abs(anterior)) * 100).toFixed(1));
+  const delta = atual - anterior;
+  const sinalPct = pct > 0 ? "+" : pct < 0 ? "−" : "";
+  const sinalDelta = delta > 0 ? "+" : delta < 0 ? "−" : "";
+  return `${sinalPct}${Math.abs(pct).toFixed(1).replace(".", ",")}% · ${sinalDelta}${formatar(Math.abs(delta))}`;
 }
 
 export function HomePage() {
@@ -179,59 +181,59 @@ export function HomePage() {
           <div className="flex min-w-0 flex-col gap-6">
             {(() => {
               const mesNome = MESES[mes - 1].toLowerCase();
-              const deltaSaldo = data.saldoAnterior
-                ? patrimonio - data.saldoAnterior
-                : null;
-              const pctSobrou =
+              const captionSobrou =
                 data.totalEntradas > 0
-                  ? `${((resultado / data.totalEntradas) * 100).toFixed(1).replace(".", ",")}%`
+                  ? `${((resultado / data.totalEntradas) * 100).toFixed(1).replace(".", ",")}% do que entrou`
                   : "—";
               return (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-[1.35fr_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
-                  <div className="order-1 sm:col-span-3 lg:col-span-1">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-[1.35fr_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                  <div className="sm:col-span-3 lg:col-span-1">
                     <FinancialCard
-                      label="Saldo nas contas"
+                      label="Seu saldo nas contas"
                       amount={patrimonio}
-                      delta={
-                        deltaSaldo === null
-                          ? undefined
-                          : `${deltaSaldo >= 0 ? "+" : "−"}${formatarValor(Math.abs(deltaSaldo))}`
-                      }
+                      action={{
+                        label: "Ver extrato",
+                        onClick: () => navigate(`/transacoes?ano=${ano}&mes=${mes}`),
+                      }}
+                      footer={{
+                        label: `Saldo anterior (${MESES[anterior.mes - 1].toLowerCase()} ${anterior.ano}) ·`,
+                        value: data.saldoAnterior,
+                      }}
                     />
                   </div>
                   <StatCard
-                    className="order-3 sm:order-2"
-                    label="Entrou"
+                    label={`Entrou em ${mesNome}`}
                     amount={data.totalEntradas}
                     tone="in"
+                    icon={<ArrowDownLeft className="size-4" />}
                     href={`/transacoes?ano=${ano}&mes=${mes}`}
                     ariaLabel={`Entrou em ${mesNome}, ${formatarValor(data.totalEntradas)}${resumoAnterior ? `, ${variacaoDescritiva(data.totalEntradas, resumoAnterior.totalEntradas, formatarValor)}` : ""}`}
                     caption={
                       resumoAnterior
-                        ? variacaoTexto(data.totalEntradas, resumoAnterior.totalEntradas, formatarValor)
+                        ? variacaoTopoCaption(data.totalEntradas, resumoAnterior.totalEntradas, formatarValor)
                         : "…"
                     }
                   />
                   <StatCard
-                    className="order-4 sm:order-3"
-                    label="Saiu"
+                    label={`Saiu em ${mesNome}`}
                     amount={data.totalSaidas}
                     tone="out"
+                    icon={<ArrowUpRight className="size-4" />}
                     href={`/transacoes?ano=${ano}&mes=${mes}`}
                     ariaLabel={`Saiu em ${mesNome}, ${formatarValor(data.totalSaidas)}${resumoAnterior ? `, ${variacaoDescritiva(data.totalSaidas, resumoAnterior.totalSaidas, formatarValor)}` : ""}`}
                     caption={
                       resumoAnterior
-                        ? variacaoTexto(data.totalSaidas, resumoAnterior.totalSaidas, formatarValor)
+                        ? variacaoTopoCaption(data.totalSaidas, resumoAnterior.totalSaidas, formatarValor)
                         : "…"
                     }
                   />
                   <StatCard
-                    className="order-2 sm:order-4"
                     label="Sobrou"
                     amount={resultado}
                     tone="saved"
-                    ariaLabel={`Sobrou em ${mesNome}, ${formatarValor(resultado)}, ${pctSobrou} do que entrou`}
-                    caption={pctSobrou}
+                    icon={<TrendingUp className="size-4" />}
+                    ariaLabel={`Sobrou em ${mesNome}, ${formatarValor(resultado)}, ${captionSobrou}`}
+                    caption={captionSobrou}
                   />
                 </div>
               );

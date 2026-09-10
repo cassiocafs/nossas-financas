@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { useFormatarValor } from "@/hooks/use-formatar-valor";
 
@@ -7,6 +8,7 @@ interface StatCardProps {
   label: string;
   amount: number;
   tone: Tone;
+  icon: ReactNode;
   caption: string;
   /** Quando presente, o card vira link (alvo ≥ 44px) para a lista de transações. */
   href?: string;
@@ -16,41 +18,57 @@ interface StatCardProps {
   className?: string;
 }
 
-/** Cor do número por papel. Despesa é neutra (nunca vermelha); "sobrou" negativo também. */
-const VALOR_COR: Record<Tone, string> = {
-  in: "text-income",
-  out: "text-foreground",
-  saved: "text-income",
+/** Tom do chip do ícone e da pílula. `saved` negativo usa o tom de `out`. */
+const TONES: Record<Tone, { chip: string; pill: string }> = {
+  in: { chip: "bg-income-soft text-income", pill: "bg-income-soft text-income" },
+  out: {
+    chip: "bg-yellow-accent/15 text-yellow-accent",
+    pill: "bg-yellow-accent/15 text-yellow-accent",
+  },
+  saved: { chip: "bg-income-soft text-income", pill: "bg-income-soft text-income" },
 };
 
 /**
- * Card de fluxo do topo do dashboard (spec "Topo — Opção B"): label, número e
- * legenda empilhados. Branco, ao lado do card verde de saldo, mesma altura.
+ * Card de fluxo do topo do dashboard: ícone + rótulo, número neutro e a
+ * legenda de variação em pílula. Fica ao lado do card verde de saldo, na
+ * mesma linha e com a mesma altura.
  */
 export function StatCard({
   label,
   amount,
   tone,
+  icon,
   caption,
   href,
   ariaLabel,
   className = "",
 }: StatCardProps) {
   const formatarValor = useFormatarValor();
-  const corValor =
-    tone === "saved" && amount < 0 ? "text-foreground" : VALOR_COR[tone];
+  const efetivo: Tone = tone === "saved" && amount < 0 ? "out" : tone;
+  const cor = TONES[efetivo];
 
   const conteudo = (
     <>
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <span className={`num text-[19px] font-semibold ${corValor}`}>
-        {formatarValor(amount)}
+      <div className="flex items-center gap-2">
+        <span
+          className={`grid size-6 shrink-0 place-items-center rounded-lg [&>svg]:size-3.5 ${cor.chip}`}
+        >
+          {icon}
+        </span>
+        <span className="text-xs font-medium leading-tight text-muted-foreground">
+          {label}
+        </span>
+      </div>
+      <p className="num text-[19px] font-semibold text-foreground">{formatarValor(amount)}</p>
+      <span
+        className={`self-start rounded-full px-2 py-0.5 text-[11px] leading-snug font-semibold ${cor.pill}`}
+      >
+        {caption}
       </span>
-      <span className="text-xs text-muted-foreground">{caption}</span>
     </>
   );
 
-  const base = `card-surface flex min-h-[44px] flex-col gap-1.5 rounded-lg p-3.5 ${className}`;
+  const base = `card-surface flex min-h-[44px] flex-col justify-center gap-2 rounded-lg p-3.5 ${className}`;
 
   if (href) {
     return (
