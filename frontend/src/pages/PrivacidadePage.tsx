@@ -37,8 +37,8 @@ export function PrivacidadePage() {
             <p>
               O Poupeu é o responsável (controlador) pelo tratamento dos dados descritos nesta
               política. Dúvidas ou solicitações podem ser enviadas para{" "}
-              <a href="mailto:privacidade@nossasfinancas.app" className="underline">
-                privacidade@nossasfinancas.app
+              <a href="mailto:privacidade@poupeu.app" className="underline">
+                privacidade@poupeu.app
               </a>
               .
             </p>

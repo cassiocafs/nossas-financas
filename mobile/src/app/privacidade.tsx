@@ -52,7 +52,7 @@ export default function PrivacidadeScreen() {
           <Secao titulo="1. Quem trata seus dados">
             <ThemedText type="small" style={styles.paragrafo}>
               O Poupeu é o responsável (controlador) pelo tratamento dos dados descritos nesta
-              política. Dúvidas ou solicitações podem ser enviadas para privacidade@nossasfinancas.app.
+              política. Dúvidas ou solicitações podem ser enviadas para privacidade@poupeu.app.
             </ThemedText>
           </Secao>
 

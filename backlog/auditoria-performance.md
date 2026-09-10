@@ -1,4 +1,4 @@
-# Auditoria de Performance — Nossas Finanças
+# Auditoria de Performance — Poupeu
 
 Contexto: volume de dados médio em produção (centenas de usuários/espaços, dezenas de milhares de transações por espaço), com backend (Hostinger) e banco (Supabase) em redes distintas — toda ida ao banco tem latência real de rede, não é round-trip local.
 

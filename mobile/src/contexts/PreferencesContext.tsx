@@ -11,7 +11,7 @@ interface PreferencesContextValue {
   toggleHideValues: () => void;
 }
 
-const STORAGE_KEY = '@nossas-financas/preferencias';
+const STORAGE_KEY = '@poupeu/preferencias';
 
 const defaultValue: PreferencesContextValue = {
   colorSchemeOverride: 'system',

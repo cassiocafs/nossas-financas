@@ -35,7 +35,7 @@ App Expo/React Native (Expo Router, `app/(tabs)` + `app/(auth)`), publicado para
 
 ## Brand Commitments
 
-Nome do produto agora é **Poupeu** (decisão do usuário durante o redesenho; "Nossas Finanças" era o nome anterior). Identidade visual adotada a partir do design system Poupeu: paleta verde/amarelo/creme (`#0D5B2E` primário), tipografia Poppins, mascote (vira-lata caramelo, usado só em estados vazios/momentos pontuais, nunca decorativo), ícones Feather (base visual do Lucide, mantido sem nova dependência). Regra semântica adotada: despesa comum usa texto neutro, vermelho fica reservado para alertas reais (saldo negativo). Consistente com o app web (mesma marca, dois clientes). `android.package`/`ios.bundleIdentifier` mantidos como `com.nossasfinancas.app` deliberadamente, para não quebrar builds/lojas já publicadas.
+Nome do produto agora é **Poupeu** (decisão do usuário durante o redesenho; "Nossas Finanças" era o nome anterior). Identidade visual adotada a partir do design system Poupeu: paleta verde/amarelo/creme (`#0D5B2E` primário), tipografia Poppins, mascote (vira-lata caramelo, usado só em estados vazios/momentos pontuais, nunca decorativo), ícones Feather (base visual do Lucide, mantido sem nova dependência). Regra semântica adotada: despesa comum usa texto neutro, vermelho fica reservado para alertas reais (saldo negativo). Consistente com o app web (mesma marca, dois clientes). `android.package`/`ios.bundleIdentifier` migrados para `com.poupeu.app` na renomeação do projeto (era `com.nossasfinancas.app`) — o `applicationId` novo é tratado como um app novo pela Play Store, exigindo nova publicação.
 
 ## Evidence on Hand
 

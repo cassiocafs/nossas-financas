@@ -21,8 +21,8 @@ function hojeISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-const CHAVE_ULTIMA_DATA = "nossas-financas:ultima-data-transacao";
-const CHAVE_ULTIMA_CONTA = "nossas-financas:ultima-conta-transacao";
+const CHAVE_ULTIMA_DATA = "poupeu:ultima-data-transacao";
+const CHAVE_ULTIMA_CONTA = "poupeu:ultima-conta-transacao";
 
 function obterUltimaDataUsada(): string {
   try {

@@ -34,7 +34,7 @@ addLog('info', 'App iniciado', { baseUrl });
 
 const asyncStoragePersister = createAsyncStoragePersister({
   storage: AsyncStorage,
-  key: '@nossas-financas/cache-query',
+  key: '@poupeu/cache-query',
 });
 const persistOptions = {
   persister: asyncStoragePersister,

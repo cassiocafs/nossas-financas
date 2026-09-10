@@ -9,7 +9,7 @@
     "userInterfaceStyle": "light",
     "owner": "cassiocafs",
     "android": {
-      "package": "com.nossasfinancas.app",
+      "package": "com.poupeu.app",
       "versionCode": 10,
       "adaptiveIcon": {
         "backgroundColor": "#0D5B2E",
@@ -18,7 +18,7 @@
       "predictiveBackGestureEnabled": false
     },
     "ios": {
-      "bundleIdentifier": "com.nossasfinancas.app"
+      "bundleIdentifier": "com.poupeu.app"
     },
     "web": {
       "output": "static",

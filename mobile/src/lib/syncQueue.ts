@@ -15,8 +15,8 @@ import { addLog } from '@/lib/logStore';
 import { queryClient } from '@/lib/queryClient';
 import { gerarUuid } from '@/lib/uuid';
 
-const CHAVE_FILA = '@nossas-financas/fila-sincronizacao';
-const CHAVE_ULTIMA_SYNC = '@nossas-financas/ultima-sincronizacao';
+const CHAVE_FILA = '@poupeu/fila-sincronizacao';
+const CHAVE_ULTIMA_SYNC = '@poupeu/ultima-sincronizacao';
 
 interface OperacaoBase {
   criadoEm: string;

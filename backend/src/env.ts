@@ -14,7 +14,7 @@ const envSchema = z.object({
   // Necessária apenas para excluir o usuário no Supabase Auth (Settings > API > service_role).
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   EMAIL_PROVIDER_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().default("no-reply@nossasfinancas.app"),
+  EMAIL_FROM: z.string().default("no-reply@poupeu.app"),
 });
 
 const parsed = envSchema.safeParse(process.env);
