@@ -7,19 +7,27 @@ import { formatarMoeda } from "@/lib/format";
 interface OrcamentoResumoCardProps {
   ano: number;
   mes: number;
-  /** Grade já carregada (payload da Home); `null` = sem orçamento no ano. Omitir para buscar. */
+  /** Grade já carregada (payload adiado da Home); `null` = sem orçamento no ano. Omitir para buscar. */
   grade?: (GradeOrcamento & { orcamentoId: string }) | null;
+  /** Payload adiado ainda carregando — mostra "Carregando..." sem buscar por conta própria. */
+  carregando?: boolean;
 }
 
-export function OrcamentoResumoCard({ ano, mes, grade: gradeProp }: OrcamentoResumoCardProps) {
+export function OrcamentoResumoCard({
+  ano,
+  mes,
+  grade: gradeProp,
+  carregando: aguardando,
+}: OrcamentoResumoCardProps) {
+  const controladoPorFora = gradeProp !== undefined || Boolean(aguardando);
   const { data: gradeQuery, isLoading } = useQuery({
     queryKey: ["orcamento", "grade", ano, mes],
     queryFn: () => buscarGradeOrcamentoPorAno(ano, mes),
-    enabled: gradeProp === undefined,
+    enabled: !controladoPorFora,
   });
 
-  const grade = gradeProp === undefined ? gradeQuery : gradeProp;
-  const carregando = gradeProp === undefined && isLoading;
+  const grade = gradeProp !== undefined ? gradeProp : gradeQuery;
+  const carregando = gradeProp !== undefined ? false : Boolean(aguardando) || isLoading;
 
   const categoriasEstouradas =
     grade?.grupos.flatMap((g) => g.categorias.filter((c) => c.estourado)) ?? [];

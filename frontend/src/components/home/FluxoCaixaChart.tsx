@@ -28,24 +28,34 @@ interface FluxoCaixaChartProps {
   ano: number;
   mes: number;
   contaIds?: string[];
-  /** Série de 6 meses já carregada (payload da Home); evita a requisição na visão padrão. */
+  /** Série de 6 meses já carregada (payload adiado da Home); evita a requisição na visão padrão. */
   serieInicial?: PontoFluxoCaixa[];
+  /** Payload adiado ainda carregando — mostra "Carregando..." sem buscar por conta própria. */
+  carregando?: boolean;
 }
 
-export function FluxoCaixaChart({ ano, mes, contaIds, serieInicial }: FluxoCaixaChartProps) {
+export function FluxoCaixaChart({
+  ano,
+  mes,
+  contaIds,
+  serieInicial,
+  carregando: aguardando,
+}: FluxoCaixaChartProps) {
   const [meses, setMeses] = useState<6 | 12>(6);
 
-  const usarSerieInicial = meses === 6 && serieInicial !== undefined;
+  // Na visão padrão (6 meses) a série vem do payload adiado da Home; ao trocar
+  // para 12 meses o componente busca sozinho.
+  const controladoPorFora = meses === 6 && (serieInicial !== undefined || Boolean(aguardando));
 
   const { data, isLoading } = useQuery({
     queryKey: ["transacoes", "fluxo-caixa", ano, mes, meses, contaIds],
     queryFn: () => buscarFluxoCaixa({ ano, mes }, meses, contaIds),
     staleTime: 5 * 60_000,
-    enabled: !usarSerieInicial,
+    enabled: !controladoPorFora,
   });
 
-  const pontos = usarSerieInicial ? serieInicial : data?.serie;
-  const carregando = !usarSerieInicial && isLoading;
+  const pontos = controladoPorFora ? serieInicial : data?.serie;
+  const carregando = controladoPorFora ? serieInicial === undefined : isLoading;
 
   const serie = (pontos ?? []).map((p) => ({
     label: `${MESES_ABREV[p.mes - 1]}/${String(p.ano).slice(2)}`,

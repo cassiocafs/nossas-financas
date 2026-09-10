@@ -701,11 +701,42 @@ function indiceParaPeriodo(indice: number): { ano: number; mes: number } {
   return { ano: Math.floor(indice / 12), mes: (indice % 12) + 1 };
 }
 
+const PENDENCIAS_VAZIAS: PendenciasNaoConsolidadas = {
+  anterioresNaoConsolidadas: [],
+  proximasNaoConsolidadas: [],
+};
+
 /**
- * Payload único da tela inicial. Substitui ~14 requisições (resumo do mês atual,
- * do anterior e de 2 meses de histórico, contas, evolução, fluxo de caixa,
- * orçamento e metas) por uma só, resolvendo as contas e o saldo de abertura da
- * janela uma única vez e derivando todos os meses de um único SELECT.
+ * Percorre as transações de uma janela (ordenadas por data) e monta o resumo de
+ * um mês: acumula o saldo de tudo que veio antes e agrega o que caiu no mês.
+ */
+function resumoMensalDaJanela(
+  transacoesJanela: TransacaoResumoPayload[],
+  idxTransacao: number[],
+  saldoAberturaJanela: number,
+  idxMes: number,
+  pendencias: PendenciasNaoConsolidadas,
+) {
+  let saldoAnterior = saldoAberturaJanela;
+  const transacoesDoMes: TransacaoResumoPayload[] = [];
+  for (let i = 0; i < transacoesJanela.length; i++) {
+    if (idxTransacao[i] < idxMes) saldoAnterior += toNumber(transacoesJanela[i].valor);
+    else if (idxTransacao[i] === idxMes) transacoesDoMes.push(transacoesJanela[i]);
+  }
+  const periodo = indiceParaPeriodo(idxMes);
+  return {
+    ano: periodo.ano,
+    mes: periodo.mes,
+    ...montarResumoMensal(transacoesDoMes, saldoAnterior, pendencias),
+  };
+}
+
+/**
+ * Parte ESSENCIAL da tela inicial — o que a página precisa para pintar: contas e
+ * o resumo do mês atual + do anterior (cards do topo, comparativo, recentes,
+ * pendências, gráfico de categorias). Uma janela de 2 meses, poucas queries.
+ * Gráficos de 6 meses, orçamento, metas e histórico de insight vêm no
+ * `/home/extras`, carregado depois que a tela já apareceu.
  */
 export async function buscarHome(
   espacoId: string,
@@ -732,57 +763,103 @@ async function buscarHomeImpl(
   );
 
   const indiceMesAtual = periodoParaIndice(ano, mes);
+  const indiceMesAnterior = indiceMesAtual - 1;
+  const anterior = indiceParaPeriodo(indiceMesAnterior);
+  const primeiroDiaAnterior = primeiroDiaMesUTC(anterior.ano, anterior.mes);
+  const ultimoDiaMesAtual = ultimoDiaMesUTC(ano, mes);
+
+  const [saldoAberturaAnterior, transacoesJanela, pendencias, contas] = await Promise.all([
+    calcularSaldoAnterior(espacoId, contaIdsEmEscopo, saldoInicialTotal, primeiroDiaAnterior),
+    prisma.transacao.findMany({
+      where: {
+        espacoId,
+        contaId: { in: contaIdsEmEscopo },
+        data: { gte: primeiroDiaAnterior, lte: ultimoDiaMesAtual },
+      },
+      include: CATEGORIA_RESUMO_INCLUDE,
+      orderBy: [{ data: "asc" }, { criadoEm: "asc" }],
+    }),
+    buscarPendenciasNaoConsolidadas(espacoId, contaIdsEmEscopo),
+    listarContas(espacoId, false),
+  ]);
+
+  const idxTransacao = transacoesJanela.map((t) =>
+    periodoParaIndice(t.data.getUTCFullYear(), t.data.getUTCMonth() + 1),
+  );
+
+  const meses = [indiceMesAtual, indiceMesAnterior].map((idx) =>
+    resumoMensalDaJanela(transacoesJanela, idxTransacao, saldoAberturaAnterior, idx, pendencias),
+  );
+
+  return { contas, meses };
+}
+
+/**
+ * Parte ADIADA da tela inicial: gráficos de 6 meses (evolução e fluxo de caixa),
+ * grade de orçamento, metas e os 2 meses de histórico mais antigos que o insight
+ * usa. Carregado em paralelo ao `/home`, mas a página não espera por ele.
+ */
+export async function buscarHomeExtras(
+  espacoId: string,
+  ano: number,
+  mes: number,
+  contaIds?: string[],
+) {
+  return comTempo("buscarHomeExtras", { espacoId, ano, mes }, () =>
+    buscarHomeExtrasImpl(espacoId, ano, mes, contaIds),
+  );
+}
+
+async function buscarHomeExtrasImpl(
+  espacoId: string,
+  ano: number,
+  mes: number,
+  contaIds?: string[],
+) {
+  const contasEscopo = await resolverContasEmEscopo(espacoId, contaIds);
+  const contaIdsEmEscopo = contasEscopo.map((c) => c.id);
+  const saldoInicialTotal = contasEscopo.reduce(
+    (soma, c) => soma + toNumber(c.saldoInicial),
+    0,
+  );
+
+  const indiceMesAtual = periodoParaIndice(ano, mes);
   const indiceInicioJanela = indiceMesAtual - (MESES_JANELA_GRAFICOS - 1);
   const inicioJanela = indiceParaPeriodo(indiceInicioJanela);
   const primeiroDiaJanela = primeiroDiaMesUTC(inicioJanela.ano, inicioJanela.mes);
   const ultimoDiaMesAtual = ultimoDiaMesUTC(ano, mes);
 
-  const [saldoAberturaJanela, transacoesJanela, pendencias, contas, orcamentoGrade, metas] =
-    await Promise.all([
-      calcularSaldoAnterior(
+  const [saldoAberturaJanela, transacoesJanela, orcamentoGrade, metas] = await Promise.all([
+    calcularSaldoAnterior(espacoId, contaIdsEmEscopo, saldoInicialTotal, primeiroDiaJanela),
+    prisma.transacao.findMany({
+      where: {
         espacoId,
-        contaIdsEmEscopo,
-        saldoInicialTotal,
-        primeiroDiaJanela,
-      ),
-      prisma.transacao.findMany({
-        where: {
-          espacoId,
-          contaId: { in: contaIdsEmEscopo },
-          data: { gte: primeiroDiaJanela, lte: ultimoDiaMesAtual },
-        },
-        include: CATEGORIA_RESUMO_INCLUDE,
-        orderBy: [{ data: "asc" }, { criadoEm: "asc" }],
-      }),
-      buscarPendenciasNaoConsolidadas(espacoId, contaIdsEmEscopo),
-      listarContas(espacoId, false),
-      buscarGradePorAno(espacoId, ano, mes),
-      listarMetas(espacoId, false),
-    ]);
+        contaId: { in: contaIdsEmEscopo },
+        data: { gte: primeiroDiaJanela, lte: ultimoDiaMesAtual },
+      },
+      include: CATEGORIA_RESUMO_INCLUDE,
+      orderBy: [{ data: "asc" }, { criadoEm: "asc" }],
+    }),
+    buscarGradePorAno(espacoId, ano, mes),
+    listarMetas(espacoId, false),
+  ]);
 
-  // Índice de mês de cada transação, calculado uma vez e reaproveitado.
   const idxTransacao = transacoesJanela.map((t) =>
     periodoParaIndice(t.data.getUTCFullYear(), t.data.getUTCMonth() + 1),
   );
 
-  // Resumos mensais: mês atual + MESES_HISTORICO_HOME meses fechados.
-  const meses: (ReturnType<typeof montarResumoMensal> & { ano: number; mes: number })[] = [];
-  for (let offset = 0; offset <= MESES_HISTORICO_HOME; offset++) {
-    const idx = indiceMesAtual - offset;
-    const periodo = indiceParaPeriodo(idx);
-
-    let saldoAnterior = saldoAberturaJanela;
-    const transacoesDoMes: TransacaoResumoPayload[] = [];
-    for (let i = 0; i < transacoesJanela.length; i++) {
-      if (idxTransacao[i] < idx) saldoAnterior += toNumber(transacoesJanela[i].valor);
-      else if (idxTransacao[i] === idx) transacoesDoMes.push(transacoesJanela[i]);
-    }
-
-    meses.push({
-      ano: periodo.ano,
-      mes: periodo.mes,
-      ...montarResumoMensal(transacoesDoMes, saldoAnterior, pendencias),
-    });
+  // Histórico do insight: meses -2 e -3 (o -1 já vem no payload essencial).
+  const historico = [];
+  for (let offset = 2; offset <= MESES_HISTORICO_HOME; offset++) {
+    historico.push(
+      resumoMensalDaJanela(
+        transacoesJanela,
+        idxTransacao,
+        saldoAberturaJanela,
+        indiceMesAtual - offset,
+        PENDENCIAS_VAZIAS,
+      ),
+    );
   }
 
   // Evolução de saldo (MESES_JANELA_GRAFICOS pontos), varrendo a janela uma vez.
@@ -826,7 +903,7 @@ async function buscarHomeImpl(
     }),
   };
 
-  return { contas, meses, evolucaoSaldo, fluxoCaixa, orcamentoGrade, metas };
+  return { historico, evolucaoSaldo, fluxoCaixa, orcamentoGrade, metas };
 }
 
 function sequenciaMeses(

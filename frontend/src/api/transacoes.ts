@@ -170,14 +170,27 @@ export interface ResumoMensalComPeriodo extends ResumoMensal {
   mes: number;
 }
 
+/** Parte essencial da Home — o que a página precisa para pintar. */
 export interface HomePayload {
   contas: Conta[];
-  /** [0] = mês consultado; [1..3] = meses fechados anteriores, mais recente primeiro. */
+  /** [0] = mês consultado; [1] = mês anterior. */
   meses: ResumoMensalComPeriodo[];
+}
+
+/** Parte adiada da Home — carregada depois que a tela já apareceu. */
+export interface HomeExtrasPayload {
+  /** meses -2 e -3 (o -1 vem no payload essencial), para o insight. */
+  historico: ResumoMensalComPeriodo[];
   evolucaoSaldo: PontoEvolucaoSaldo[];
   fluxoCaixa: FluxoCaixa;
   orcamentoGrade: (GradeOrcamento & { orcamentoId: string }) | null;
   metas: Meta[];
+}
+
+function montarParamsHome(ano: number, mes: number, contaIds?: string[]): string {
+  const params = new URLSearchParams({ ano: String(ano), mes: String(mes) });
+  if (contaIds?.length) params.set("contaIds", contaIds.join(","));
+  return params.toString();
 }
 
 export function buscarHome(
@@ -185,9 +198,17 @@ export function buscarHome(
   mes: number,
   contaIds?: string[],
 ): Promise<HomePayload> {
-  const params = new URLSearchParams({ ano: String(ano), mes: String(mes) });
-  if (contaIds?.length) params.set("contaIds", contaIds.join(","));
-  return apiFetch<HomePayload>(`/api/transacoes/home?${params.toString()}`);
+  return apiFetch<HomePayload>(`/api/transacoes/home?${montarParamsHome(ano, mes, contaIds)}`);
+}
+
+export function buscarHomeExtras(
+  ano: number,
+  mes: number,
+  contaIds?: string[],
+): Promise<HomeExtrasPayload> {
+  return apiFetch<HomeExtrasPayload>(
+    `/api/transacoes/home/extras?${montarParamsHome(ano, mes, contaIds)}`,
+  );
 }
 
 export function criarTransacao(input: CriarTransacaoInput): Promise<Transacao> {

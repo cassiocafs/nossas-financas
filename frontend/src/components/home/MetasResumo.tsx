@@ -6,16 +6,18 @@ import { Card } from "@/components/ui/Card";
 import { ordenarMetasHome } from "@/lib/metas";
 
 interface MetasResumoProps {
-  /** Metas já carregadas (payload da Home); evita uma requisição. */
+  /** Metas já carregadas (payload adiado da Home); evita uma requisição. */
   metas?: Meta[];
+  /** Payload adiado ainda carregando — não busca por conta própria. */
+  carregando?: boolean;
 }
 
-export function MetasResumo({ metas: metasProp }: MetasResumoProps = {}) {
+export function MetasResumo({ metas: metasProp, carregando }: MetasResumoProps = {}) {
   const navigate = useNavigate();
   const { data: metasQuery } = useQuery({
     queryKey: ["metas", "home"],
     queryFn: () => listarMetas(false),
-    enabled: metasProp === undefined,
+    enabled: metasProp === undefined && !carregando,
   });
 
   const metas = metasProp ?? metasQuery;

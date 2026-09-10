@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus, CircleAlert, ArrowDownLeft, ArrowUpRight, TrendingUp } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { buscarEvolucaoSaldo, buscarHome, type PeriodoMes } from "@/api/transacoes";
+import {
+  buscarEvolucaoSaldo,
+  buscarHome,
+  buscarHomeExtras,
+  type PeriodoMes,
+} from "@/api/transacoes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAccountFilter } from "@/contexts/AccountFilterContext";
 import { ComparativoMesAnteriorCard } from "@/components/home/ComparativoMesAnteriorCard";
@@ -95,12 +100,20 @@ export function HomePage() {
     setSearchParams({ ano: String(novoAno), mes: String(novoMes) });
   }
 
-  // Payload único da Home: resumo do mês + 3 meses de histórico, contas,
-  // evolução de saldo (6m), fluxo de caixa (6m), orçamento e metas — tudo numa
-  // requisição. Ver GET /api/transacoes/home.
+  // Essencial: contas + resumo do mês atual e do anterior. É o que a página
+  // espera para pintar. Ver GET /api/transacoes/home.
   const { data: home, isLoading } = useQuery({
     queryKey: ["home", ano, mes, contaIds],
     queryFn: () => buscarHome(ano, mes, contaIds),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60_000,
+  });
+
+  // Adiado: gráficos de 6 meses, orçamento, metas e histórico do insight.
+  // Carrega em paralelo, mas a Home não bloqueia esperando por ele.
+  const { data: extras, isLoading: extrasCarregando } = useQuery({
+    queryKey: ["home", "extras", ano, mes, contaIds],
+    queryFn: () => buscarHomeExtras(ano, mes, contaIds),
     placeholderData: keepPreviousData,
     staleTime: 5 * 60_000,
   });
@@ -109,7 +122,13 @@ export function HomePage() {
   const data = home?.meses[0];
   const resumoAnterior = home?.meses[1];
   const contas = home?.contas;
-  const historicoInsight = useMemo(() => home?.meses.slice(1) ?? [], [home]);
+  const historicoInsight = useMemo(
+    () => [
+      ...(resumoAnterior ? [resumoAnterior] : []),
+      ...(extras?.historico ?? []),
+    ],
+    [resumoAnterior, extras],
+  );
 
   const patrimonio = (contas ?? [])
     .filter((c) => contasSelecionadasIds.length === 0 || contasSelecionadasIds.includes(c.id))
@@ -122,7 +141,7 @@ export function HomePage() {
     resumoAtual: data,
     resumoMesAnterior: resumoAnterior,
     historico: historicoInsight,
-    orcamento: home?.orcamentoGrade ?? undefined,
+    orcamento: extras?.orcamentoGrade ?? undefined,
     contas,
   });
 
@@ -144,7 +163,7 @@ export function HomePage() {
     evolucaoFim.mes === mes;
 
   // Só busca separadamente quando o usuário muda o intervalo do gráfico; a visão
-  // padrão (últimos 6 meses) já vem no payload da Home.
+  // padrão (últimos 6 meses) vem no payload adiado da Home.
   const { data: evolucaoCustomizada } = useQuery({
     queryKey: [
       "transacoes",
@@ -161,7 +180,7 @@ export function HomePage() {
     enabled: !rangeEvolucaoEhPadrao,
   });
 
-  const evolucaoSaldo = rangeEvolucaoEhPadrao ? home?.evolucaoSaldo : evolucaoCustomizada;
+  const evolucaoSaldo = rangeEvolucaoEhPadrao ? extras?.evolucaoSaldo : evolucaoCustomizada;
 
   const despesasSemCategoria = data?.despesasPorCategoria.find((d) => d.categoriaId === null);
   const resultado = data ? data.totalEntradas - data.totalSaidas : 0;
@@ -261,7 +280,8 @@ export function HomePage() {
               ano={ano}
               mes={mes}
               contaIds={contaIds}
-              serieInicial={home?.fluxoCaixa.serie}
+              serieInicial={extras?.fluxoCaixa.serie}
+              carregando={extrasCarregando}
             />
 
             <TransacoesRecentesCard ano={ano} mes={mes} recentes={data.recentes} />
@@ -301,7 +321,7 @@ export function HomePage() {
               />
             </Card>
 
-            <MetasResumo metas={home?.metas} />
+            <MetasResumo metas={extras?.metas} carregando={extrasCarregando} />
           </div>
         </div>
       )}
@@ -328,7 +348,12 @@ export function HomePage() {
             resumoAnterior={resumoAnterior}
           />
 
-          <OrcamentoResumoCard ano={ano} mes={mes} grade={home?.orcamentoGrade} />
+          <OrcamentoResumoCard
+            ano={ano}
+            mes={mes}
+            grade={extras?.orcamentoGrade}
+            carregando={extrasCarregando}
+          />
 
           {evolucaoSaldo && (
             <EvolucaoSaldoChart

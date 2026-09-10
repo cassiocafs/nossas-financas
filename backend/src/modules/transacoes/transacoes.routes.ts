@@ -42,6 +42,15 @@ transacoesRouter.get(
 );
 
 transacoesRouter.get(
+  "/home/extras",
+  asyncHandler(async (req, res) => {
+    const { ano, mes, contaIds } = homeQuerySchema.parse(req.query);
+    const extras = await transacoesService.buscarHomeExtras(req.espacoId!, ano, mes, contaIds);
+    res.json(extras);
+  }),
+);
+
+transacoesRouter.get(
   "/evolucao-saldo",
   asyncHandler(async (req, res) => {
     const { anoInicio, mesInicio, anoFim, mesFim, contaIds } = evolucaoSaldoQuerySchema.parse(
