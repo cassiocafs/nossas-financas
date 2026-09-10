@@ -718,16 +718,6 @@ export async function buscarHome(
   );
 }
 
-/** Categoria enxuta usada para enriquecer os agregados por `categoriaId`. */
-type CategoriaResumoLookup = {
-  id: string;
-  nome: string;
-  grupoId: string | null;
-  grupo: { nome: string } | null;
-  subgrupoId: string | null;
-  subgrupo: { nome: string } | null;
-};
-
 async function buscarHomeImpl(
   espacoId: string,
   ano: number,
@@ -747,178 +737,81 @@ async function buscarHomeImpl(
   const primeiroDiaJanela = primeiroDiaMesUTC(inicioJanela.ano, inicioJanela.mes);
   const ultimoDiaMesAtual = ultimoDiaMesUTC(ano, mes);
 
-  // Meses devolvidos: atual + MESES_HISTORICO_HOME fechados (mais recente primeiro).
-  const periodosAlvo = Array.from({ length: MESES_HISTORICO_HOME + 1 }, (_, offset) =>
-    indiceParaPeriodo(indiceMesAtual - offset),
-  );
-
-  const whereJanela = {
-    espacoId,
-    contaId: { in: contaIdsEmEscopo },
-    data: { gte: primeiroDiaJanela, lte: ultimoDiaMesAtual },
-  } satisfies Prisma.TransacaoWhereInput;
-  const whereMes = (p: { ano: number; mes: number }) => ({
-    espacoId,
-    contaId: { in: contaIdsEmEscopo },
-    data: { gte: primeiroDiaMesUTC(p.ano, p.mes), lte: ultimoDiaMesUTC(p.ano, p.mes) },
-  });
-
-  // Em vez de trazer todas as transações da janela (com categoria/grupo/subgrupo
-  // aninhados) e agregar no JS, a Home agrega no Postgres: uma soma por dia+tipo
-  // para saldo/evolução/fluxo, e uma soma por categoria+tipo em cada mês alvo.
-  const [
-    saldoAberturaJanela,
-    somasPorDiaTipo,
-    somasPorCategoriaPorMes,
-    categorias,
-    recentesRows,
-    pendencias,
-    contas,
-    orcamentoGrade,
-    metas,
-  ] = await Promise.all([
-    calcularSaldoAnterior(espacoId, contaIdsEmEscopo, saldoInicialTotal, primeiroDiaJanela),
-    prisma.transacao.groupBy({
-      by: ["data", "tipo"],
-      where: whereJanela,
-      _sum: { valor: true },
-    }),
-    Promise.all(
-      periodosAlvo.map((p) =>
-        prisma.transacao.groupBy({
-          by: ["categoriaId", "tipo"],
-          where: whereMes(p),
-          _sum: { valor: true },
-        }),
+  const [saldoAberturaJanela, transacoesJanela, pendencias, contas, orcamentoGrade, metas] =
+    await Promise.all([
+      calcularSaldoAnterior(
+        espacoId,
+        contaIdsEmEscopo,
+        saldoInicialTotal,
+        primeiroDiaJanela,
       ),
-    ),
-    prisma.categoria.findMany({
-      where: { espacoId },
-      select: {
-        id: true,
-        nome: true,
-        grupoId: true,
-        grupo: { select: { nome: true } },
-        subgrupoId: true,
-        subgrupo: { select: { nome: true } },
-      },
-    }),
-    prisma.transacao.findMany({
-      where: whereMes(periodosAlvo[0]),
-      include: TRANSACAO_INCLUDE,
-      orderBy: [{ data: "desc" }, { criadoEm: "desc" }],
-      take: LIMITE_RECENTES,
-    }),
-    buscarPendenciasNaoConsolidadas(espacoId, contaIdsEmEscopo),
-    listarContas(espacoId, false),
-    buscarGradePorAno(espacoId, ano, mes),
-    listarMetas(espacoId, false),
-  ]);
+      prisma.transacao.findMany({
+        where: {
+          espacoId,
+          contaId: { in: contaIdsEmEscopo },
+          data: { gte: primeiroDiaJanela, lte: ultimoDiaMesAtual },
+        },
+        include: CATEGORIA_RESUMO_INCLUDE,
+        orderBy: [{ data: "asc" }, { criadoEm: "asc" }],
+      }),
+      buscarPendenciasNaoConsolidadas(espacoId, contaIdsEmEscopo),
+      listarContas(espacoId, false),
+      buscarGradePorAno(espacoId, ano, mes),
+      listarMetas(espacoId, false),
+    ]);
 
-  const categoriaPorId = new Map<string, CategoriaResumoLookup>(
-    categorias.map((c) => [c.id, c]),
-  );
-  const idsCategoriaTransferencia = new Set(
-    categorias.filter((c) => c.nome === NOME_CATEGORIA_TRANSFERENCIA).map((c) => c.id),
+  // Índice de mês de cada transação, calculado uma vez e reaproveitado.
+  const idxTransacao = transacoesJanela.map((t) =>
+    periodoParaIndice(t.data.getUTCFullYear(), t.data.getUTCMonth() + 1),
   );
 
-  // --- Movimento (todos os tipos) e fluxo (só DESPESA/RECEITA) por mês da janela ---
-  const movimentoPorIndice = new Map<number, number>();
-  const fluxoPorIndice = new Map<number, { entradas: number; saidas: number }>();
-  for (let idx = indiceInicioJanela; idx <= indiceMesAtual; idx++) {
-    movimentoPorIndice.set(idx, 0);
-    fluxoPorIndice.set(idx, { entradas: 0, saidas: 0 });
-  }
-  for (const linha of somasPorDiaTipo) {
-    const idx = periodoParaIndice(
-      linha.data.getUTCFullYear(),
-      linha.data.getUTCMonth() + 1,
-    );
-    const valor = toNumber(linha._sum.valor);
-    movimentoPorIndice.set(idx, (movimentoPorIndice.get(idx) ?? 0) + valor);
-    const fluxo = fluxoPorIndice.get(idx);
-    if (fluxo) {
-      if (linha.tipo === "RECEITA") fluxo.entradas += Math.abs(valor);
-      else if (linha.tipo === "DESPESA") fluxo.saidas += Math.abs(valor);
-    }
-  }
+  // Resumos mensais: mês atual + MESES_HISTORICO_HOME meses fechados.
+  const meses: (ReturnType<typeof montarResumoMensal> & { ano: number; mes: number })[] = [];
+  for (let offset = 0; offset <= MESES_HISTORICO_HOME; offset++) {
+    const idx = indiceMesAtual - offset;
+    const periodo = indiceParaPeriodo(idx);
 
-  // Saldo ao fim de cada mês da janela, acumulando a partir da abertura.
-  const saldoFimPorIndice = new Map<number, number>();
-  let saldoAcumulado = saldoAberturaJanela;
-  for (let idx = indiceInicioJanela; idx <= indiceMesAtual; idx++) {
-    saldoAcumulado += movimentoPorIndice.get(idx) ?? 0;
-    saldoFimPorIndice.set(idx, saldoAcumulado);
-  }
-  const saldoAberturaDoMes = (idx: number) =>
-    saldoFimPorIndice.get(idx - 1) ?? saldoAberturaJanela;
-
-  // --- Resumos mensais a partir da soma por categoria+tipo de cada mês ---
-  const recentesSerializadas = recentesRows.map(serializarTransacao);
-  const meses = periodosAlvo.map((periodo, i) => {
-    const idx = periodoParaIndice(periodo.ano, periodo.mes);
-    const linhas = somasPorCategoriaPorMes[i];
-
-    let totalEntradas = 0;
-    let totalSaidas = 0;
-    const despesasMap = new Map<string, ItemCategoriaResumo>();
-    const receitasMap = new Map<string, ItemCategoriaResumo>();
-
-    for (const linha of linhas) {
-      if (linha.tipo !== "DESPESA" && linha.tipo !== "RECEITA") continue;
-      const soma = toNumber(linha._sum.valor);
-      if (linha.tipo === "RECEITA") totalEntradas += Math.abs(soma);
-      else totalSaidas += Math.abs(soma);
-
-      // Guard legado: categoria chamada "Transferência" fica fora do detalhamento
-      // (mas continua nos totais), como em `montarResumoMensal`.
-      if (linha.categoriaId && idsCategoriaTransferencia.has(linha.categoriaId)) continue;
-      const valorAbs = Math.abs(soma);
-      if (valorAbs === 0) continue;
-
-      const mapa = linha.tipo === "DESPESA" ? despesasMap : receitasMap;
-      const chave = linha.categoriaId ?? "sem-categoria";
-      const atual = mapa.get(chave);
-      if (atual) {
-        atual.total += valorAbs;
-      } else {
-        const cat = linha.categoriaId
-          ? categoriaPorId.get(linha.categoriaId)
-          : undefined;
-        mapa.set(chave, {
-          categoriaId: linha.categoriaId,
-          categoriaNome: cat?.nome ?? "Sem Categoria",
-          grupoId: cat?.grupoId ?? null,
-          grupoNome: cat?.grupo?.nome ?? null,
-          subgrupoId: cat?.subgrupoId ?? null,
-          subgrupoNome: cat?.subgrupo?.nome ?? null,
-          total: valorAbs,
-        });
-      }
+    let saldoAnterior = saldoAberturaJanela;
+    const transacoesDoMes: TransacaoResumoPayload[] = [];
+    for (let i = 0; i < transacoesJanela.length; i++) {
+      if (idxTransacao[i] < idx) saldoAnterior += toNumber(transacoesJanela[i].valor);
+      else if (idxTransacao[i] === idx) transacoesDoMes.push(transacoesJanela[i]);
     }
 
-    const saldoAnterior = saldoAberturaDoMes(idx);
-    return {
+    meses.push({
       ano: periodo.ano,
       mes: periodo.mes,
-      saldoAnterior,
-      totalEntradas,
-      totalSaidas,
-      saldoFinal: saldoAnterior + (movimentoPorIndice.get(idx) ?? 0),
-      recentes: i === 0 ? recentesSerializadas : [],
-      anterioresNaoConsolidadas: pendencias.anterioresNaoConsolidadas,
-      proximasNaoConsolidadas: pendencias.proximasNaoConsolidadas,
-      despesasPorCategoria: Array.from(despesasMap.values()),
-      receitasPorCategoria: Array.from(receitasMap.values()),
-    };
-  });
+      ...montarResumoMensal(transacoesDoMes, saldoAnterior, pendencias),
+    });
+  }
 
-  const evolucaoSaldo = Array.from({ length: MESES_JANELA_GRAFICOS }, (_, i) => {
-    const idx = indiceInicioJanela + i;
+  // Evolução de saldo (MESES_JANELA_GRAFICOS pontos), varrendo a janela uma vez.
+  const evolucaoSaldo: { ano: number; mes: number; saldoFinal: number }[] = [];
+  let saldoAcumulado = saldoAberturaJanela;
+  let cursor = 0;
+  for (let idx = indiceInicioJanela; idx <= indiceMesAtual; idx++) {
+    while (cursor < transacoesJanela.length && idxTransacao[cursor] <= idx) {
+      saldoAcumulado += toNumber(transacoesJanela[cursor].valor);
+      cursor++;
+    }
     const periodo = indiceParaPeriodo(idx);
-    return { ano: periodo.ano, mes: periodo.mes, saldoFinal: saldoFimPorIndice.get(idx)! };
-  });
+    evolucaoSaldo.push({ ano: periodo.ano, mes: periodo.mes, saldoFinal: saldoAcumulado });
+  }
 
+  // Fluxo de caixa por mês (só DESPESA e RECEITA, em valor absoluto).
+  const fluxoPorIndice = new Map<number, { entradas: number; saidas: number }>();
+  for (let idx = indiceInicioJanela; idx <= indiceMesAtual; idx++) {
+    fluxoPorIndice.set(idx, { entradas: 0, saidas: 0 });
+  }
+  for (let i = 0; i < transacoesJanela.length; i++) {
+    const t = transacoesJanela[i];
+    if (t.tipo !== "DESPESA" && t.tipo !== "RECEITA") continue;
+    const balde = fluxoPorIndice.get(idxTransacao[i]);
+    if (!balde) continue;
+    const valorAbs = Math.abs(toNumber(t.valor));
+    if (t.tipo === "RECEITA") balde.entradas += valorAbs;
+    else balde.saidas += valorAbs;
+  }
   const fluxoCaixa = {
     serie: Array.from({ length: MESES_JANELA_GRAFICOS }, (_, i) => {
       const idx = indiceInicioJanela + i;
