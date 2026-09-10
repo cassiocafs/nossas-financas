@@ -412,7 +412,7 @@ describe("transacoes.service — buscarHome", () => {
     };
   }
 
-  it("deriva mês atual + histórico, evolução e fluxo de um único SELECT da janela", async () => {
+  it("agrega mês atual + histórico, evolução e fluxo via groupBy no Postgres", async () => {
     // resolverContasEmEscopo, depois listarContas
     mockPrisma.conta.findMany
       .mockResolvedValueOnce([{ id: "conta-1", saldoInicial: 0 }])
@@ -421,49 +421,49 @@ describe("transacoes.service — buscarHome", () => {
       ]);
     // saldo de abertura da janela (data < 2026-04-01)
     mockPrisma.transacao.aggregate.mockResolvedValue({ _sum: { valor: 100 } });
-    // (1) janela  (2) pendências anteriores  (3) pendências próximas
-    mockPrisma.transacao.findMany
-      .mockResolvedValueOnce([
-        txn({
-          id: "jul",
-          data: new Date("2026-07-10T00:00:00.000Z"),
-          tipo: "DESPESA",
-          valor: -200,
-          categoriaId: "cat-mercado",
-          categoria: {
-            id: "cat-mercado",
-            nome: "Mercado",
-            grupoId: null,
-            grupo: null,
-            subgrupoId: null,
-            subgrupo: null,
-          },
-        }),
-        txn({
-          id: "ago",
-          data: new Date("2026-08-05T00:00:00.000Z"),
-          tipo: "RECEITA",
-          valor: 5000,
-          categoriaId: "cat-salario",
-          categoria: {
-            id: "cat-salario",
-            nome: "Salário",
-            grupoId: null,
-            grupo: null,
-            subgrupoId: null,
-            subgrupo: null,
-          },
-        }),
-        txn({
-          id: "set",
-          data: new Date("2026-09-12T00:00:00.000Z"),
-          tipo: "DESPESA",
-          valor: -300,
-        }),
-      ])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
-    mockPrisma.transacao.groupBy.mockResolvedValue([]);
+
+    // groupBy: por data+tipo (janela), por categoria+tipo (cada mês alvo) e por conta (saldos).
+    mockPrisma.transacao.groupBy.mockImplementation(async (args: {
+      by: string[];
+      where?: { data?: { gte?: Date } };
+    }) => {
+      const by = args.by.join(",");
+      if (by === "data,tipo") {
+        return [
+          { data: new Date("2026-07-10T00:00:00.000Z"), tipo: "DESPESA", _sum: { valor: -200 } },
+          { data: new Date("2026-08-05T00:00:00.000Z"), tipo: "RECEITA", _sum: { valor: 5000 } },
+          { data: new Date("2026-09-12T00:00:00.000Z"), tipo: "DESPESA", _sum: { valor: -300 } },
+        ];
+      }
+      if (by === "categoriaId,tipo") {
+        const mes = args.where!.data!.gte!.getUTCMonth() + 1;
+        return (
+          {
+            9: [{ categoriaId: null, tipo: "DESPESA", _sum: { valor: -300 } }],
+            8: [{ categoriaId: "cat-salario", tipo: "RECEITA", _sum: { valor: 5000 } }],
+            7: [{ categoriaId: "cat-mercado", tipo: "DESPESA", _sum: { valor: -200 } }],
+            6: [],
+          } as Record<number, unknown[]>
+        )[mes] ?? [];
+      }
+      return []; // by conta (calcularSaldos)
+    });
+
+    mockPrisma.categoria.findMany.mockResolvedValue([
+      { id: "cat-mercado", nome: "Mercado", grupoId: null, grupo: null, subgrupoId: null, subgrupo: null },
+      { id: "cat-salario", nome: "Salário", grupoId: null, grupo: null, subgrupoId: null, subgrupo: null },
+    ]);
+
+    // findMany: recentes do mês atual, e as duas listas de pendências (consolidado:false).
+    mockPrisma.transacao.findMany.mockImplementation(async (args: {
+      where?: { consolidado?: boolean };
+    }) => {
+      if (args.where?.consolidado === false) return [];
+      return [
+        txn({ id: "set", data: new Date("2026-09-12T00:00:00.000Z"), tipo: "DESPESA", valor: -300 }),
+      ];
+    });
+
     mockPrisma.orcamentoAnual.findFirst.mockResolvedValue(null);
     mockPrisma.meta.findMany.mockResolvedValue([]);
 
@@ -478,7 +478,7 @@ describe("transacoes.service — buscarHome", () => {
       },
       _sum: { valor: true },
     });
-    // um único findMany para os 4 meses de resumo (+2 de pendências)
+    // Nada de fetch de linhas cruas da janela: só recentes (take:6) + 2 de pendências.
     expect(mockPrisma.transacao.findMany).toHaveBeenCalledTimes(3);
 
     expect(home.meses.map((m) => [m.ano, m.mes])).toEqual([
@@ -501,6 +501,18 @@ describe("transacoes.service — buscarHome", () => {
     });
     expect(home.meses[2]).toMatchObject({ saldoAnterior: 100, totalSaidas: 200, saldoFinal: -100 });
     expect(home.meses[3]).toMatchObject({ saldoAnterior: 100, saldoFinal: 100 });
+
+    // recentes só no mês atual; meses fechados vêm vazios (não são consumidos).
+    expect(home.meses[0].recentes.map((t) => t.id)).toEqual(["set"]);
+    expect(home.meses[1].recentes).toEqual([]);
+
+    // detalhamento por categoria a partir do groupBy + catálogo de categorias
+    expect(home.meses[2].despesasPorCategoria).toEqual([
+      expect.objectContaining({ categoriaId: "cat-mercado", categoriaNome: "Mercado", total: 200 }),
+    ]);
+    expect(home.meses[0].despesasPorCategoria).toEqual([
+      expect.objectContaining({ categoriaId: null, categoriaNome: "Sem Categoria", total: 300 }),
+    ]);
 
     expect(home.evolucaoSaldo).toEqual([
       { ano: 2026, mes: 4, saldoFinal: 100 },
