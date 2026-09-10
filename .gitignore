@@ -10,6 +10,10 @@ Thumbs.db
 .claude/
 skills-lock.json
 
+# Outras ferramentas de IA (config local)
+.agents/
+.codex/
+
 # Variáveis de ambiente
 .env
 .env.local
