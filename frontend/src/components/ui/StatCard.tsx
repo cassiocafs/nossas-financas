@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { formatarMoeda } from "@/lib/format";
+import { useFormatarValor } from "@/hooks/use-formatar-valor";
 
 type Tone = "in" | "out" | "saved";
 
@@ -36,6 +36,7 @@ export function StatCard({
   ariaLabel,
   className = "",
 }: StatCardProps) {
+  const formatarValor = useFormatarValor();
   const corValor =
     tone === "saved" && amount < 0 ? "text-foreground" : VALOR_COR[tone];
 
@@ -43,7 +44,7 @@ export function StatCard({
     <>
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <span className={`num text-[19px] font-semibold ${corValor}`}>
-        {formatarMoeda(amount)}
+        {formatarValor(amount)}
       </span>
       <span className="text-xs text-muted-foreground">{caption}</span>
     </>

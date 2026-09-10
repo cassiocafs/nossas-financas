@@ -9,11 +9,13 @@ import {
   ultimoDiaMesUTC,
 } from "../../lib/datas.js";
 import { toNumber } from "../../lib/decimal.js";
+import { comTempo } from "../../lib/timing.js";
 import { aprenderComTransacao } from "../regras/regras.service.js";
 import type {
   CriarTransacaoInput,
   CriarTransferenciaInput,
   EditarTransacaoInput,
+  FluxoCaixaQuery,
   ListarTransacoesQuery,
 } from "./transacoes.schemas.js";
 
@@ -478,6 +480,14 @@ async function calcularSaldoAnterior(
 }
 
 export async function listarTransacoesMes(espacoId: string, filtros: ListarTransacoesQuery) {
+  return comTempo(
+    "listarTransacoesMes",
+    { espacoId, ano: filtros.ano, mes: filtros.mes },
+    () => listarTransacoesMesImpl(espacoId, filtros),
+  );
+}
+
+async function listarTransacoesMesImpl(espacoId: string, filtros: ListarTransacoesQuery) {
   const contas = await resolverContasEmEscopo(espacoId, filtros.contaIds);
   const contaIdsEmEscopo = contas.map((c) => c.id);
   const saldoInicialTotal = contas.reduce((soma, c) => soma + toNumber(c.saldoInicial), 0);
@@ -545,6 +555,19 @@ export async function listarTransacoesMes(espacoId: string, filtros: ListarTrans
 }
 
 export async function buscarResumoMensal(
+  espacoId: string,
+  ano: number,
+  mes: number,
+  contaIds?: string[],
+) {
+  return comTempo(
+    "buscarResumoMensal",
+    { espacoId, ano, mes },
+    () => buscarResumoMensalImpl(espacoId, ano, mes, contaIds),
+  );
+}
+
+async function buscarResumoMensalImpl(
   espacoId: string,
   ano: number,
   mes: number,
@@ -697,4 +720,71 @@ export async function buscarEvolucaoSaldo(
   }
 
   return evolucao;
+}
+
+export interface PontoFluxoCaixa {
+  ano: number;
+  mes: number;
+  entradas: number;
+  saidas: number;
+}
+
+export async function buscarFluxoCaixa(
+  espacoId: string,
+  fim: { ano: number; mes: number },
+  meses: number,
+  contaIds?: string[],
+): Promise<{ serie: PontoFluxoCaixa[] }> {
+  return comTempo(
+    "buscarFluxoCaixa",
+    { espacoId, ano: fim.ano, mes: fim.mes, meses },
+    () => buscarFluxoCaixaImpl(espacoId, fim, meses, contaIds),
+  );
+}
+
+async function buscarFluxoCaixaImpl(
+  espacoId: string,
+  fim: { ano: number; mes: number },
+  meses: number,
+  contaIds?: string[],
+): Promise<{ serie: PontoFluxoCaixa[] }> {
+  const contas = await resolverContasEmEscopo(espacoId, contaIds);
+  const contaIdsEmEscopo = contas.map((c) => c.id);
+
+  const totalFim = fim.ano * 12 + (fim.mes - 1);
+  const totalInicio = totalFim - (meses - 1);
+  const inicio = { ano: Math.floor(totalInicio / 12), mes: (totalInicio % 12) + 1 };
+
+  const sequencia = sequenciaMeses(inicio.ano, inicio.mes, fim.ano, fim.mes);
+  const primeiroDia = primeiroDiaMesUTC(inicio.ano, inicio.mes);
+  const ultimoDia = ultimoDiaMesUTC(fim.ano, fim.mes);
+
+  const agrupado = await prisma.transacao.groupBy({
+    by: ["data", "tipo"],
+    where: {
+      espacoId,
+      contaId: { in: contaIdsEmEscopo },
+      data: { gte: primeiroDia, lte: ultimoDia },
+      tipo: { in: ["DESPESA", "RECEITA"] },
+    },
+    _sum: { valor: true },
+  });
+
+  const chave = (ano: number, mes: number) => `${ano}-${mes}`;
+  const baldes = new Map<string, PontoFluxoCaixa>();
+  for (const { ano, mes } of sequencia) {
+    baldes.set(chave(ano, mes), { ano, mes, entradas: 0, saidas: 0 });
+  }
+
+  for (const linha of agrupado) {
+    const ano = linha.data.getUTCFullYear();
+    const mes = linha.data.getUTCMonth() + 1;
+    const balde = baldes.get(chave(ano, mes));
+    if (!balde) continue;
+    const valorAbs = Math.abs(toNumber(linha._sum.valor));
+    if (linha.tipo === "RECEITA") balde.entradas += valorAbs;
+    else balde.saidas += valorAbs;
+  }
+
+  return { serie: sequencia.map(({ ano, mes }) => baldes.get(chave(ano, mes))!) };
 }

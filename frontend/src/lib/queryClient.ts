@@ -17,9 +17,10 @@ export const queryClient = new QueryClient({
       retry: shouldRetry,
       // Dados financeiros do próprio usuário não precisam ser revalidados a
       // cada foco de janela; mutations já invalidam as queries afetadas, então
-      // uma janela de 30s de "fresco" evita refetch redundante das ~7
-      // requisições paralelas da Home sem risco de mostrar dado desatualizado.
-      staleTime: 30_000,
+      // uma janela de 1 min de "fresco" evita refetch redundante das
+      // requisições paralelas da Home (e ao navegar entre meses) sem risco de
+      // mostrar dado desatualizado.
+      staleTime: 60_000,
     },
   },
 });

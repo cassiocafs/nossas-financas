@@ -1,4 +1,4 @@
-import { formatarMoeda } from "@/lib/format";
+import { useFormatarValor } from "@/hooks/use-formatar-valor";
 
 interface ValorProps {
   valor: number;
@@ -9,6 +9,7 @@ interface ValorProps {
 }
 
 export function Valor({ valor, className = "", neutro = false, saldo = false }: ValorProps) {
+  const formatarValor = useFormatarValor();
   const cor = neutro
     ? "text-foreground"
     : valor < 0
@@ -21,7 +22,7 @@ export function Valor({ valor, className = "", neutro = false, saldo = false }: 
 
   return (
     <span className={`num ${cor} ${className}`}>
-      {formatarMoeda(valor)}
+      {formatarValor(valor)}
     </span>
   );
 }

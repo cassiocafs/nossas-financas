@@ -38,7 +38,7 @@ export function TransacoesPage() {
 
   const { data: contas = [] } = useQuery({ queryKey: ["contas"], queryFn: () => listarContas(true) });
   const { contasSelecionadasIds } = useAccountFilter();
-  const { categoriasSelecionadasIds } = useCategoryFilter();
+  const { categoriasSelecionadasIds, alternarCategoriaSelecionada } = useCategoryFilter();
   const categoriaIds =
     categoriasSelecionadasIds.length > 0 ? categoriasSelecionadasIds : undefined;
 
@@ -49,6 +49,21 @@ export function TransacoesPage() {
       proximos.delete("novo");
       setSearchParams(proximos, { replace: true });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Semeia o filtro de categoria a partir de `?categoriaIds=` (ex.: CTA de um insight
+  // na Home). Consome o param e limpa da URL, no mesmo padrão do `?novo=1`.
+  useEffect(() => {
+    const param = searchParams.get("categoriaIds");
+    if (!param) return;
+    const ids = param.split(",").filter(Boolean);
+    for (const id of ids) {
+      if (!categoriasSelecionadasIds.includes(id)) alternarCategoriaSelecionada(id);
+    }
+    const proximos = new URLSearchParams(searchParams);
+    proximos.delete("categoriaIds");
+    setSearchParams(proximos, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

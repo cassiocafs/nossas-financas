@@ -84,6 +84,14 @@ export const evolucaoSaldoQuerySchema = z
     path: ["anoInicio"],
   });
 
+export const fluxoCaixaQuerySchema = z.object({
+  ano: z.coerce.number().int(),
+  mes: z.coerce.number().int().min(1).max(12),
+  meses: z.coerce.number().int().min(1).max(24).default(6),
+  contaIds: contaIdsSchema,
+});
+export type FluxoCaixaQuery = z.infer<typeof fluxoCaixaQuerySchema>;
+
 export const excluirLoteSchema = z.object({ ids: z.array(idSchema).min(1) });
 export const consolidarLoteSchema = z.object({
   ids: z.array(idSchema).min(1),

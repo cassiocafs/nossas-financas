@@ -137,6 +137,31 @@ export function buscarEvolucaoSaldo(
   return apiFetch<PontoEvolucaoSaldo[]>(`/api/transacoes/evolucao-saldo?${params.toString()}`);
 }
 
+export interface PontoFluxoCaixa {
+  ano: number;
+  mes: number;
+  entradas: number;
+  saidas: number;
+}
+
+export interface FluxoCaixa {
+  serie: PontoFluxoCaixa[];
+}
+
+export function buscarFluxoCaixa(
+  fim: PeriodoMes,
+  meses = 6,
+  contaIds?: string[],
+): Promise<FluxoCaixa> {
+  const params = new URLSearchParams({
+    ano: String(fim.ano),
+    mes: String(fim.mes),
+    meses: String(meses),
+  });
+  if (contaIds?.length) params.set("contaIds", contaIds.join(","));
+  return apiFetch<FluxoCaixa>(`/api/transacoes/fluxo-caixa?${params.toString()}`);
+}
+
 export function criarTransacao(input: CriarTransacaoInput): Promise<Transacao> {
   return apiFetch<Transacao>("/api/transacoes", {
     method: "POST",

@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { formatarMoeda } from "@/lib/format";
+import { usePreferences } from "@/contexts/PreferencesContext";
+import { useFormatarValor } from "@/hooks/use-formatar-valor";
 
 interface FinancialCardProps {
   label: string;
@@ -17,7 +17,8 @@ interface FinancialCardProps {
  * "Saldo anterior" — ambos vivem na tela de extrato.
  */
 export function FinancialCard({ label, amount, delta }: FinancialCardProps) {
-  const [oculto, setOculto] = useState(false);
+  const { hideValues, toggleHideValues } = usePreferences();
+  const formatarValor = useFormatarValor();
 
   return (
     <Card
@@ -30,19 +31,19 @@ export function FinancialCard({ label, amount, delta }: FinancialCardProps) {
         </p>
         <button
           type="button"
-          onClick={() => setOculto((v) => !v)}
-          aria-label={oculto ? "Mostrar saldo" : "Ocultar saldo"}
-          title={oculto ? "Mostrar saldo" : "Ocultar saldo"}
+          onClick={toggleHideValues}
+          aria-label={hideValues ? "Mostrar valores" : "Ocultar valores"}
+          title={hideValues ? "Mostrar valores" : "Ocultar valores"}
           className="-m-1 grid size-8 shrink-0 place-items-center rounded-full bg-primary-foreground/[0.14] text-primary-foreground/85 transition-colors hover:bg-primary-foreground/25"
         >
-          {oculto ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+          {hideValues ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
         </button>
       </div>
       <div className="min-w-0">
         <p className="num text-[clamp(1.125rem,1.1rem+1vw,1.5rem)] leading-[1.1] font-bold text-primary-foreground">
-          {oculto ? "R$ ••••••" : formatarMoeda(amount)}
+          {formatarValor(amount)}
         </p>
-        {delta && !oculto && (
+        {delta && (
           <p className="mt-1 text-sm text-primary-foreground/80">{delta}</p>
         )}
       </div>

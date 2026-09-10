@@ -141,6 +141,8 @@ model Categoria {
   regrasTransacao RegraTransacao[]
 
   @@unique([espacoId, grupoId, subgrupoId, nome])
+  @@index([grupoId])
+  @@index([subgrupoId])
 }
 
 model RegraCategorizacao {
@@ -235,6 +237,7 @@ model Transacao {
   serie                SerieRecorrencia?     @relation(fields: [serieId], references: [id])
 
   @@index([espacoId, data])
+  @@index([espacoId, contaId, data])
   @@index([contaId])
   @@index([categoriaId])
   @@index([serieId])
@@ -262,4 +265,5 @@ model OrcamentoCategoriaMes {
   categoria        Categoria      @relation(fields: [categoriaId], references: [id])
 
   @@unique([orcamentoAnualId, categoriaId, mes])
+  @@index([categoriaId])
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, CircleAlert, Plane, PiggyBank } from "lucide-react";
-import { Link, useSearchParams } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { Link, useNavigate, useSearchParams } from "react-router";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { buscarEvolucaoSaldo, buscarResumoMensal, type PeriodoMes } from "@/api/transacoes";
 import { listarContas } from "@/api/contas";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,7 +20,9 @@ import { FinancialCard } from "@/components/ui/FinancialCard";
 import { StatCard } from "@/components/ui/StatCard";
 import { GoalCard } from "@/components/ui/GoalCard";
 import { InsightCard } from "@/components/ui/InsightCard";
-import { formatarMoeda } from "@/lib/format";
+import { useFormatarValor } from "@/hooks/use-formatar-valor";
+import { useInsightMensal } from "@/hooks/use-insight-mensal";
+import type { InsightCta } from "@/lib/insights";
 
 const MESES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -37,26 +39,33 @@ function subtrairMeses(periodo: PeriodoMes, quantidade: number): PeriodoMes {
   return { ano: data.getUTCFullYear(), mes: data.getUTCMonth() + 1 };
 }
 
-/** Legenda curta do card do topo (só a variação percentual contra o mês anterior). */
-function variacaoPercentual(atual: number, anterior: number): string {
-  if (anterior === 0) return "sem base de comparação";
-  const pct = ((atual - anterior) / Math.abs(anterior)) * 100;
-  const arredondado = Number(pct.toFixed(1));
-  const sinal = arredondado > 0 ? "+" : arredondado < 0 ? "−" : "";
-  return `${sinal}${Math.abs(arredondado).toFixed(1).replace(".", ",")}%`;
+/** Legenda curta do card: só o delta em reais contra o mês anterior. */
+function variacaoTexto(
+  atual: number,
+  anterior: number,
+  formatar: (valor: number) => string,
+): string {
+  if (anterior === 0) return "sem dado do mês anterior";
+  const delta = atual - anterior;
+  const sinal = delta > 0 ? "+" : delta < 0 ? "−" : "";
+  return `${sinal}${formatar(Math.abs(delta))}`;
 }
 
-/** Descrição da variação para leitores de tela (não depende de ícone de direção). */
-function variacaoDescritiva(atual: number, anterior: number): string {
-  if (anterior === 0) return "sem comparação com o mês anterior";
-  const pct = ((atual - anterior) / Math.abs(anterior)) * 100;
-  const arredondado = Number(pct.toFixed(1));
-  if (arredondado === 0) return "estável ante o mês anterior";
-  const direcao = arredondado > 0 ? "alta" : "queda";
-  return `${direcao} de ${Math.abs(arredondado).toFixed(1).replace(".", ",")}% ante o mês anterior`;
+/** Descrição da variação para leitores de tela (não depende de ícone). */
+function variacaoDescritiva(
+  atual: number,
+  anterior: number,
+  formatar: (valor: number) => string,
+): string {
+  if (anterior === 0) return "sem dado do mês anterior";
+  const delta = atual - anterior;
+  if (delta === 0) return "estável ante o mês anterior";
+  const direcao = delta > 0 ? "alta" : "queda";
+  return `${direcao} de ${formatar(Math.abs(delta))} ante o mês anterior`;
 }
 
 export function HomePage() {
+  const formatarValor = useFormatarValor();
   const { session } = useAuth();
   const nome = (session?.user.user_metadata as { nome?: string } | undefined)?.nome;
   const saudacao = nome ? nome.split(" ")[0] : (session?.user.email ?? "");
@@ -69,6 +78,19 @@ export function HomePage() {
   const { contasSelecionadasIds } = useAccountFilter();
   const contaIds = contasSelecionadasIds.length > 0 ? contasSelecionadasIds : undefined;
 
+  const navigate = useNavigate();
+  const insight = useInsightMensal(ano, mes, contaIds);
+
+  function aplicarCta(cta: InsightCta) {
+    if (cta.scrollTo) {
+      document
+        .getElementById(cta.scrollTo)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    if (cta.to) navigate(cta.to);
+  }
+
   function mudarMes(novoAno: number, novoMes: number) {
     setSearchParams({ ano: String(novoAno), mes: String(novoMes) });
   }
@@ -76,12 +98,16 @@ export function HomePage() {
   const { data, isLoading } = useQuery({
     queryKey: ["transacoes", "resumo", ano, mes, contaIds],
     queryFn: () => buscarResumoMensal(ano, mes, contaIds),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60_000,
   });
 
   const anterior = subtrairMeses({ ano, mes }, 1);
   const { data: resumoAnterior } = useQuery({
     queryKey: ["transacoes", "resumo", anterior.ano, anterior.mes, contaIds],
     queryFn: () => buscarResumoMensal(anterior.ano, anterior.mes, contaIds),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60_000,
   });
 
   const { data: contas } = useQuery({
@@ -113,6 +139,8 @@ export function HomePage() {
       contaIds,
     ],
     queryFn: () => buscarEvolucaoSaldo(evolucaoInicio, evolucaoFim, contaIds),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60_000,
   });
 
   const despesasSemCategoria = data?.despesasPorCategoria.find((d) => d.categoriaId === null);
@@ -151,7 +179,9 @@ export function HomePage() {
           <div className="flex min-w-0 flex-col gap-6">
             {(() => {
               const mesNome = MESES[mes - 1].toLowerCase();
-              const deltaSaldo = data.saldoAnterior ? patrimonio - data.saldoAnterior : null;
+              const deltaSaldo = data.saldoAnterior
+                ? patrimonio - data.saldoAnterior
+                : null;
               const pctSobrou =
                 data.totalEntradas > 0
                   ? `${((resultado / data.totalEntradas) * 100).toFixed(1).replace(".", ",")}%`
@@ -165,7 +195,7 @@ export function HomePage() {
                       delta={
                         deltaSaldo === null
                           ? undefined
-                          : `${deltaSaldo >= 0 ? "+" : "−"}${formatarMoeda(Math.abs(deltaSaldo))}`
+                          : `${deltaSaldo >= 0 ? "+" : "−"}${formatarValor(Math.abs(deltaSaldo))}`
                       }
                     />
                   </div>
@@ -175,10 +205,10 @@ export function HomePage() {
                     amount={data.totalEntradas}
                     tone="in"
                     href={`/transacoes?ano=${ano}&mes=${mes}`}
-                    ariaLabel={`Entrou em ${mesNome}, ${formatarMoeda(data.totalEntradas)}${resumoAnterior ? `, ${variacaoDescritiva(data.totalEntradas, resumoAnterior.totalEntradas)}` : ""}`}
+                    ariaLabel={`Entrou em ${mesNome}, ${formatarValor(data.totalEntradas)}${resumoAnterior ? `, ${variacaoDescritiva(data.totalEntradas, resumoAnterior.totalEntradas, formatarValor)}` : ""}`}
                     caption={
                       resumoAnterior
-                        ? variacaoPercentual(data.totalEntradas, resumoAnterior.totalEntradas)
+                        ? variacaoTexto(data.totalEntradas, resumoAnterior.totalEntradas, formatarValor)
                         : "…"
                     }
                   />
@@ -188,10 +218,10 @@ export function HomePage() {
                     amount={data.totalSaidas}
                     tone="out"
                     href={`/transacoes?ano=${ano}&mes=${mes}`}
-                    ariaLabel={`Saiu em ${mesNome}, ${formatarMoeda(data.totalSaidas)}${resumoAnterior ? `, ${variacaoDescritiva(data.totalSaidas, resumoAnterior.totalSaidas)}` : ""}`}
+                    ariaLabel={`Saiu em ${mesNome}, ${formatarValor(data.totalSaidas)}${resumoAnterior ? `, ${variacaoDescritiva(data.totalSaidas, resumoAnterior.totalSaidas, formatarValor)}` : ""}`}
                     caption={
                       resumoAnterior
-                        ? variacaoPercentual(data.totalSaidas, resumoAnterior.totalSaidas)
+                        ? variacaoTexto(data.totalSaidas, resumoAnterior.totalSaidas, formatarValor)
                         : "…"
                     }
                   />
@@ -200,7 +230,7 @@ export function HomePage() {
                     label="Sobrou"
                     amount={resultado}
                     tone="saved"
-                    ariaLabel={`Sobrou em ${mesNome}, ${formatarMoeda(resultado)}, ${pctSobrou} do que entrou`}
+                    ariaLabel={`Sobrou em ${mesNome}, ${formatarValor(resultado)}, ${pctSobrou} do que entrou`}
                     caption={pctSobrou}
                   />
                 </div>
@@ -213,13 +243,20 @@ export function HomePage() {
           </div>
 
           <div className="flex flex-col gap-6">
-            <InsightCard
-              cta={{ label: "Ver gastos com transporte", onClick: () => {} }}
-            >
-              Acompanhe abaixo para onde foi o dinheiro este mês e ajuste o que fizer sentido.
-            </InsightCard>
+            {insight && (
+              <InsightCard
+                mascotState={insight.mascotState}
+                cta={
+                  insight.cta
+                    ? { label: insight.cta.label, onClick: () => aplicarCta(insight.cta!) }
+                    : undefined
+                }
+              >
+                {insight.texto}
+              </InsightCard>
+            )}
 
-            <Card className="p-5">
+            <Card className="p-5" id="grafico-categorias">
               <CategoriaDrilldownChart
                 dados={data.despesasPorCategoria}
                 tipo="DESPESA"
@@ -280,7 +317,7 @@ export function HomePage() {
               className="card-surface flex items-center gap-2 p-3 text-sm text-foreground/70 hover:underline"
             >
               <CircleAlert className="size-4 shrink-0 text-muted-foreground" />
-              {formatarMoeda(despesasSemCategoria.total)} em despesas sem categoria este mês
+              {formatarValor(despesasSemCategoria.total)} em despesas sem categoria este mês
             </Link>
           )}
 
@@ -303,16 +340,19 @@ export function HomePage() {
             />
           )}
 
-          <div className="grid gap-6 sm:grid-cols-2">
-            <PendenciasList
-              titulo="Anteriores não consolidadas"
-              itens={data.anterioresNaoConsolidadas}
-            />
-            <PendenciasList
-              titulo="Próximas não consolidadas"
-              itens={data.proximasNaoConsolidadas}
-            />
-          </div>
+          {(data.anterioresNaoConsolidadas.length > 0 ||
+            data.proximasNaoConsolidadas.length > 0) && (
+            <div className="grid gap-6 sm:grid-cols-2">
+              <PendenciasList
+                titulo="Anteriores não consolidadas"
+                itens={data.anterioresNaoConsolidadas}
+              />
+              <PendenciasList
+                titulo="Próximas não consolidadas"
+                itens={data.proximasNaoConsolidadas}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

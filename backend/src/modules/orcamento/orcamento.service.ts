@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma.js";
 import { HttpError } from "../../middlewares/errorHandler.js";
 import { diasNoMes, primeiroDiaMesUTC, ultimoDiaMesUTC } from "../../lib/datas.js";
 import { toNumber } from "../../lib/decimal.js";
+import { comTempo } from "../../lib/timing.js";
 import type { DefinirPrevistoInput } from "./orcamento.schemas.js";
 
 async function buscarOrcamentoOuFalhar(espacoId: string, id: string) {
@@ -58,54 +59,67 @@ async function montarGrade(
   orcamento: { id: string; ano: number },
   mes: number,
 ) {
-  const orcamentoId = orcamento.id;
+  return comTempo("montarGrade", { espacoId, ano: orcamento.ano, mes }, () =>
+    montarGradeImpl(espacoId, orcamento, mes),
+  );
+}
 
-  const itensMes = await prisma.orcamentoCategoriaMes.findMany({
-    where: { orcamentoAnualId: orcamentoId, mes },
-    include: { categoria: { include: { grupo: true, subgrupo: true } } },
-  });
+async function montarGradeImpl(
+  espacoId: string,
+  orcamento: { id: string; ano: number },
+  mes: number,
+) {
+  const orcamentoId = orcamento.id;
 
   const primeiroDia = primeiroDiaMesUTC(orcamento.ano, mes);
   const ultimoDia = ultimoDiaMesUTC(orcamento.ano, mes);
 
-  const categoriaIdsOrcadas = new Set(itensMes.map((i) => i.categoriaId));
+  // Orçamento lida apenas com saídas: só DESPESA entra no grid e nos totais.
+  // Queries independentes rodam em paralelo.
+  const [itensMes, transacoesDespesaMes, realizadoPorCategoria] = await Promise.all([
+    prisma.orcamentoCategoriaMes.findMany({
+      where: { orcamentoAnualId: orcamentoId, mes },
+      include: { categoria: { include: { grupo: true, subgrupo: true } } },
+    }),
+    prisma.transacao.findMany({
+      where: { espacoId, tipo: "DESPESA", data: { gte: primeiroDia, lte: ultimoDia } },
+      select: { data: true, valor: true },
+    }),
+    prisma.transacao.groupBy({
+      by: ["categoriaId"],
+      where: {
+        espacoId,
+        tipo: "DESPESA",
+        categoriaId: { not: null },
+        data: { gte: primeiroDia, lte: ultimoDia },
+      },
+      _sum: { valor: true },
+    }),
+  ]);
 
-  const transacoesForaDoOrcamento = await prisma.transacao.findMany({
-    where: {
-      espacoId,
-      tipo: { not: "TRANSFERENCIA" },
-      categoriaId: { not: null, notIn: [...categoriaIdsOrcadas] },
-      data: { gte: primeiroDia, lte: ultimoDia },
-    },
-    select: { categoriaId: true },
-    distinct: ["categoriaId"],
-  });
+  // Categorias de receita não pertencem ao orçamento de saídas.
+  const itensMesDespesa = itensMes.filter((i) => i.categoria.tipo !== "RECEITA");
+  const categoriaIdsOrcadas = new Set(itensMesDespesa.map((i) => i.categoriaId));
 
-  const categoriasExtras = transacoesForaDoOrcamento.length > 0
-    ? await prisma.categoria.findMany({
-        where: { id: { in: transacoesForaDoOrcamento.map((t) => t.categoriaId!) } },
-        include: { grupo: true, subgrupo: true },
-      })
-    : [];
-
-  const todasCategoriaIds = [...categoriaIdsOrcadas, ...categoriasExtras.map((c) => c.id)];
-
-  const realizadoPorCategoria = await prisma.transacao.groupBy({
-    by: ["categoriaId", "tipo"],
-    where: {
-      espacoId,
-      categoriaId: { in: todasCategoriaIds },
-      tipo: { not: "TRANSFERENCIA" },
-      data: { gte: primeiroDia, lte: ultimoDia },
-    },
-    _sum: { valor: true },
-  });
   const realizadoMap = new Map<string, number>();
   for (const r of realizadoPorCategoria) {
     if (!r.categoriaId) continue;
     const atual = realizadoMap.get(r.categoriaId) ?? 0;
     realizadoMap.set(r.categoriaId, atual + Math.abs(toNumber(r._sum.valor)));
   }
+
+  // Categorias com despesa lançada no mês mas fora do orçamento: derivadas do
+  // próprio groupBy acima, sem uma query extra de transações.
+  const idsCategoriasExtras = [...realizadoMap.keys()].filter(
+    (id) => !categoriaIdsOrcadas.has(id),
+  );
+  const categoriasExtras =
+    idsCategoriasExtras.length > 0
+      ? await prisma.categoria.findMany({
+          where: { id: { in: idsCategoriasExtras }, tipo: { not: "RECEITA" } },
+          include: { grupo: true, subgrupo: true },
+        })
+      : [];
 
   interface SubgrupoBucket {
     subgrupoId: string;
@@ -131,7 +145,7 @@ async function montarGrade(
   let totalRealizado = 0;
 
   const itensParaExibir = [
-    ...itensMes.map((i) => ({
+    ...itensMesDespesa.map((i) => ({
       categoriaId: i.categoriaId,
       valorPrevisto: toNumber(i.valorPrevisto),
       categoria: i.categoria,
@@ -192,10 +206,6 @@ async function montarGrade(
   }
 
   const totalDias = diasNoMes(orcamento.ano, mes);
-  const transacoesDespesaMes = await prisma.transacao.findMany({
-    where: { espacoId, tipo: "DESPESA", data: { gte: primeiroDia, lte: ultimoDia } },
-    select: { data: true, valor: true },
-  });
 
   const somaPorDia = new Array<number>(totalDias + 1).fill(0);
   for (const t of transacoesDespesaMes) {

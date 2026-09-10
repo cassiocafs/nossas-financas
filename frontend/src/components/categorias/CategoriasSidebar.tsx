@@ -92,7 +92,7 @@ export function CategoriasSidebar() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex flex-col">
       <div className="flex items-center gap-2.5">
         <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
           Categorias
@@ -111,7 +111,7 @@ export function CategoriasSidebar() {
       <div
         role="tree"
         aria-label="Categorias"
-        className="scrollbar-thin mt-2.5 -mr-1.5 flex min-h-0 flex-1 flex-col gap-px overflow-y-auto pr-1.5"
+        className="scrollbar-thin mt-2.5 -mr-1.5 flex flex-col gap-px pr-1.5"
       >
         {grupos.map((grupo) => {
           const aberto = gruposAbertos.includes(grupo.id);

@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listarContas, type Conta } from "@/api/contas";
-import { formatarMoeda } from "@/lib/format";
+import { useFormatarValor } from "@/hooks/use-formatar-valor";
 import { ContaFormModal } from "./ContaFormModal";
 import { ExcluirContaDialog } from "./ExcluirContaDialog";
 import { Button } from "@/components/ui/Button";
 import { cardClassName } from "@/components/ui/Card";
 
 export function ContasSection() {
+  const formatarValor = useFormatarValor();
   const { data: contas = [], isLoading } = useQuery({
     queryKey: ["contas"],
     queryFn: () => listarContas(true),
@@ -39,7 +40,7 @@ export function ContasSection() {
           <h2 className="text-lg font-semibold text-foreground">Contas</h2>
           <p className="text-sm text-muted-foreground">
             Saldo consolidado:{" "}
-            <span className="font-medium text-foreground">{formatarMoeda(saldoConsolidado)}</span>
+            <span className="font-medium text-foreground">{formatarValor(saldoConsolidado)}</span>
           </p>
         </div>
         <Button onClick={abrirCriacao}>Nova conta</Button>
@@ -56,7 +57,7 @@ export function ContasSection() {
             >
               <span className="text-foreground">{conta.nome}</span>
               <div className="flex items-center gap-4">
-                <span className="text-foreground/80">{formatarMoeda(conta.saldoAtual)}</span>
+                <span className="text-foreground/80">{formatarValor(conta.saldoAtual)}</span>
                 <div className="hidden gap-2 group-hover:flex">
                   <button
                     type="button"
@@ -100,7 +101,7 @@ export function ContasSection() {
                 >
                   <span>{conta.nome}</span>
                   <div className="flex items-center gap-4">
-                    <span>{formatarMoeda(conta.saldoAtual)}</span>
+                    <span>{formatarValor(conta.saldoAtual)}</span>
                     <button
                       type="button"
                       onClick={() => abrirEdicao(conta)}

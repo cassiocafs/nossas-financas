@@ -1,7 +1,8 @@
 import { useState, type MouseEvent } from "react";
-import { Bell } from "lucide-react";
+import { Bell, Eye, EyeOff } from "lucide-react";
 import { NavLink } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePreferences } from "@/contexts/PreferencesContext";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconButton } from "@/components/ui/IconButton";
 import { ContextMenu } from "@/components/ui/ContextMenu";
@@ -18,6 +19,7 @@ const links = [
 
 export function TopBar() {
   const { session, signOut } = useAuth();
+  const { hideValues, toggleHideValues } = usePreferences();
   const email = session?.user.email ?? "";
   const nome = (session?.user.user_metadata as { nome?: string } | undefined)?.nome;
 
@@ -30,7 +32,7 @@ export function TopBar() {
 
   return (
     <header className="relative z-30 flex h-[72px] shrink-0 items-center gap-8 border-b border-border bg-card px-7">
-      <img src={logoHorizontal} alt="Poupeu" style={{ width: 126 }} className="h-auto shrink-0" />
+      <img src={logoHorizontal} alt="Poupeu" style={{ width: 150 }} className="h-auto shrink-0" />
 
       <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
         {links.map(({ to, label }) => (
@@ -50,6 +52,13 @@ export function TopBar() {
           </NavLink>
         ))}
       </nav>
+
+      <IconButton
+        icon={hideValues ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+        label={hideValues ? "Mostrar valores" : "Ocultar valores"}
+        variant="soft"
+        onClick={toggleHideValues}
+      />
 
       <IconButton icon={<Bell className="size-4" />} label="Notificações" variant="soft" />
 

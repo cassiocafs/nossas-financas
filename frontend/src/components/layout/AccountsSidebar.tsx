@@ -13,7 +13,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { CategoriasSidebar } from "@/components/categorias/CategoriasSidebar";
 import { ContaFormModal } from "@/components/contas/ContaFormModal";
 import { useAccountFilter } from "@/contexts/AccountFilterContext";
-import { formatarMoeda } from "@/lib/format";
+import { useFormatarValor } from "@/hooks/use-formatar-valor";
 
 function parseMoedaPtBr(texto: string): number | null {
   const limpo = texto.trim().replace(/\./g, "").replace(",", ".");
@@ -83,6 +83,7 @@ function ContaMenu({ onEditar, onExcluir, onClose }: ContaMenuProps) {
 
 export function AccountsSidebar() {
   const queryClient = useQueryClient();
+  const formatarValor = useFormatarValor();
   const { contasSelecionadasIds, alternarContaSelecionada } = useAccountFilter();
   const { data: contas } = useQuery({
     queryKey: ["contas", "ativas"],
@@ -141,12 +142,12 @@ export function AccountsSidebar() {
   }
 
   return (
-    <aside className="flex min-h-0 w-[288px] shrink-0 flex-col gap-5 border-r border-border bg-card p-3.5 pt-5">
+    <aside className="flex min-h-0 w-[288px] shrink-0 flex-col gap-5 overflow-y-auto border-r border-border bg-card p-3.5 pt-5">
       <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
         Suas contas
       </p>
 
-      <ul className="scrollbar-thin flex max-h-[40%] min-h-0 shrink-0 flex-col gap-2 overflow-y-auto pr-1">
+      <ul className="scrollbar-thin flex flex-col gap-2 pr-1">
         {(contas ?? []).map((conta) => {
           const selecionada = contasSelecionadasIds.includes(conta.id);
           return (
@@ -167,7 +168,7 @@ export function AccountsSidebar() {
                 {conta.nome}
               </span>
               <span className="num flex-1 text-right text-[12px] leading-[1.2] font-medium whitespace-nowrap text-foreground">
-                {formatarMoeda(conta.saldoAtual)}
+                {formatarValor(conta.saldoAtual)}
               </span>
               <button
                 type="button"

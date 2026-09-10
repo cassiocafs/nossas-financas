@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { buscarResumoMensal } from "@/api/transacoes";
+import { buscarFluxoCaixa } from "@/api/transacoes";
 import { formatarMoeda } from "@/lib/format";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
@@ -14,11 +14,6 @@ const MESES_ABREV = [
 /** Cor de rosa/coral para as saídas: exceção introduzida pelo usuário no handoff de design,
  * não faz parte da paleta de tokens — mantida como hex literal por decisão de produto. */
 const COR_SAIDAS = "#E59D98";
-
-function subtrairMeses(ano: number, mes: number, quantidade: number) {
-  const data = new Date(Date.UTC(ano, mes - 1 - quantidade, 1));
-  return { ano: data.getUTCFullYear(), mes: data.getUTCMonth() + 1 };
-}
 
 function formatarMoedaCompacta(valor: number) {
   return valor.toLocaleString("pt-BR", {
@@ -37,25 +32,25 @@ interface FluxoCaixaChartProps {
 
 export function FluxoCaixaChart({ ano, mes, contaIds }: FluxoCaixaChartProps) {
   const [meses, setMeses] = useState<6 | 12>(6);
-  const periodos = Array.from({ length: meses }, (_, i) => subtrairMeses(ano, mes, meses - 1 - i));
 
-  const resultados = useQueries({
-    queries: periodos.map((p) => ({
-      queryKey: ["transacoes", "resumo", p.ano, p.mes, contaIds],
-      queryFn: () => buscarResumoMensal(p.ano, p.mes, contaIds),
-    })),
+  const { data, isLoading: carregando } = useQuery({
+    queryKey: ["transacoes", "fluxo-caixa", ano, mes, meses, contaIds],
+    queryFn: () => buscarFluxoCaixa({ ano, mes }, meses, contaIds),
+    staleTime: 5 * 60_000,
   });
 
-  const carregando = resultados.some((r) => r.isLoading);
-
-  const serie = periodos.map((p, i) => ({
+  const serie = (data?.serie ?? []).map((p) => ({
     label: `${MESES_ABREV[p.mes - 1]}/${String(p.ano).slice(2)}`,
-    entradas: resultados[i].data?.totalEntradas ?? 0,
-    saidas: resultados[i].data?.totalSaidas ?? 0,
+    entradas: p.entradas,
+    saidas: p.saidas,
   }));
 
-  const mediaEntradas = serie.reduce((soma, m) => soma + m.entradas, 0) / serie.length;
-  const mediaSaidas = serie.reduce((soma, m) => soma + m.saidas, 0) / serie.length;
+  const mediaEntradas = serie.length
+    ? serie.reduce((soma, m) => soma + m.entradas, 0) / serie.length
+    : 0;
+  const mediaSaidas = serie.length
+    ? serie.reduce((soma, m) => soma + m.saidas, 0) / serie.length
+    : 0;
 
   const corEntradas = "var(--color-chart-2)";
   const corGrid = "var(--color-border)";
@@ -100,24 +95,28 @@ export function FluxoCaixaChart({ ano, mes, contaIds }: FluxoCaixaChartProps) {
                 contentStyle={{ fontSize: 12 }}
               />
               <Bar dataKey="entradas" name="Entrou" fill={corEntradas} radius={[6, 6, 2, 2]}>
-                <LabelList
-                  dataKey="entradas"
-                  position="top"
-                  formatter={(valor: unknown) =>
-                    formatarMoedaCompacta(typeof valor === "number" ? valor : Number(valor ?? 0))
-                  }
-                  style={{ fontSize: 10, fill: corEixo }}
-                />
+                {meses === 6 && (
+                  <LabelList
+                    dataKey="entradas"
+                    position="top"
+                    formatter={(valor: unknown) =>
+                      formatarMoedaCompacta(typeof valor === "number" ? valor : Number(valor ?? 0))
+                    }
+                    style={{ fontSize: 10, fill: corEixo }}
+                  />
+                )}
               </Bar>
               <Bar dataKey="saidas" name="Saiu" fill={COR_SAIDAS} radius={[6, 6, 2, 2]}>
-                <LabelList
-                  dataKey="saidas"
-                  position="top"
-                  formatter={(valor: unknown) =>
-                    formatarMoedaCompacta(typeof valor === "number" ? valor : Number(valor ?? 0))
-                  }
-                  style={{ fontSize: 10, fill: "var(--color-yellow-accent)" }}
-                />
+                {meses === 6 && (
+                  <LabelList
+                    dataKey="saidas"
+                    position="top"
+                    formatter={(valor: unknown) =>
+                      formatarMoedaCompacta(typeof valor === "number" ? valor : Number(valor ?? 0))
+                    }
+                    style={{ fontSize: 10, fill: "var(--color-yellow-accent)" }}
+                  />
+                )}
               </Bar>
             </BarChart>
           </ResponsiveContainer>

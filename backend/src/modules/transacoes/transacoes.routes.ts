@@ -10,6 +10,7 @@ import {
   criarTransferenciaSchema,
   editarTransacaoSchema,
   evolucaoSaldoQuerySchema,
+  fluxoCaixaQuerySchema,
   excluirLoteSchema,
   listarTransacoesQuerySchema,
   resumoQuerySchema,
@@ -42,6 +43,20 @@ transacoesRouter.get(
       contaIds,
     );
     res.json(evolucao);
+  }),
+);
+
+transacoesRouter.get(
+  "/fluxo-caixa",
+  asyncHandler(async (req, res) => {
+    const { ano, mes, meses, contaIds } = fluxoCaixaQuerySchema.parse(req.query);
+    const fluxo = await transacoesService.buscarFluxoCaixa(
+      req.espacoId!,
+      { ano, mes },
+      meses,
+      contaIds,
+    );
+    res.json(fluxo);
   }),
 );
 

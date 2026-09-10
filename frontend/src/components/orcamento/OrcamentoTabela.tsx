@@ -28,16 +28,19 @@ interface OrcamentoTabelaProps {
   mes: number;
   grupos: GrupoGrade[];
   onEditarCategoria: (categoriaId: string) => void;
+  onSelecionarCategoria: (categoriaId: string) => void;
 }
 
 function LinhaCategoria({
   linha,
+  onSelecionar,
   onEditar,
   onRemover,
   removendo,
   bloqueado,
 }: {
   linha: CategoriaGrade;
+  onSelecionar: () => void;
   onEditar: () => void;
   onRemover: () => void;
   removendo: boolean;
@@ -61,23 +64,24 @@ function LinhaCategoria({
     <li className={`group flex items-center gap-3 py-1.5 transition-opacity ${removendo ? "opacity-50" : ""}`}>
       <button
         type="button"
-        onClick={onEditar}
+        onClick={onSelecionar}
         disabled={bloqueado}
-        className="w-28 shrink-0 truncate text-left text-sm font-medium text-foreground hover:text-primary disabled:cursor-not-allowed disabled:hover:text-foreground sm:w-40"
+        aria-label={`Ver transações de ${categoriaNome}`}
+        className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-not-allowed"
       >
-        {categoriaNome}
-      </button>
+        <span className="w-28 shrink-0 truncate text-sm font-medium text-foreground group-hover:text-primary group-focus-within:text-primary sm:w-40">
+          {categoriaNome}
+        </span>
 
-      <div className="min-w-0 flex-1">
-        <div className="relative h-6 overflow-hidden rounded-full bg-foreground/10">
-          <div
+        <span className="relative block h-6 min-w-0 flex-1 overflow-hidden rounded-full bg-foreground/10">
+          <span
             className={`absolute inset-y-0 left-0 rounded-l-full bg-black transition-[width] duration-300 ease-out ${
               estourado ? "" : "rounded-r-full"
             }`}
             style={{ width: `${percentualBarra}%` }}
           />
           {estourado && (
-            <div
+            <span
               className="absolute inset-y-0 rounded-r-full bg-money-alert/70 transition-[width] duration-300 ease-out"
               style={{ left: `${percentualBarra}%`, width: `${percentualExcedente}%` }}
             />
@@ -89,8 +93,8 @@ function LinhaCategoria({
           >
             {percentualExibido}%
           </span>
-        </div>
-      </div>
+        </span>
+      </button>
 
       <div className="flex shrink-0 items-center gap-1.5">
         {estourado && (
@@ -106,7 +110,9 @@ function LinhaCategoria({
 
       <div
         className={`flex shrink-0 items-center gap-1.5 transition-opacity ${
-          removendo ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          removendo
+            ? "opacity-100"
+            : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-within:opacity-100"
         }`}
       >
         {removendo ? (
@@ -140,7 +146,13 @@ function LinhaCategoria({
   );
 }
 
-export function OrcamentoTabela({ orcamentoId, mes, grupos, onEditarCategoria }: OrcamentoTabelaProps) {
+export function OrcamentoTabela({
+  orcamentoId,
+  mes,
+  grupos,
+  onEditarCategoria,
+  onSelecionarCategoria,
+}: OrcamentoTabelaProps) {
   const queryClient = useQueryClient();
   const [categoriaParaRemover, setCategoriaParaRemover] = useState<CategoriaGrade | null>(null);
 
@@ -170,6 +182,7 @@ export function OrcamentoTabela({ orcamentoId, mes, grupos, onEditarCategoria }:
           <LinhaCategoria
             key={c.categoriaId}
             linha={c}
+            onSelecionar={() => onSelecionarCategoria(c.categoriaId)}
             onEditar={() => onEditarCategoria(c.categoriaId)}
             onRemover={() => setCategoriaParaRemover(c)}
             removendo={removerMutation.isPending && removerMutation.variables === c.categoriaId}

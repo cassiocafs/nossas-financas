@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { useQuery } from "@tanstack/react-query";
-import { listarTransacoesMes, type ItemCategoriaResumo } from "@/api/transacoes";
-import { formatarData, formatarMoeda } from "@/lib/format";
+import { type ItemCategoriaResumo } from "@/api/transacoes";
+import { formatarMoeda } from "@/lib/format";
 import { OUTROS_COR } from "@/lib/chartPalette";
 import { categoryColor } from "@/lib/categoryColor";
-import { cardClassName } from "@/components/ui/Card";
-import { Valor } from "@/components/ui/Valor";
+import { TransacoesDaCategoria } from "@/components/transacoes/TransacoesDaCategoria";
 
 type Nivel =
   | { tipo: "raiz" }
@@ -285,65 +283,6 @@ export function CategoriaDrilldownChart({ dados, tipo, ano, mes, contaIds }: Cat
           categoriaNome={categoriaSelecionada.nome}
           contaIds={contaIds}
         />
-      )}
-    </div>
-  );
-}
-
-interface TransacoesDaCategoriaProps {
-  ano: number;
-  mes: number;
-  tipo: "DESPESA" | "RECEITA";
-  categoriaId: string | null;
-  categoriaNome: string;
-  contaIds?: string[];
-}
-
-function TransacoesDaCategoria({
-  ano,
-  mes,
-  tipo,
-  categoriaId,
-  categoriaNome,
-  contaIds,
-}: TransacoesDaCategoriaProps) {
-  const { data, isLoading } = useQuery({
-    queryKey: ["transacoes", "categoria", ano, mes, categoriaId, contaIds],
-    queryFn: () =>
-      listarTransacoesMes({
-        ano,
-        mes,
-        categoriaIds: categoriaId ? [categoriaId] : undefined,
-        contaIds,
-      }),
-  });
-
-  const transacoes = (data?.dias.flatMap((d) => d.transacoes) ?? []).filter((t) => {
-    if (t.tipo !== tipo) return false;
-    if (categoriaId === null) return t.categoriaId === null;
-    return true;
-  });
-
-  return (
-    <div className="mt-4 border-t border-border pt-3">
-      <h4 className="mb-2 text-[10.5px] font-bold tracking-widest text-muted-foreground uppercase">
-        Transações · {categoriaNome}
-      </h4>
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Carregando...</p>
-      ) : transacoes.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nenhuma transação encontrada.</p>
-      ) : (
-        <ul className={`divide-y divide-border ${cardClassName}`}>
-          {transacoes.map((t) => (
-            <li key={t.id} className="flex items-center justify-between px-3 py-2 text-sm">
-              <span className="text-muted-foreground">
-                {formatarData(t.data)} · {t.descricao}
-              </span>
-              <Valor valor={t.valor} />
-            </li>
-          ))}
-        </ul>
       )}
     </div>
   );
