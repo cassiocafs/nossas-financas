@@ -71,6 +71,8 @@ export const resumoQuerySchema = z.object({
   contaIds: contaIdsSchema,
 });
 
+export const homeQuerySchema = resumoQuerySchema;
+
 export const evolucaoSaldoQuerySchema = z
   .object({
     anoInicio: z.coerce.number().int(),

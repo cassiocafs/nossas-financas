@@ -11,6 +11,7 @@ import {
   editarTransacaoSchema,
   evolucaoSaldoQuerySchema,
   fluxoCaixaQuerySchema,
+  homeQuerySchema,
   relatorioQuerySchema,
   excluirLoteSchema,
   listarTransacoesQuerySchema,
@@ -28,6 +29,15 @@ transacoesRouter.get(
     const { ano, mes, contaIds } = resumoQuerySchema.parse(req.query);
     const resumo = await transacoesService.buscarResumoMensal(req.espacoId!, ano, mes, contaIds);
     res.json(resumo);
+  }),
+);
+
+transacoesRouter.get(
+  "/home",
+  asyncHandler(async (req, res) => {
+    const { ano, mes, contaIds } = homeQuerySchema.parse(req.query);
+    const home = await transacoesService.buscarHome(req.espacoId!, ano, mes, contaIds);
+    res.json(home);
   }),
 );
 

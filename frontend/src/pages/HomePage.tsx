@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, CircleAlert, ArrowDownLeft, ArrowUpRight, TrendingUp } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { buscarEvolucaoSaldo, buscarResumoMensal, type PeriodoMes } from "@/api/transacoes";
-import { listarContas } from "@/api/contas";
+import { buscarEvolucaoSaldo, buscarHome, type PeriodoMes } from "@/api/transacoes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAccountFilter } from "@/contexts/AccountFilterContext";
 import { ComparativoMesAnteriorCard } from "@/components/home/ComparativoMesAnteriorCard";
@@ -81,7 +80,6 @@ export function HomePage() {
   const contaIds = contasSelecionadasIds.length > 0 ? contasSelecionadasIds : undefined;
 
   const navigate = useNavigate();
-  const insight = useInsightMensal(ano, mes, contaIds);
 
   function aplicarCta(cta: InsightCta) {
     if (cta.scrollTo) {
@@ -97,28 +95,36 @@ export function HomePage() {
     setSearchParams({ ano: String(novoAno), mes: String(novoMes) });
   }
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["transacoes", "resumo", ano, mes, contaIds],
-    queryFn: () => buscarResumoMensal(ano, mes, contaIds),
+  // Payload único da Home: resumo do mês + 3 meses de histórico, contas,
+  // evolução de saldo (6m), fluxo de caixa (6m), orçamento e metas — tudo numa
+  // requisição. Ver GET /api/transacoes/home.
+  const { data: home, isLoading } = useQuery({
+    queryKey: ["home", ano, mes, contaIds],
+    queryFn: () => buscarHome(ano, mes, contaIds),
     placeholderData: keepPreviousData,
     staleTime: 5 * 60_000,
   });
 
   const anterior = subtrairMeses({ ano, mes }, 1);
-  const { data: resumoAnterior } = useQuery({
-    queryKey: ["transacoes", "resumo", anterior.ano, anterior.mes, contaIds],
-    queryFn: () => buscarResumoMensal(anterior.ano, anterior.mes, contaIds),
-    placeholderData: keepPreviousData,
-    staleTime: 5 * 60_000,
-  });
+  const data = home?.meses[0];
+  const resumoAnterior = home?.meses[1];
+  const contas = home?.contas;
+  const historicoInsight = useMemo(() => home?.meses.slice(1) ?? [], [home]);
 
-  const { data: contas } = useQuery({
-    queryKey: ["contas", "ativas"],
-    queryFn: () => listarContas(false),
-  });
   const patrimonio = (contas ?? [])
     .filter((c) => contasSelecionadasIds.length === 0 || contasSelecionadasIds.includes(c.id))
     .reduce((soma, c) => soma + c.saldoAtual, 0);
+
+  const insight = useInsightMensal({
+    ano,
+    mes,
+    contaIds,
+    resumoAtual: data,
+    resumoMesAnterior: resumoAnterior,
+    historico: historicoInsight,
+    orcamento: home?.orcamentoGrade ?? undefined,
+    contas,
+  });
 
   const [evolucaoFim, setEvolucaoFim] = useState<PeriodoMes>({ ano, mes });
   const [evolucaoInicio, setEvolucaoInicio] = useState<PeriodoMes>(() =>
@@ -130,7 +136,16 @@ export function HomePage() {
     setEvolucaoInicio(subtrairMeses({ ano, mes }, 5));
   }, [ano, mes]);
 
-  const { data: evolucaoSaldo } = useQuery({
+  const evolucaoInicioPadrao = subtrairMeses({ ano, mes }, 5);
+  const rangeEvolucaoEhPadrao =
+    evolucaoInicio.ano === evolucaoInicioPadrao.ano &&
+    evolucaoInicio.mes === evolucaoInicioPadrao.mes &&
+    evolucaoFim.ano === ano &&
+    evolucaoFim.mes === mes;
+
+  // Só busca separadamente quando o usuário muda o intervalo do gráfico; a visão
+  // padrão (últimos 6 meses) já vem no payload da Home.
+  const { data: evolucaoCustomizada } = useQuery({
     queryKey: [
       "transacoes",
       "evolucao-saldo",
@@ -143,7 +158,10 @@ export function HomePage() {
     queryFn: () => buscarEvolucaoSaldo(evolucaoInicio, evolucaoFim, contaIds),
     placeholderData: keepPreviousData,
     staleTime: 5 * 60_000,
+    enabled: !rangeEvolucaoEhPadrao,
   });
+
+  const evolucaoSaldo = rangeEvolucaoEhPadrao ? home?.evolucaoSaldo : evolucaoCustomizada;
 
   const despesasSemCategoria = data?.despesasPorCategoria.find((d) => d.categoriaId === null);
   const resultado = data ? data.totalEntradas - data.totalSaidas : 0;
@@ -239,7 +257,12 @@ export function HomePage() {
               );
             })()}
 
-            <FluxoCaixaChart ano={ano} mes={mes} contaIds={contaIds} />
+            <FluxoCaixaChart
+              ano={ano}
+              mes={mes}
+              contaIds={contaIds}
+              serieInicial={home?.fluxoCaixa.serie}
+            />
 
             <TransacoesRecentesCard ano={ano} mes={mes} recentes={data.recentes} />
           </div>
@@ -278,7 +301,7 @@ export function HomePage() {
               />
             </Card>
 
-            <MetasResumo />
+            <MetasResumo metas={home?.metas} />
           </div>
         </div>
       )}
@@ -302,9 +325,10 @@ export function HomePage() {
             mes={mes}
             totalEntradas={data.totalEntradas}
             totalSaidas={data.totalSaidas}
+            resumoAnterior={resumoAnterior}
           />
 
-          <OrcamentoResumoCard ano={ano} mes={mes} />
+          <OrcamentoResumoCard ano={ano} mes={mes} grade={home?.orcamentoGrade} />
 
           {evolucaoSaldo && (
             <EvolucaoSaldoChart

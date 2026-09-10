@@ -391,3 +391,139 @@ describe("transacoes.service — buscarEvolucaoSaldo", () => {
     ]);
   });
 });
+
+describe("transacoes.service — buscarHome", () => {
+  function txn(over: Record<string, unknown>) {
+    return {
+      id: "t",
+      tipo: "DESPESA",
+      data: new Date("2026-07-10T00:00:00.000Z"),
+      descricao: "x",
+      contaId: "conta-1",
+      conta: { id: "conta-1", nome: "Conta 1" },
+      categoriaId: null,
+      categoria: null,
+      valor: 0,
+      consolidado: true,
+      nota: null,
+      transferenciaGrupoId: null,
+      criadoEm: new Date("2026-07-10T00:00:00.000Z"),
+      ...over,
+    };
+  }
+
+  it("deriva mês atual + histórico, evolução e fluxo de um único SELECT da janela", async () => {
+    // resolverContasEmEscopo, depois listarContas
+    mockPrisma.conta.findMany
+      .mockResolvedValueOnce([{ id: "conta-1", saldoInicial: 0 }])
+      .mockResolvedValueOnce([
+        { id: "conta-1", nome: "Conta 1", saldoInicial: 0, ativa: true },
+      ]);
+    // saldo de abertura da janela (data < 2026-04-01)
+    mockPrisma.transacao.aggregate.mockResolvedValue({ _sum: { valor: 100 } });
+    // (1) janela  (2) pendências anteriores  (3) pendências próximas
+    mockPrisma.transacao.findMany
+      .mockResolvedValueOnce([
+        txn({
+          id: "jul",
+          data: new Date("2026-07-10T00:00:00.000Z"),
+          tipo: "DESPESA",
+          valor: -200,
+          categoriaId: "cat-mercado",
+          categoria: {
+            id: "cat-mercado",
+            nome: "Mercado",
+            grupoId: null,
+            grupo: null,
+            subgrupoId: null,
+            subgrupo: null,
+          },
+        }),
+        txn({
+          id: "ago",
+          data: new Date("2026-08-05T00:00:00.000Z"),
+          tipo: "RECEITA",
+          valor: 5000,
+          categoriaId: "cat-salario",
+          categoria: {
+            id: "cat-salario",
+            nome: "Salário",
+            grupoId: null,
+            grupo: null,
+            subgrupoId: null,
+            subgrupo: null,
+          },
+        }),
+        txn({
+          id: "set",
+          data: new Date("2026-09-12T00:00:00.000Z"),
+          tipo: "DESPESA",
+          valor: -300,
+        }),
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    mockPrisma.transacao.groupBy.mockResolvedValue([]);
+    mockPrisma.orcamentoAnual.findFirst.mockResolvedValue(null);
+    mockPrisma.meta.findMany.mockResolvedValue([]);
+
+    const home = await transacoesService.buscarHome(ESPACO_ID, 2026, 9);
+
+    // saldo de abertura da janela deve considerar só o começo da janela (abril)
+    expect(mockPrisma.transacao.aggregate).toHaveBeenCalledWith({
+      where: {
+        espacoId: ESPACO_ID,
+        contaId: { in: ["conta-1"] },
+        data: { lt: new Date("2026-04-01T00:00:00.000Z") },
+      },
+      _sum: { valor: true },
+    });
+    // um único findMany para os 4 meses de resumo (+2 de pendências)
+    expect(mockPrisma.transacao.findMany).toHaveBeenCalledTimes(3);
+
+    expect(home.meses.map((m) => [m.ano, m.mes])).toEqual([
+      [2026, 9],
+      [2026, 8],
+      [2026, 7],
+      [2026, 6],
+    ]);
+    expect(home.meses[0]).toMatchObject({
+      saldoAnterior: 4900,
+      totalEntradas: 0,
+      totalSaidas: 300,
+      saldoFinal: 4600,
+    });
+    expect(home.meses[1]).toMatchObject({
+      saldoAnterior: -100,
+      totalEntradas: 5000,
+      totalSaidas: 0,
+      saldoFinal: 4900,
+    });
+    expect(home.meses[2]).toMatchObject({ saldoAnterior: 100, totalSaidas: 200, saldoFinal: -100 });
+    expect(home.meses[3]).toMatchObject({ saldoAnterior: 100, saldoFinal: 100 });
+
+    expect(home.evolucaoSaldo).toEqual([
+      { ano: 2026, mes: 4, saldoFinal: 100 },
+      { ano: 2026, mes: 5, saldoFinal: 100 },
+      { ano: 2026, mes: 6, saldoFinal: 100 },
+      { ano: 2026, mes: 7, saldoFinal: -100 },
+      { ano: 2026, mes: 8, saldoFinal: 4900 },
+      { ano: 2026, mes: 9, saldoFinal: 4600 },
+    ]);
+
+    expect(home.fluxoCaixa.serie).toEqual([
+      { ano: 2026, mes: 4, entradas: 0, saidas: 0 },
+      { ano: 2026, mes: 5, entradas: 0, saidas: 0 },
+      { ano: 2026, mes: 6, entradas: 0, saidas: 0 },
+      { ano: 2026, mes: 7, entradas: 0, saidas: 200 },
+      { ano: 2026, mes: 8, entradas: 5000, saidas: 0 },
+      { ano: 2026, mes: 9, entradas: 0, saidas: 300 },
+    ]);
+
+    expect(home.contas).toEqual([
+      { id: "conta-1", nome: "Conta 1", saldoInicial: 0, ativa: true, saldoAtual: 0 },
+    ]);
+    expect(home.orcamentoGrade).toBeNull();
+    expect(home.metas).toEqual([]);
+  });
+});

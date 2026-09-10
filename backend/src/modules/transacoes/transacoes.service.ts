@@ -11,6 +11,9 @@ import {
 import { toNumber } from "../../lib/decimal.js";
 import { comTempo } from "../../lib/timing.js";
 import { aprenderComTransacao } from "../regras/regras.service.js";
+import { listarContas } from "../contas/contas.service.js";
+import { buscarGradePorAno } from "../orcamento/orcamento.service.js";
+import { listarMetas } from "../metas/metas.service.js";
 import type {
   CriarTransacaoInput,
   CriarTransferenciaInput,
@@ -567,55 +570,50 @@ export async function buscarResumoMensal(
   );
 }
 
-async function buscarResumoMensalImpl(
+type TransacaoResumoPayload = Prisma.TransacaoGetPayload<{
+  include: typeof CATEGORIA_RESUMO_INCLUDE;
+}>;
+
+interface PendenciasNaoConsolidadas {
+  anterioresNaoConsolidadas: TransacaoDTO[];
+  proximasNaoConsolidadas: TransacaoDTO[];
+}
+
+/**
+ * Transações não consolidadas antes/depois de hoje. Não são recortadas pelo mês
+ * consultado — o resumo mensal sempre devolve o mesmo panorama de pendências.
+ */
+async function buscarPendenciasNaoConsolidadas(
   espacoId: string,
-  ano: number,
-  mes: number,
-  contaIds?: string[],
-) {
-  const contas = await resolverContasEmEscopo(espacoId, contaIds);
-  const contaIdsEmEscopo = contas.map((c) => c.id);
-  const saldoInicialTotal = contas.reduce((soma, c) => soma + toNumber(c.saldoInicial), 0);
-
-  const primeiroDia = primeiroDiaMesUTC(ano, mes);
-  const ultimoDia = ultimoDiaMesUTC(ano, mes);
+  contaIdsEmEscopo: string[],
+): Promise<PendenciasNaoConsolidadas> {
   const hoje = hojeUTC();
+  const [anteriores, proximas] = await Promise.all([
+    prisma.transacao.findMany({
+      where: { espacoId, contaId: { in: contaIdsEmEscopo }, consolidado: false, data: { lt: hoje } },
+      include: TRANSACAO_INCLUDE,
+      orderBy: { data: "asc" },
+      take: 10,
+    }),
+    prisma.transacao.findMany({
+      where: { espacoId, contaId: { in: contaIdsEmEscopo }, consolidado: false, data: { gte: hoje } },
+      include: TRANSACAO_INCLUDE,
+      orderBy: { data: "asc" },
+      take: 10,
+    }),
+  ]);
+  return {
+    anterioresNaoConsolidadas: anteriores.map(serializarTransacao),
+    proximasNaoConsolidadas: proximas.map(serializarTransacao),
+  };
+}
 
-  const [saldoAnterior, transacoesDoMes, anterioresNaoConsolidadas, proximasNaoConsolidadas] =
-    await Promise.all([
-      calcularSaldoAnterior(espacoId, contaIdsEmEscopo, saldoInicialTotal, primeiroDia),
-      prisma.transacao.findMany({
-        where: {
-          espacoId,
-          contaId: { in: contaIdsEmEscopo },
-          data: { gte: primeiroDia, lte: ultimoDia },
-        },
-        include: CATEGORIA_RESUMO_INCLUDE,
-      }),
-      prisma.transacao.findMany({
-        where: {
-          espacoId,
-          contaId: { in: contaIdsEmEscopo },
-          consolidado: false,
-          data: { lt: hoje },
-        },
-        include: TRANSACAO_INCLUDE,
-        orderBy: { data: "asc" },
-        take: 10,
-      }),
-      prisma.transacao.findMany({
-        where: {
-          espacoId,
-          contaId: { in: contaIdsEmEscopo },
-          consolidado: false,
-          data: { gte: hoje },
-        },
-        include: TRANSACAO_INCLUDE,
-        orderBy: { data: "asc" },
-        take: 10,
-      }),
-    ]);
-
+/** Agrega um conjunto de transações de um mês no formato do resumo mensal. */
+function montarResumoMensal(
+  transacoesDoMes: TransacaoResumoPayload[],
+  saldoAnterior: number,
+  pendencias: PendenciasNaoConsolidadas,
+) {
   let totalEntradas = 0;
   let totalSaidas = 0;
   let movimentoTotal = 0;
@@ -653,11 +651,182 @@ async function buscarResumoMensalImpl(
     totalSaidas,
     saldoFinal: saldoAnterior + movimentoTotal,
     recentes,
-    anterioresNaoConsolidadas: anterioresNaoConsolidadas.map(serializarTransacao),
-    proximasNaoConsolidadas: proximasNaoConsolidadas.map(serializarTransacao),
+    anterioresNaoConsolidadas: pendencias.anterioresNaoConsolidadas,
+    proximasNaoConsolidadas: pendencias.proximasNaoConsolidadas,
     despesasPorCategoria: Array.from(despesasPorCategoriaMap.values()),
     receitasPorCategoria: Array.from(receitasPorCategoriaMap.values()),
   };
+}
+
+async function buscarResumoMensalImpl(
+  espacoId: string,
+  ano: number,
+  mes: number,
+  contaIds?: string[],
+) {
+  const contas = await resolverContasEmEscopo(espacoId, contaIds);
+  const contaIdsEmEscopo = contas.map((c) => c.id);
+  const saldoInicialTotal = contas.reduce((soma, c) => soma + toNumber(c.saldoInicial), 0);
+
+  const primeiroDia = primeiroDiaMesUTC(ano, mes);
+  const ultimoDia = ultimoDiaMesUTC(ano, mes);
+
+  const [saldoAnterior, transacoesDoMes, pendencias] = await Promise.all([
+    calcularSaldoAnterior(espacoId, contaIdsEmEscopo, saldoInicialTotal, primeiroDia),
+    prisma.transacao.findMany({
+      where: {
+        espacoId,
+        contaId: { in: contaIdsEmEscopo },
+        data: { gte: primeiroDia, lte: ultimoDia },
+      },
+      include: CATEGORIA_RESUMO_INCLUDE,
+    }),
+    buscarPendenciasNaoConsolidadas(espacoId, contaIdsEmEscopo),
+  ]);
+
+  return montarResumoMensal(transacoesDoMes, saldoAnterior, pendencias);
+}
+
+// Quantos meses fechados (além do mês corrente) o endpoint da Home devolve, para
+// alimentar o comparativo e os insights sem uma requisição por mês.
+const MESES_HISTORICO_HOME = 3;
+// Janela dos gráficos de 6 meses (evolução de saldo e fluxo de caixa).
+const MESES_JANELA_GRAFICOS = 6;
+
+function periodoParaIndice(ano: number, mes: number): number {
+  return ano * 12 + (mes - 1);
+}
+
+function indiceParaPeriodo(indice: number): { ano: number; mes: number } {
+  return { ano: Math.floor(indice / 12), mes: (indice % 12) + 1 };
+}
+
+/**
+ * Payload único da tela inicial. Substitui ~14 requisições (resumo do mês atual,
+ * do anterior e de 2 meses de histórico, contas, evolução, fluxo de caixa,
+ * orçamento e metas) por uma só, resolvendo as contas e o saldo de abertura da
+ * janela uma única vez e derivando todos os meses de um único SELECT.
+ */
+export async function buscarHome(
+  espacoId: string,
+  ano: number,
+  mes: number,
+  contaIds?: string[],
+) {
+  return comTempo("buscarHome", { espacoId, ano, mes }, () =>
+    buscarHomeImpl(espacoId, ano, mes, contaIds),
+  );
+}
+
+async function buscarHomeImpl(
+  espacoId: string,
+  ano: number,
+  mes: number,
+  contaIds?: string[],
+) {
+  const contasEscopo = await resolverContasEmEscopo(espacoId, contaIds);
+  const contaIdsEmEscopo = contasEscopo.map((c) => c.id);
+  const saldoInicialTotal = contasEscopo.reduce(
+    (soma, c) => soma + toNumber(c.saldoInicial),
+    0,
+  );
+
+  const indiceMesAtual = periodoParaIndice(ano, mes);
+  const indiceInicioJanela = indiceMesAtual - (MESES_JANELA_GRAFICOS - 1);
+  const inicioJanela = indiceParaPeriodo(indiceInicioJanela);
+  const primeiroDiaJanela = primeiroDiaMesUTC(inicioJanela.ano, inicioJanela.mes);
+  const ultimoDiaMesAtual = ultimoDiaMesUTC(ano, mes);
+
+  const [saldoAberturaJanela, transacoesJanela, pendencias, contas, orcamentoGrade, metas] =
+    await Promise.all([
+      calcularSaldoAnterior(
+        espacoId,
+        contaIdsEmEscopo,
+        saldoInicialTotal,
+        primeiroDiaJanela,
+      ),
+      prisma.transacao.findMany({
+        where: {
+          espacoId,
+          contaId: { in: contaIdsEmEscopo },
+          data: { gte: primeiroDiaJanela, lte: ultimoDiaMesAtual },
+        },
+        include: CATEGORIA_RESUMO_INCLUDE,
+        orderBy: [{ data: "asc" }, { criadoEm: "asc" }],
+      }),
+      buscarPendenciasNaoConsolidadas(espacoId, contaIdsEmEscopo),
+      listarContas(espacoId, false),
+      buscarGradePorAno(espacoId, ano, mes),
+      listarMetas(espacoId, false),
+    ]);
+
+  // Índice de mês de cada transação, calculado uma vez e reaproveitado.
+  const idxTransacao = transacoesJanela.map((t) =>
+    periodoParaIndice(t.data.getUTCFullYear(), t.data.getUTCMonth() + 1),
+  );
+
+  // Resumos mensais: mês atual + MESES_HISTORICO_HOME meses fechados.
+  const meses: (ReturnType<typeof montarResumoMensal> & { ano: number; mes: number })[] = [];
+  for (let offset = 0; offset <= MESES_HISTORICO_HOME; offset++) {
+    const idx = indiceMesAtual - offset;
+    const periodo = indiceParaPeriodo(idx);
+
+    let saldoAnterior = saldoAberturaJanela;
+    const transacoesDoMes: TransacaoResumoPayload[] = [];
+    for (let i = 0; i < transacoesJanela.length; i++) {
+      if (idxTransacao[i] < idx) saldoAnterior += toNumber(transacoesJanela[i].valor);
+      else if (idxTransacao[i] === idx) transacoesDoMes.push(transacoesJanela[i]);
+    }
+
+    meses.push({
+      ano: periodo.ano,
+      mes: periodo.mes,
+      ...montarResumoMensal(transacoesDoMes, saldoAnterior, pendencias),
+    });
+  }
+
+  // Evolução de saldo (MESES_JANELA_GRAFICOS pontos), varrendo a janela uma vez.
+  const evolucaoSaldo: { ano: number; mes: number; saldoFinal: number }[] = [];
+  let saldoAcumulado = saldoAberturaJanela;
+  let cursor = 0;
+  for (let idx = indiceInicioJanela; idx <= indiceMesAtual; idx++) {
+    while (cursor < transacoesJanela.length && idxTransacao[cursor] <= idx) {
+      saldoAcumulado += toNumber(transacoesJanela[cursor].valor);
+      cursor++;
+    }
+    const periodo = indiceParaPeriodo(idx);
+    evolucaoSaldo.push({ ano: periodo.ano, mes: periodo.mes, saldoFinal: saldoAcumulado });
+  }
+
+  // Fluxo de caixa por mês (só DESPESA e RECEITA, em valor absoluto).
+  const fluxoPorIndice = new Map<number, { entradas: number; saidas: number }>();
+  for (let idx = indiceInicioJanela; idx <= indiceMesAtual; idx++) {
+    fluxoPorIndice.set(idx, { entradas: 0, saidas: 0 });
+  }
+  for (let i = 0; i < transacoesJanela.length; i++) {
+    const t = transacoesJanela[i];
+    if (t.tipo !== "DESPESA" && t.tipo !== "RECEITA") continue;
+    const balde = fluxoPorIndice.get(idxTransacao[i]);
+    if (!balde) continue;
+    const valorAbs = Math.abs(toNumber(t.valor));
+    if (t.tipo === "RECEITA") balde.entradas += valorAbs;
+    else balde.saidas += valorAbs;
+  }
+  const fluxoCaixa = {
+    serie: Array.from({ length: MESES_JANELA_GRAFICOS }, (_, i) => {
+      const idx = indiceInicioJanela + i;
+      const periodo = indiceParaPeriodo(idx);
+      const balde = fluxoPorIndice.get(idx)!;
+      return {
+        ano: periodo.ano,
+        mes: periodo.mes,
+        entradas: balde.entradas,
+        saidas: balde.saidas,
+      };
+    }),
+  };
+
+  return { contas, meses, evolucaoSaldo, fluxoCaixa, orcamentoGrade, metas };
 }
 
 function sequenciaMeses(

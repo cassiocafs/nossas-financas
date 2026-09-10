@@ -1,4 +1,7 @@
 import { apiFetch } from "./client";
+import type { Conta } from "./contas";
+import type { GradeOrcamento } from "./orcamento";
+import type { Meta } from "./metas";
 
 export type TipoTransacao = "DESPESA" | "RECEITA" | "TRANSFERENCIA";
 export type StatusFiltro = "todas" | "consolidadas" | "pendentes";
@@ -160,6 +163,31 @@ export function buscarFluxoCaixa(
   });
   if (contaIds?.length) params.set("contaIds", contaIds.join(","));
   return apiFetch<FluxoCaixa>(`/api/transacoes/fluxo-caixa?${params.toString()}`);
+}
+
+export interface ResumoMensalComPeriodo extends ResumoMensal {
+  ano: number;
+  mes: number;
+}
+
+export interface HomePayload {
+  contas: Conta[];
+  /** [0] = mês consultado; [1..3] = meses fechados anteriores, mais recente primeiro. */
+  meses: ResumoMensalComPeriodo[];
+  evolucaoSaldo: PontoEvolucaoSaldo[];
+  fluxoCaixa: FluxoCaixa;
+  orcamentoGrade: (GradeOrcamento & { orcamentoId: string }) | null;
+  metas: Meta[];
+}
+
+export function buscarHome(
+  ano: number,
+  mes: number,
+  contaIds?: string[],
+): Promise<HomePayload> {
+  const params = new URLSearchParams({ ano: String(ano), mes: String(mes) });
+  if (contaIds?.length) params.set("contaIds", contaIds.join(","));
+  return apiFetch<HomePayload>(`/api/transacoes/home?${params.toString()}`);
 }
 
 export function criarTransacao(input: CriarTransacaoInput): Promise<Transacao> {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { buscarFluxoCaixa } from "@/api/transacoes";
+import { buscarFluxoCaixa, type PontoFluxoCaixa } from "@/api/transacoes";
 import { formatarMoeda } from "@/lib/format";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
@@ -28,18 +28,26 @@ interface FluxoCaixaChartProps {
   ano: number;
   mes: number;
   contaIds?: string[];
+  /** Série de 6 meses já carregada (payload da Home); evita a requisição na visão padrão. */
+  serieInicial?: PontoFluxoCaixa[];
 }
 
-export function FluxoCaixaChart({ ano, mes, contaIds }: FluxoCaixaChartProps) {
+export function FluxoCaixaChart({ ano, mes, contaIds, serieInicial }: FluxoCaixaChartProps) {
   const [meses, setMeses] = useState<6 | 12>(6);
 
-  const { data, isLoading: carregando } = useQuery({
+  const usarSerieInicial = meses === 6 && serieInicial !== undefined;
+
+  const { data, isLoading } = useQuery({
     queryKey: ["transacoes", "fluxo-caixa", ano, mes, meses, contaIds],
     queryFn: () => buscarFluxoCaixa({ ano, mes }, meses, contaIds),
     staleTime: 5 * 60_000,
+    enabled: !usarSerieInicial,
   });
 
-  const serie = (data?.serie ?? []).map((p) => ({
+  const pontos = usarSerieInicial ? serieInicial : data?.serie;
+  const carregando = !usarSerieInicial && isLoading;
+
+  const serie = (pontos ?? []).map((p) => ({
     label: `${MESES_ABREV[p.mes - 1]}/${String(p.ano).slice(2)}`,
     entradas: p.entradas,
     saidas: p.saidas,

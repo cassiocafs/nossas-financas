@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { buscarResumoMensal } from "@/api/transacoes";
+import { buscarResumoMensal, type ResumoMensal } from "@/api/transacoes";
 import { Card } from "@/components/ui/Card";
 import { useFormatarValor } from "@/hooks/use-formatar-valor";
 
@@ -8,6 +8,8 @@ interface ComparativoMesAnteriorCardProps {
   mes: number;
   totalEntradas: number;
   totalSaidas: number;
+  /** Resumo do mês anterior já carregado (payload da Home); evita uma requisição. */
+  resumoAnterior?: ResumoMensal;
 }
 
 function mesAnterior(ano: number, mes: number): { ano: number; mes: number } {
@@ -40,13 +42,18 @@ export function ComparativoMesAnteriorCard({
   mes,
   totalEntradas,
   totalSaidas,
+  resumoAnterior: resumoAnteriorProp,
 }: ComparativoMesAnteriorCardProps) {
   const anterior = mesAnterior(ano, mes);
 
-  const { data: resumoAnterior, isLoading } = useQuery({
+  const { data: resumoAnteriorQuery, isLoading: carregandoQuery } = useQuery({
     queryKey: ["transacoes", "resumo", anterior.ano, anterior.mes],
     queryFn: () => buscarResumoMensal(anterior.ano, anterior.mes),
+    enabled: resumoAnteriorProp === undefined,
   });
+
+  const resumoAnterior = resumoAnteriorProp ?? resumoAnteriorQuery;
+  const isLoading = resumoAnteriorProp === undefined && carregandoQuery;
 
   const movimentoAtual = totalEntradas - totalSaidas;
   const movimentoAnterior = resumoAnterior

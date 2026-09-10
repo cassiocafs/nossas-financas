@@ -51,6 +51,7 @@ model MembroEspaco {
 
   @@unique([usuarioId, espacoId])
   @@index([usuarioId, criadoEm])
+  @@index([espacoId])
 }
 
 enum StatusConvite {
@@ -76,6 +77,7 @@ model Convite {
 
   @@index([espacoId])
   @@index([emailConvidado])
+  @@index([criadoPorId])
 }
 
 model Conta {
@@ -116,6 +118,7 @@ model SubgrupoCategoria {
   categorias Categoria[]
 
   @@unique([grupoId, nome])
+  @@index([espacoId])
 }
 
 enum TipoCategoria {
@@ -211,6 +214,8 @@ model SerieRecorrencia {
   criadoEm            DateTime           @default(now())
   espaco              EspacoFinanceiro   @relation(fields: [espacoId], references: [id])
   transacoes          Transacao[]
+
+  @@index([espacoId])
 }
 
 model Transacao {

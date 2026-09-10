@@ -1,19 +1,25 @@
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { buscarGradeOrcamentoPorAno } from "@/api/orcamento";
+import { buscarGradeOrcamentoPorAno, type GradeOrcamento } from "@/api/orcamento";
 import { Card } from "@/components/ui/Card";
 import { formatarMoeda } from "@/lib/format";
 
 interface OrcamentoResumoCardProps {
   ano: number;
   mes: number;
+  /** Grade já carregada (payload da Home); `null` = sem orçamento no ano. Omitir para buscar. */
+  grade?: (GradeOrcamento & { orcamentoId: string }) | null;
 }
 
-export function OrcamentoResumoCard({ ano, mes }: OrcamentoResumoCardProps) {
-  const { data: grade, isLoading: carregando } = useQuery({
+export function OrcamentoResumoCard({ ano, mes, grade: gradeProp }: OrcamentoResumoCardProps) {
+  const { data: gradeQuery, isLoading } = useQuery({
     queryKey: ["orcamento", "grade", ano, mes],
     queryFn: () => buscarGradeOrcamentoPorAno(ano, mes),
+    enabled: gradeProp === undefined,
   });
+
+  const grade = gradeProp === undefined ? gradeQuery : gradeProp;
+  const carregando = gradeProp === undefined && isLoading;
 
   const categoriasEstouradas =
     grade?.grupos.flatMap((g) => g.categorias.filter((c) => c.estourado)) ?? [];

@@ -1,16 +1,24 @@
 import { useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { listarMetas } from "@/api/metas";
+import { listarMetas, type Meta } from "@/api/metas";
 import { MetaCard } from "@/components/metas/MetaCard";
 import { Card } from "@/components/ui/Card";
 import { ordenarMetasHome } from "@/lib/metas";
 
-export function MetasResumo() {
+interface MetasResumoProps {
+  /** Metas já carregadas (payload da Home); evita uma requisição. */
+  metas?: Meta[];
+}
+
+export function MetasResumo({ metas: metasProp }: MetasResumoProps = {}) {
   const navigate = useNavigate();
-  const { data: metas } = useQuery({
+  const { data: metasQuery } = useQuery({
     queryKey: ["metas", "home"],
     queryFn: () => listarMetas(false),
+    enabled: metasProp === undefined,
   });
+
+  const metas = metasProp ?? metasQuery;
 
   const top3 = metas ? ordenarMetasHome(metas).slice(0, 3) : [];
 
