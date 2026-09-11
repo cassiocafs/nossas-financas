@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'expo-router';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { Link, useLocalSearchParams } from 'expo-router';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -11,14 +12,17 @@ import { GoogleButton } from '@/components/ui/GoogleButton';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/hooks/use-theme';
+import { traduzirErroAuth } from '@/lib/authErrors';
 
 export default function LoginScreen() {
   const { signIn, signInWithGoogle } = useAuth();
   const theme = useTheme();
+  const { erroGoogle } = useLocalSearchParams<{ erroGoogle?: string }>();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [erro, setErro] = useState<string | null>(null);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [erro, setErro] = useState<string | null>(erroGoogle ?? null);
   const [loading, setLoading] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
 
@@ -28,7 +32,7 @@ export default function LoginScreen() {
     try {
       await signIn(email.trim(), password);
     } catch (err) {
-      setErro(err instanceof Error ? err.message : 'Falha ao entrar');
+      setErro(traduzirErroAuth(err, 'Falha ao entrar'));
     } finally {
       setLoading(false);
     }
@@ -40,7 +44,7 @@ export default function LoginScreen() {
     try {
       await signInWithGoogle();
     } catch (err) {
-      setErro(err instanceof Error ? err.message : 'Falha ao entrar com Google');
+      setErro(traduzirErroAuth(err, 'Falha ao entrar com Google'));
     } finally {
       setLoadingGoogle(false);
     }
@@ -63,12 +67,32 @@ export default function LoginScreen() {
                 style={styles.logo}
                 resizeMode="contain"
               />
-              <ThemedText type="default" themeColor="textSecondary">
-                Entrar na conta
+            </ThemedView>
+
+            <ThemedView style={styles.ctaNovaConta}>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.ctaFrase}>
+                Organize suas finanças e alcance seus objetivos. Comece agora, é grátis.
               </ThemedText>
+              <Link href="/cadastro" asChild>
+                <Pressable
+                  style={(state) => [
+                    styles.ctaBadge,
+                    { backgroundColor: theme.primarySoft, opacity: state.pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <ThemedText type="linkPrimary" themeColor="primary">
+                    Criar conta grátis
+                  </ThemedText>
+                  <Feather name="arrow-right" size={14} color={theme.primary} />
+                </Pressable>
+              </Link>
             </ThemedView>
 
             <Card style={styles.card}>
+              <ThemedText type="h3" style={styles.cardTitle}>
+                Entrar na conta
+              </ThemedText>
+
               <ThemedView style={styles.field}>
                 <ThemedText type="label">E-mail</ThemedText>
                 <TextInput
@@ -84,13 +108,28 @@ export default function LoginScreen() {
 
               <ThemedView style={styles.field}>
                 <ThemedText type="label">Senha</ThemedText>
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface }]}
-                  placeholderTextColor={theme.textTertiary}
-                />
+                <ThemedView style={styles.passwordRow}>
+                  <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!mostrarSenha}
+                    style={[
+                      styles.input,
+                      styles.inputPassword,
+                      { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface },
+                    ]}
+                    placeholderTextColor={theme.textTertiary}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                    onPress={() => setMostrarSenha((v) => !v)}
+                    hitSlop={8}
+                    style={styles.togglePassword}
+                  >
+                    <Feather name={mostrarSenha ? 'eye-off' : 'eye'} size={18} color={theme.textTertiary} />
+                  </Pressable>
+                </ThemedView>
               </ThemedView>
 
               {erro && (
@@ -122,12 +161,6 @@ export default function LoginScreen() {
               loading={loadingGoogle}
             />
 
-            <Link href="/cadastro" style={styles.link}>
-              <ThemedText type="link" themeColor="textSecondary">
-                Não tem conta? <ThemedText type="linkPrimary">Criar conta</ThemedText>
-              </ThemedText>
-            </Link>
-
             <Link href="/privacidade" style={styles.privacidadeLink}>
               <ThemedText type="small" themeColor="textTertiary" style={styles.privacidadeTexto}>
                 Política de Privacidade
@@ -156,12 +189,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
   },
   header: {
-    gap: Spacing.half,
+    alignItems: 'center',
+    marginBottom: Spacing.four,
+  },
+  logo: { height: 48, width: 192 },
+  ctaNovaConta: {
+    alignItems: 'center',
+    gap: Spacing.two,
     marginBottom: Spacing.five,
   },
-  logo: { height: 32, width: 128 },
+  ctaFrase: {
+    textAlign: 'center',
+  },
+  ctaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    borderRadius: Radius.xl,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+  },
   card: {
     gap: Spacing.three,
+  },
+  cardTitle: {
+    marginBottom: Spacing.one,
   },
   field: {
     gap: Spacing.one,
@@ -172,6 +224,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     fontSize: 16,
+  },
+  passwordRow: {
+    justifyContent: 'center',
+  },
+  inputPassword: {
+    paddingRight: Spacing.five,
+  },
+  togglePassword: {
+    position: 'absolute',
+    right: Spacing.three,
+    padding: Spacing.one,
   },
   erro: {
     marginTop: -Spacing.one,
@@ -188,10 +251,6 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-  },
-  link: {
-    alignSelf: 'center',
-    marginTop: Spacing.four,
   },
   privacidadeLink: {
     alignSelf: 'center',

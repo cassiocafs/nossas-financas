@@ -40,15 +40,15 @@ function LinhaGrupo({ grupo }: { grupo: GrupoGrade }) {
           <ThemedText type="smallBold" numberOfLines={1}>
             {grupo.grupoNome}
           </ThemedText>
-          <ThemedText type="caption" themeColor={estourado ? 'moneyAlert' : 'income'}>
-            {Math.round(pct)}%
-          </ThemedText>
         </View>
-        <ThemedText type="small" themeColor="textSecondary">
-          <ThemedText type="smallBold">{formatarValor(grupo.subtotalRealizado)}</ThemedText> de{' '}
-          {formatarValor(grupo.subtotalPrevisto)}
+        <ThemedText type="caption" themeColor={estourado ? 'moneyAlert' : 'income'}>
+          {Math.round(pct)}%
         </ThemedText>
       </View>
+      <ThemedText type="small" themeColor="textSecondary">
+        <ThemedText type="smallBold">{formatarValor(grupo.subtotalRealizado)}</ThemedText> de{' '}
+        {formatarValor(grupo.subtotalPrevisto)}
+      </ThemedText>
       <ProgressBar
         value={Math.min(pct, 100) / 100}
         color={estourado ? theme.moneyAlert : cor}
@@ -129,7 +129,7 @@ export function PrevistoRealizadoChart({ ano, mes }: PrevistoRealizadoChartProps
 
           {grade ? (
             <Button
-              title="Definir previsto"
+              title="Incluir no orçamento"
               variant="secondary"
               icon="edit-2"
               onPress={() => setModalVisivel(true)}

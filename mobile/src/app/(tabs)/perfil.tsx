@@ -141,6 +141,18 @@ export default function PerfilScreen() {
             </Pressable>
 
             <Pressable
+              onPress={() => router.push('/metas')}
+              style={[styles.acaoLinha, { borderBottomColor: theme.border }]}>
+              <ThemedView style={[styles.acaoIcone, { backgroundColor: theme.surface }]}>
+                <Feather name="target" size={16} color={theme.primary} />
+              </ThemedView>
+              <ThemedText type="default" style={styles.acaoTexto}>
+                Metas
+              </ThemedText>
+              <Feather name="chevron-right" size={18} color={theme.textTertiary} />
+            </Pressable>
+
+            <Pressable
               onPress={() => setRegrasAberto(true)}
               style={[styles.acaoLinha, { borderBottomColor: theme.border }]}>
               <ThemedView style={[styles.acaoIcone, { backgroundColor: theme.surface }]}>

@@ -77,7 +77,7 @@ export function DefinirPrevistoModal({
           <ThemedView style={styles.header}>
             <IconButton icon="x" label="Fechar" onPress={onClose} disabled={mutation.isPending} />
             <ThemedText type="subtitle" style={styles.headerTitle}>
-              Definir previsto
+              Incluir no orçamento
             </ThemedText>
           </ThemedView>
 

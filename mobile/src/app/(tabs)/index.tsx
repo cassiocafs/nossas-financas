@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +8,7 @@ import { buscarResumoMensal } from '@/api/transacoes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { FinancialCard } from '@/components/home/FinancialCard';
+import { MetasResumoCard } from '@/components/home/MetasResumoCard';
 import { SaldoPorContasCard } from '@/components/home/SaldoPorContasCard';
 import { TransacoesRecentesCard } from '@/components/home/TransacoesRecentesCard';
 import { AppHeader } from '@/components/ui/AppHeader';
@@ -39,6 +41,7 @@ function nomeDeExibicao(email: string | undefined, nomeCompleto: unknown): strin
 
 export default function InicioScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const formatarValor = useFormatarValor();
   const { session } = useAuth();
   const { ano, mes } = hoje();
@@ -96,7 +99,7 @@ export default function InicioScreen() {
                       ? variacaoTopoCaption(resumo.totalEntradas, resumoAnterior.totalEntradas, formatarValor)
                       : '…'
                   }
-                  style={styles.stat}
+                  onPress={() => router.push(`/relatorios?ano=${ano}&mes=${mes}&foco=receitas`)}
                 />
                 <StatCard
                   label={`Saiu em ${mesNome}`}
@@ -107,20 +110,22 @@ export default function InicioScreen() {
                       ? variacaoTopoCaption(resumo.totalSaidas, resumoAnterior.totalSaidas, formatarValor)
                       : '…'
                   }
-                  style={styles.stat}
+                  onPress={() => router.push(`/relatorios?ano=${ano}&mes=${mes}&foco=despesas`)}
                 />
                 <StatCard
                   label="Sobrou"
                   value={economia}
                   tone="saved"
                   caption={captionSobrou(economia, resumo.totalEntradas)}
-                  style={styles.stat}
+                  onPress={() => router.push(`/relatorios?ano=${ano}&mes=${mes}&foco=comparativo`)}
                 />
               </View>
 
               {insight ? <InsightCard>{insight.texto}</InsightCard> : null}
 
               <TransacoesRecentesCard ano={ano} mes={mes} recentes={resumo.recentes} />
+
+              <MetasResumoCard />
 
               <SaldoPorContasCard ano={ano} mes={mes} />
             </>
@@ -135,6 +140,5 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
   scroll: { padding: Spacing.page, gap: Spacing.gap, paddingBottom: Spacing.six * 2 },
-  statRow: { flexDirection: 'row', gap: Spacing.two },
-  stat: { flex: 1 },
+  statRow: { flexDirection: 'column', gap: Spacing.two },
 });

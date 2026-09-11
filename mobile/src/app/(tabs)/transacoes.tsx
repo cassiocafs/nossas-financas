@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -108,13 +108,15 @@ export default function TransacoesScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contas]);
 
+  const buscaNormalizada = busca.trim();
+
   const {
     data: dadosServidor,
     isLoading,
     isFetching,
     refetch,
   } = useQuery({
-    queryKey: ['transacoes', { ano, mes, contaIds, categoriaIds, status, dataInicio, dataFim }],
+    queryKey: ['transacoes', { ano, mes, contaIds, categoriaIds, status, dataInicio, dataFim, texto: buscaNormalizada }],
     queryFn: () =>
       listarTransacoesMes({
         ano,
@@ -122,6 +124,7 @@ export default function TransacoesScreen() {
         contaIds: contaIds.length > 0 ? contaIds : undefined,
         categoriaIds: categoriaIds.length > 0 ? categoriaIds : undefined,
         status,
+        texto: buscaNormalizada || undefined,
         dataInicio: dataInicio ?? undefined,
         dataFim: dataFim ?? undefined,
       }),
@@ -172,20 +175,7 @@ export default function TransacoesScreen() {
     }
   }
 
-  const buscaNormalizada = busca.trim().toLowerCase();
-
-  const grupos = useMemo(
-    () =>
-      (data?.dias ?? [])
-        .map((dia) => ({
-          ...dia,
-          transacoes: buscaNormalizada
-            ? dia.transacoes.filter((t) => t.descricao.toLowerCase().includes(buscaNormalizada))
-            : dia.transacoes,
-        }))
-        .filter((dia) => dia.transacoes.length > 0),
-    [data?.dias, buscaNormalizada],
-  );
+  const grupos = data?.dias ?? [];
 
   const filtrosAtivos =
     status !== 'todas' ||
@@ -242,7 +232,12 @@ export default function TransacoesScreen() {
               <RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={theme.primary} />
             }
             ListHeaderComponent={
-              data ? <SummaryStrip label={`Saiu em ${MESES[mes - 1]}`} value={-Math.abs(data.totalSaidas)} /> : null
+              data ? (
+                <SummaryStrip
+                  label={buscaNormalizada ? 'Saiu no resultado da busca' : `Saiu em ${MESES[mes - 1]}`}
+                  value={-Math.abs(data.totalSaidas)}
+                />
+              ) : null
             }
             renderItem={({ item: dia }) => (
               <ThemedView style={styles.grupo}>

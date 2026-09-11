@@ -134,9 +134,9 @@ const styles = StyleSheet.create({
   },
   conteudo: { flex: 1, gap: 2 },
   linha1: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
-  titulo: { flexShrink: 1 },
-  valor: { flexShrink: 0 },
+  titulo: { flexShrink: 1, fontSize: 13, lineHeight: 18 },
+  valor: { flexShrink: 0, fontSize: 15, lineHeight: 19 },
   linha2: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
-  legenda: { flexShrink: 1 },
+  legenda: { flexShrink: 1, fontSize: 12, lineHeight: 16 },
   data: { flexShrink: 0, letterSpacing: 0.4 },
 });

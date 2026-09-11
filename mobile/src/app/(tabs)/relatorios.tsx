@@ -1,14 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { buscarRelatorio } from '@/api/relatorios';
-import { buscarEvolucaoSaldo, buscarResumoMensal, type ItemCategoriaResumo, type PeriodoMes } from '@/api/transacoes';
+import { buscarResumoMensal, type ItemCategoriaResumo, type PeriodoMes } from '@/api/transacoes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { CategoriaDrilldownChart } from '@/components/relatorios/CategoriaDrilldownChart';
-import { EvolucaoSaldoChart } from '@/components/relatorios/EvolucaoSaldoChart';
 import { PrevistoRealizadoChart } from '@/components/relatorios/PrevistoRealizadoChart';
 import { ReceitaDespesaChart } from '@/components/relatorios/ReceitaDespesaChart';
 import { RelatoriosFiltrosModal } from '@/components/relatorios/RelatoriosFiltrosModal';
@@ -34,39 +34,46 @@ export default function RelatoriosScreen() {
   const theme = useTheme();
   const padrao = hoje();
 
+  const params = useLocalSearchParams<{ ano?: string; mes?: string; foco?: string }>();
+  const anoParam = Array.isArray(params.ano) ? params.ano[0] : params.ano;
+  const mesParam = Array.isArray(params.mes) ? params.mes[0] : params.mes;
+  const focoParam = Array.isArray(params.foco) ? params.foco[0] : params.foco;
+  const periodoParamAplicado = useRef<string | undefined>(undefined);
+  const focoAplicado = useRef<string | undefined>(undefined);
+  const scrollRef = useRef<ScrollView>(null);
+  const posicoesSecoes = useRef<Record<string, number>>({});
+
   const [ano, setAno] = useState(padrao.ano);
   const [mes, setMes] = useState(padrao.mes);
   const [contaIds, setContaIds] = useState<string[]>([]);
   const [categoriaIds, setCategoriaIds] = useState<string[]>([]);
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
 
-  const [evolucaoFim, setEvolucaoFim] = useState<PeriodoMes>({ ano, mes });
-  const [evolucaoInicio, setEvolucaoInicio] = useState<PeriodoMes>(() => subtrairMeses({ ano, mes }, 5));
-
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reancora o período de evolução sempre que o mês principal muda
-    setEvolucaoFim({ ano, mes });
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reancora o período de evolução sempre que o mês principal muda
-    setEvolucaoInicio(subtrairMeses({ ano, mes }, 5));
-  }, [ano, mes]);
+    if (!anoParam || !mesParam) return;
+    const chave = `${anoParam}-${mesParam}`;
+    if (chave !== periodoParamAplicado.current) {
+      periodoParamAplicado.current = chave;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- aplica mês vindo da navegação (cards da Home)
+      setAno(Number(anoParam));
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- aplica mês vindo da navegação (cards da Home)
+      setMes(Number(mesParam));
+    }
+  }, [anoParam, mesParam]);
 
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['transacoes', 'resumo', ano, mes, contaIds],
     queryFn: () => buscarResumoMensal(ano, mes, contaIds.length > 0 ? contaIds : undefined),
   });
 
-  const { data: evolucaoSaldo } = useQuery({
-    queryKey: [
-      'transacoes',
-      'evolucao-saldo',
-      evolucaoInicio.ano,
-      evolucaoInicio.mes,
-      evolucaoFim.ano,
-      evolucaoFim.mes,
-      contaIds,
-    ],
-    queryFn: () => buscarEvolucaoSaldo(evolucaoInicio, evolucaoFim, contaIds.length > 0 ? contaIds : undefined),
-  });
+  useEffect(() => {
+    if (!focoParam || focoParam === focoAplicado.current || isLoading || !data) return;
+    focoAplicado.current = focoParam;
+    requestAnimationFrame(() => {
+      const y = posicoesSecoes.current[focoParam];
+      if (y !== undefined) scrollRef.current?.scrollTo({ y: Math.max(y - Spacing.page, 0), animated: true });
+    });
+  }, [focoParam, isLoading, data]);
 
   const relatorioInicio = useMemo<PeriodoMes>(() => subtrairMeses({ ano, mes }, 35), [ano, mes]);
   const { data: relatorio } = useQuery({
@@ -88,6 +95,7 @@ export default function RelatoriosScreen() {
     <ThemedView type="background" style={styles.container}>
       <SafeAreaView edges={['bottom']} style={styles.safeArea}>
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scroll}
           refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={theme.primary} />}>
           <ThemedView style={styles.header}>
@@ -112,32 +120,30 @@ export default function RelatoriosScreen() {
             </ThemedText>
           ) : (
             <>
-              <CategoriaDrilldownChart
-                titulo="Despesas por categoria"
-                dados={filtrarPorCategoria(data.despesasPorCategoria, categoriaIds)}
-                tipo="DESPESA"
-                ano={ano}
-                mes={mes}
-              />
-
-              <CategoriaDrilldownChart
-                titulo="Receitas por categoria"
-                dados={filtrarPorCategoria(data.receitasPorCategoria, categoriaIds)}
-                tipo="RECEITA"
-                ano={ano}
-                mes={mes}
-              />
-
-              {relatorio && <ReceitaDespesaChart meses={relatorio.meses} />}
-
-              {evolucaoSaldo && (
-                <EvolucaoSaldoChart
-                  dados={evolucaoSaldo}
-                  inicio={evolucaoInicio}
-                  fim={evolucaoFim}
-                  onChangeInicio={(novoAno, novoMes) => setEvolucaoInicio({ ano: novoAno, mes: novoMes })}
-                  onChangeFim={(novoAno, novoMes) => setEvolucaoFim({ ano: novoAno, mes: novoMes })}
+              <ThemedView onLayout={(e) => { posicoesSecoes.current.despesas = e.nativeEvent.layout.y; }}>
+                <CategoriaDrilldownChart
+                  titulo="Despesas por categoria"
+                  dados={filtrarPorCategoria(data.despesasPorCategoria, categoriaIds)}
+                  tipo="DESPESA"
+                  ano={ano}
+                  mes={mes}
                 />
+              </ThemedView>
+
+              <ThemedView onLayout={(e) => { posicoesSecoes.current.receitas = e.nativeEvent.layout.y; }}>
+                <CategoriaDrilldownChart
+                  titulo="Receitas por categoria"
+                  dados={filtrarPorCategoria(data.receitasPorCategoria, categoriaIds)}
+                  tipo="RECEITA"
+                  ano={ano}
+                  mes={mes}
+                />
+              </ThemedView>
+
+              {relatorio && (
+                <ThemedView onLayout={(e) => { posicoesSecoes.current.comparativo = e.nativeEvent.layout.y; }}>
+                  <ReceitaDespesaChart meses={relatorio.meses} />
+                </ThemedView>
               )}
 
               <PrevistoRealizadoChart ano={ano} mes={mes} />

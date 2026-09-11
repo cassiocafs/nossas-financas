@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { Feather } from '@expo/vector-icons';
 import { Link } from 'expo-router';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -11,6 +12,7 @@ import { GoogleButton } from '@/components/ui/GoogleButton';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/hooks/use-theme';
+import { traduzirErroAuth } from '@/lib/authErrors';
 
 export default function CadastroScreen() {
   const { signUp, signInWithGoogle } = useAuth();
@@ -20,6 +22,8 @@ export default function CadastroScreen() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
@@ -41,7 +45,7 @@ export default function CadastroScreen() {
     try {
       await signUp(nome.trim(), email.trim(), senha);
     } catch (err) {
-      setErro(err instanceof Error ? err.message : 'Falha ao criar conta');
+      setErro(traduzirErroAuth(err, 'Falha ao criar conta'));
     } finally {
       setLoading(false);
     }
@@ -53,7 +57,7 @@ export default function CadastroScreen() {
     try {
       await signInWithGoogle();
     } catch (err) {
-      setErro(err instanceof Error ? err.message : 'Falha ao entrar com Google');
+      setErro(traduzirErroAuth(err, 'Falha ao entrar com Google'));
     } finally {
       setLoadingGoogle(false);
     }
@@ -107,24 +111,54 @@ export default function CadastroScreen() {
 
               <ThemedView style={styles.field}>
                 <ThemedText type="label">Senha</ThemedText>
-                <TextInput
-                  value={senha}
-                  onChangeText={setSenha}
-                  secureTextEntry
-                  style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface }]}
-                  placeholderTextColor={theme.textTertiary}
-                />
+                <ThemedView style={styles.passwordRow}>
+                  <TextInput
+                    value={senha}
+                    onChangeText={setSenha}
+                    secureTextEntry={!mostrarSenha}
+                    style={[
+                      styles.input,
+                      styles.inputPassword,
+                      { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface },
+                    ]}
+                    placeholderTextColor={theme.textTertiary}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                    onPress={() => setMostrarSenha((v) => !v)}
+                    hitSlop={8}
+                    style={styles.togglePassword}
+                  >
+                    <Feather name={mostrarSenha ? 'eye-off' : 'eye'} size={18} color={theme.textTertiary} />
+                  </Pressable>
+                </ThemedView>
               </ThemedView>
 
               <ThemedView style={styles.field}>
                 <ThemedText type="label">Confirmar senha</ThemedText>
-                <TextInput
-                  value={confirmarSenha}
-                  onChangeText={setConfirmarSenha}
-                  secureTextEntry
-                  style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface }]}
-                  placeholderTextColor={theme.textTertiary}
-                />
+                <ThemedView style={styles.passwordRow}>
+                  <TextInput
+                    value={confirmarSenha}
+                    onChangeText={setConfirmarSenha}
+                    secureTextEntry={!mostrarConfirmarSenha}
+                    style={[
+                      styles.input,
+                      styles.inputPassword,
+                      { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface },
+                    ]}
+                    placeholderTextColor={theme.textTertiary}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={mostrarConfirmarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                    onPress={() => setMostrarConfirmarSenha((v) => !v)}
+                    hitSlop={8}
+                    style={styles.togglePassword}
+                  >
+                    <Feather name={mostrarConfirmarSenha ? 'eye-off' : 'eye'} size={18} color={theme.textTertiary} />
+                  </Pressable>
+                </ThemedView>
               </ThemedView>
 
               {erro && (
@@ -210,6 +244,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     fontSize: 16,
+  },
+  passwordRow: {
+    justifyContent: 'center',
+  },
+  inputPassword: {
+    paddingRight: Spacing.five,
+  },
+  togglePassword: {
+    position: 'absolute',
+    right: Spacing.three,
+    padding: Spacing.one,
   },
   erro: {
     marginTop: -Spacing.one,
