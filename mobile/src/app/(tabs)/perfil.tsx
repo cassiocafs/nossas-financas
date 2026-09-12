@@ -176,6 +176,18 @@ export default function PerfilScreen() {
               <Feather name="chevron-right" size={18} color={theme.textTertiary} />
             </Pressable>
 
+            <Pressable
+              onPress={() => router.push('/termos')}
+              style={[styles.acaoLinha, { borderBottomColor: theme.border }]}>
+              <ThemedView style={[styles.acaoIcone, { backgroundColor: theme.surface }]}>
+                <Feather name="file-text" size={16} color={theme.primary} />
+              </ThemedView>
+              <ThemedText type="default" style={styles.acaoTexto}>
+                Termos de uso
+              </ThemedText>
+              <Feather name="chevron-right" size={18} color={theme.textTertiary} />
+            </Pressable>
+
             {podeVerDiagnostico && (
               <Pressable
                 onPress={() => setDiagnosticoAberto(true)}

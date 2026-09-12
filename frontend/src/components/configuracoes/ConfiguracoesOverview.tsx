@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
-import { Wallet, Tag, SlidersHorizontal, Upload, ShieldCheck } from "lucide-react";
+import { Wallet, Tag, SlidersHorizontal, Upload, ShieldCheck, FileText } from "lucide-react";
 import { listarContas } from "@/api/contas";
 import { listarGrupos } from "@/api/categorias";
 import { listarRegras } from "@/api/regras";
@@ -64,6 +64,14 @@ export function ConfiguracoesOverview() {
       desc: "Veja como tratamos seus dados de cadastro e informações financeiras.",
       acao: "Ver política de privacidade",
       Icon: ShieldCheck,
+    },
+    {
+      to: "/termos",
+      titulo: "Termos de Uso",
+      meta: "Contrato",
+      desc: "Regras de uso do Poupeu, sua conta e os Espaços Financeiros compartilhados.",
+      acao: "Ver termos de uso",
+      Icon: FileText,
     },
   ];
 

@@ -161,11 +161,21 @@ export default function LoginScreen() {
               loading={loadingGoogle}
             />
 
-            <Link href="/privacidade" style={styles.privacidadeLink}>
-              <ThemedText type="small" themeColor="textTertiary" style={styles.privacidadeTexto}>
-                Política de Privacidade
+            <ThemedView style={styles.privacidadeLink}>
+              <Link href="/termos">
+                <ThemedText type="small" themeColor="textTertiary" style={styles.privacidadeTexto}>
+                  Termos de Uso
+                </ThemedText>
+              </Link>
+              <ThemedText type="small" themeColor="textTertiary">
+                {'  ·  '}
               </ThemedText>
-            </Link>
+              <Link href="/privacidade">
+                <ThemedText type="small" themeColor="textTertiary" style={styles.privacidadeTexto}>
+                  Política de Privacidade
+                </ThemedText>
+              </Link>
+            </ThemedView>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -253,6 +263,7 @@ const styles = StyleSheet.create({
     height: 1,
   },
   privacidadeLink: {
+    flexDirection: 'row',
     alignSelf: 'center',
     marginTop: Spacing.three,
   },

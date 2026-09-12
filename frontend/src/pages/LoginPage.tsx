@@ -126,6 +126,10 @@ export function LoginPage() {
         </p>
 
         <p className="text-center text-xs text-muted-foreground">
+          <Link to="/termos" className="underline hover:text-foreground">
+            Termos de Uso
+          </Link>{" "}
+          ·{" "}
           <Link to="/privacidade" className="underline hover:text-foreground">
             Política de Privacidade
           </Link>

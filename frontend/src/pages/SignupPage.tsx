@@ -168,7 +168,11 @@ export function SignupPage() {
         />
 
         <p className="text-center text-xs text-muted-foreground">
-          Ao criar uma conta, você concorda com nossa{" "}
+          Ao criar uma conta, você concorda com nossos{" "}
+          <Link to="/termos" className="font-medium text-foreground underline">
+            Termos de Uso
+          </Link>{" "}
+          e nossa{" "}
           <Link to="/privacidade" className="font-medium text-foreground underline">
             Política de Privacidade
           </Link>

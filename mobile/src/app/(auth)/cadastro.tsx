@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Feather } from '@expo/vector-icons';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,6 +17,7 @@ import { traduzirErroAuth } from '@/lib/authErrors';
 export default function CadastroScreen() {
   const { signUp, signInWithGoogle } = useAuth();
   const theme = useTheme();
+  const router = useRouter();
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
@@ -175,15 +176,25 @@ export default function CadastroScreen() {
                 style={styles.button}
               />
 
-              <Link href="/privacidade" style={styles.termos}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Ao criar uma conta, você concorda com nossa{' '}
-                  <ThemedText type="small" themeColor="text" style={styles.termosLink}>
-                    Política de Privacidade
-                  </ThemedText>
-                  .
+              <ThemedText type="small" themeColor="textSecondary" style={styles.termos}>
+                Ao criar uma conta, você concorda com nossos{' '}
+                <ThemedText
+                  type="small"
+                  themeColor="text"
+                  style={styles.termosLink}
+                  onPress={() => router.push('/termos')}>
+                  Termos de Uso
+                </ThemedText>{' '}
+                e nossa{' '}
+                <ThemedText
+                  type="small"
+                  themeColor="text"
+                  style={styles.termosLink}
+                  onPress={() => router.push('/privacidade')}>
+                  Política de Privacidade
                 </ThemedText>
-              </Link>
+                .
+              </ThemedText>
             </Card>
 
             <ThemedView style={styles.divider}>

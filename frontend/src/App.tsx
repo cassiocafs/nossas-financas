@@ -9,6 +9,9 @@ const SignupPage = lazy(() =>
 const PrivacidadePage = lazy(() =>
   import("@/pages/PrivacidadePage").then((m) => ({ default: m.PrivacidadePage })),
 );
+const TermosPage = lazy(() =>
+  import("@/pages/TermosPage").then((m) => ({ default: m.TermosPage })),
+);
 const HomePage = lazy(() => import("@/pages/HomePage").then((m) => ({ default: m.HomePage })));
 const TransacoesPage = lazy(() =>
   import("@/pages/TransacoesPage").then((m) => ({ default: m.TransacoesPage })),
@@ -60,6 +63,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/privacidade" element={<PrivacidadePage />} />
+        <Route path="/termos" element={<TermosPage />} />
 
         <Route element={<AppShell />}>
           <Route path="/" element={<HomePage />} />
